@@ -1,35 +1,40 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import {useState} from "react";
+import FileUpload from "./components/FileUpload.jsx";
+import TripMap from "./components/TripMap.jsx";
 
-function App() {
-  const [count, setCount] = useState(0)
+import 'leaflet/dist/leaflet.css';
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+function App(){
+    const [currentTripId, setCurrentTripId] = useState(null);
+
+
+    return (
+        <div style={{ display: "flex", height: "100vh", fontFamily: "Arial, sans-serif" }}>
+
+            {/* LEWA STRONA: Panel wgrywania */}
+            {/* Przekazujemy funkcję: "Jak skończysz, ustaw mi nowe ID" */}
+            <FileUpload onUploadSuccess={(id) => setCurrentTripId(id)} />
+
+            {/* PRAWA STRONA: Mapa */}
+            <div style={{ flex: 1, position: "relative" }}>
+
+                {currentTripId ? (
+                    // Jeśli mamy ID, pokazujemy mapę dla tego ID
+                    <TripMap tripId={currentTripId} />
+                ) : (
+                    // Jeśli nie mamy ID, pokazujemy powitanie
+                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
+                        <div style={{ textAlign: "center", color: "#666" }}>
+                            <h1>Witaj w Weather Visualization 🗺️</h1>
+                            <p>⬅️ Wgraj plik GPX w panelu po lewej, aby zobaczyć trasę.</p>
+                        </div>
+                    </div>
+                )}
+
+            </div>
+
+        </div>
+    );
 }
 
-export default App
+export default App;

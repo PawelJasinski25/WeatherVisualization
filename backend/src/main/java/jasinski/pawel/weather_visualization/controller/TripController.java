@@ -43,14 +43,13 @@ public class TripController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadGpxFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Long> uploadGpxFile(@RequestParam("file") MultipartFile file) {
         try{
-            tripService.processGpxFile(file);
-            return ResponseEntity.ok("Plik został poprawnie załadowany");
+            Long newTripId = tripService.processGpxFile(file);
+            return ResponseEntity.ok(newTripId);
         }
         catch (Exception e){
-            e.printStackTrace();
-            return ResponseEntity.badRequest().body("Błąd podczas wgrywania: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
         }
     }
 

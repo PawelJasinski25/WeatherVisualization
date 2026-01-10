@@ -35,7 +35,7 @@ public class TripService {
     }
 
     @Transactional
-    public void processGpxFile(MultipartFile file) throws IOException {
+    public Long processGpxFile(MultipartFile file) throws IOException {
 
         //wczytywanie pliku
         InputStream inputStream = file.getInputStream();
@@ -101,6 +101,9 @@ public class TripService {
         }
         System.out.println("KONIEC! Łącznie zapisano: " + counter + " punktów.");
 
+        return savedTrip.getId();
+
     }
+
 
 }
