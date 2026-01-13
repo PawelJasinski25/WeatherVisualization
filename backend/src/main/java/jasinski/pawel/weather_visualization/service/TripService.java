@@ -35,14 +35,14 @@ public class TripService {
     }
 
     @Transactional
-    public Long processGpxFile(MultipartFile file) throws IOException {
+    public Long processGpxFile(MultipartFile file, String email) throws IOException {
 
         //wczytywanie pliku
         InputStream inputStream = file.getInputStream();
         GPX gpx = GPX.Reader.DEFAULT.read(inputStream);
         inputStream.close();
 
-        User user = userRepository.findById(1L).orElseThrow(() -> new RuntimeException("Brak usera ID=1"));
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Brak użytkownika o podanym adresie email"));
 
         //zapisywanie wycieczki
         Trip trip = new Trip();

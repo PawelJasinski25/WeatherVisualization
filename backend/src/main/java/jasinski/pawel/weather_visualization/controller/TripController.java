@@ -3,8 +3,8 @@ package jasinski.pawel.weather_visualization.controller;
 import jasinski.pawel.weather_visualization.entity.TrackPoint;
 import jasinski.pawel.weather_visualization.repository.TrackPointRepository;
 import jasinski.pawel.weather_visualization.service.TripService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -43,9 +43,10 @@ public class TripController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<Long> uploadGpxFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Long> uploadGpxFile(@RequestParam("file") MultipartFile file, Authentication authentication) {
         try{
-            Long newTripId = tripService.processGpxFile(file);
+            String email = authentication.getName();
+            Long newTripId = tripService.processGpxFile(file, email);
             return ResponseEntity.ok(newTripId);
         }
         catch (Exception e){
