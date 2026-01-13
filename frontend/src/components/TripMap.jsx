@@ -1,5 +1,6 @@
 import {useEffect, useState} from "react";
 import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
+import api from "../api/axios.js";
 
 
 function RecenterMap({ positions }) {
@@ -7,7 +8,7 @@ function RecenterMap({ positions }) {
 
     useEffect(() => {
         if (positions && positions.length > 0) {
-            map.fitBounds(positions); // Dopasuj zoom do trasy
+            map.fitBounds(positions);
         }
     }, [positions, map]);
 
@@ -22,25 +23,33 @@ const TripMap = ({ tripId }) => {
 
         console.log("Pobieram dane dla ID:", tripId);
 
-        fetch(`http://localhost:8080/api/trips/${tripId}/coordinates`)
-            .then(res => res.json())
-            .then(data => {
-                setPositions(data); // Zapisujemy punkty w stanie mapy
+        api.get(`/trips/${tripId}/coordinates`)
+            .then(response => {
+                setPositions(response.data);
             })
-            .catch(err => console.error("Błąd pobierania trasy:", err));
+            .catch(err => {
+                console.error("Błąd pobierania trasy:", err);
+                if (err.response && err.response.status === 403) {
+                    console.error("Brak dostępu! Czy na pewno jesteś zalogowany?");
+                }
+            });
     }, [tripId]);
 
-    return (
-        <div style={{ height: "100vh", width: "100%", background: "red" }}>
-            <MapContainer center={[52, 19]} zoom={6} style={{ height: "100%", width: "100%" }}>
+    const mapBounds = [
+        [-85, -Infinity]
+        [85, Infinity]
+    ];
 
-                {/* Podkład mapy (OpenStreetMap) */}
+    return (
+        <div style={{ height: "100%", width: "100%", background: "red" }}>
+            <MapContainer center={[52, 19]} zoom={6} style={{ height: "100%", width: "100%" }}
+                          minZoom={2}
+                          maxBounds={mapBounds}
+                          maxBoundsViscosity={1.0}>
                 <TileLayer
                     attribution='&copy; OpenStreetMap contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-
-                {/* Jeśli mamy punkty, rysujemy linię */}
                 {positions.length > 0 && (
                     <>
                         <Polyline positions={positions} color="blue" weight={4} />

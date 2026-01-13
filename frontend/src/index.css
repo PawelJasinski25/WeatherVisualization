@@ -1,16 +1,67 @@
-/* src/index.css */
 
-/* 1. Reset marginesów i ustawienie wysokości na 100% dla całej strony */
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
 html, body, #root {
   height: 100%;
   width: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Ukrywa paski przewijania */
+  overflow: hidden;
+  background-color: #f5f7fa;
 }
 
-/* 2. Styl domyślny dla mapy w React-Leaflet */
+
+nav {
+  position: relative;
+  z-index: 10000 !important;
+}
+
+.navbar-dropdown {
+  z-index: 10001 !important;
+}
+
+
 .leaflet-container {
   width: 100%;
   height: 100%;
+  position: relative;
+  z-index: 0 !important;
+}
+
+.leaflet-pane {
+  z-index: 0 !important;
+}
+
+
+.leaflet-top, .leaflet-bottom {
+  z-index: 1000 !important;
+}
+
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 20000 !important;
+  backdrop-filter: blur(3px);
+}
+
+/* Animacja pojawiania się okienka */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-content {
+  animation: fadeIn 0.3s ease-out;
 }
