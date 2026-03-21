@@ -15,6 +15,13 @@ const Navbar = ({ onOpenUpload }) => {
                 <span style={styles.logo}>🌍 WeatherVisualization</span>
             </div>
 
+            <div style={styles.center}>
+                <button style={{ ...styles.tab, ...styles.activeTab }}>🗺️ Mapa</button>
+                <button style={styles.tab}>🎞️ Animacja</button>
+                <button style={styles.tab}>📊 Wykresy</button>
+                <button style={styles.tab}>📄 Raport</button>
+            </div>
+
             <div style={styles.right}>
                 <button onClick={onOpenUpload} style={styles.uploadBtn}>
                     ➕ Nowa Trasa
@@ -33,7 +40,7 @@ const Navbar = ({ onOpenUpload }) => {
 const styles = {
     nav: {
         height: '60px',
-        backgroundColor: '#fff',
+        backgroundColor: '#f8f9fa',
         borderBottom: '1px solid #ddd',
         display: 'flex',
         justifyContent: 'space-between',
@@ -44,38 +51,61 @@ const styles = {
         position: 'relative'
     },
     logo: {
-        fontSize: '1.4rem',
+        fontSize: '1.2rem',
         fontWeight: 'bold',
-        color: '#333'
+        color: '#111'
     },
-    left: { display: 'flex', alignItems: 'center' },
-    right: { display: 'flex', alignItems: 'center', gap: '15px' },
+    left: { display: 'flex', alignItems: 'center', flex: 1 },
 
+    center: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        flex: 2,
+        justifyContent: 'center'
+    },
+    tab: {
+        background: 'none',
+        border: 'none',
+        padding: '8px 60px',
+        fontSize: '1rem',
+        fontWeight: '500',
+        color: '#444',
+        cursor: 'pointer',
+        borderRadius: '6px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '50px',
+        transition: 'background 0.2s'
+    },
+    activeTab: {
+        backgroundColor: '#e5e7eb',
+        color: '#000',
+        fontWeight: '600'
+    },
+
+    right: { display: 'flex', alignItems: 'center', gap: '20px', flex: 1, justifyContent: 'flex-end' },
     uploadBtn: {
         padding: '8px 16px',
-        backgroundColor: '#10b981',
-        color: 'white',
-        border: 'none',
+        backgroundColor: '#c6f6d5',
+        color: '#166534',
+        border: '1px solid #bbf7d0',
         borderRadius: '6px',
         cursor: 'pointer',
         fontWeight: '600',
-        fontSize: '0.9rem',
+        fontSize: '0.95rem',
         display: 'flex',
         alignItems: 'center',
-        gap: '5px'
+        gap: '5px',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
     },
     logoutBtn: {
         background: 'none',
         border: 'none',
-        color: '#666',
+        color: '#333',
         cursor: 'pointer',
-        fontSize: '0.9rem',
-        fontWeight: '500'
-    },
-    separator: {
-        width: '1px',
-        height: '20px',
-        backgroundColor: '#ddd'
+        fontSize: '0.95rem',
+        fontWeight: '600'
     }
 };
 

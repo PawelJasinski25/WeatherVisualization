@@ -2,18 +2,20 @@ import { useState } from "react";
 import TripMap from "../components/TripMap.jsx";
 import Navbar from "../components/Navbar.jsx";
 import FileUploadModal from "../components/FileUploadModal.jsx";
+import SidePanel from "../components/SidePanel.jsx";
 
 function DashboardPage() {
     const [currentTripId, setCurrentTripId] = useState(null);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
+    const [selectedPrimary, setSelectedPrimary] = useState(['wind', 'temp']);
+    const [selectedSecondary, setSelectedSecondary] = useState(['wind_dir']);
+
     return (
         <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
 
-            {/*Navbar*/}
             <Navbar onOpenUpload={() => setIsUploadModalOpen(true)} />
 
-            {/*Modal */}
             <FileUploadModal
                 isOpen={isUploadModalOpen}
                 onClose={() => setIsUploadModalOpen(false)}
@@ -21,6 +23,17 @@ function DashboardPage() {
             />
 
             <div style={{ flex: 1, position: "relative", backgroundColor: "#f0f0f0", zIndex: 0 }}>
+
+                {currentTripId && (
+                    <SidePanel
+                        selectedPrimary={selectedPrimary}
+                        setSelectedPrimary={setSelectedPrimary}
+                        selectedSecondary={selectedSecondary}
+                        setSelectedSecondary={setSelectedSecondary}
+                    />
+                )}
+
+
                 {currentTripId ? (
                     <TripMap tripId={currentTripId} />
                 ) : (

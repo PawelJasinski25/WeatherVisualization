@@ -23,7 +23,27 @@ public class TripController {
         this.tripService = tripService;
         this.trackPointRepository = trackPointRepository;
     }
+//STARA WERSJA DOBRA
+//    @GetMapping("/{id}/coordinates")
+//    public ResponseEntity<List<double[]>> getTripCoordinates(@PathVariable Long id){
+//
+//        List<TrackPoint> points = trackPointRepository.findByTripIdOrderByTimeAsc(id);
+//        List<double[]> coordinates = new ArrayList<>();
+//
+//        for (TrackPoint point : points) {
+//            double latitude = point.getLocation().getY();
+//            double longitude = point.getLocation().getX();
+//
+//            double[] pair = new double[]{latitude, longitude};
+//            coordinates.add(pair);
+//        }
+//
+//        return ResponseEntity.ok(coordinates);
+//
+//    }
 
+
+    //NOWA WERSJA POGLADOWA
     @GetMapping("/{id}/coordinates")
     public ResponseEntity<List<double[]>> getTripCoordinates(@PathVariable Long id){
 
@@ -34,12 +54,15 @@ public class TripController {
             double latitude = point.getLocation().getY();
             double longitude = point.getLocation().getX();
 
-            double[] pair = new double[]{latitude, longitude};
-            coordinates.add(pair);
+            // Pobieramy czas punktu z PostGIS w postaci unixowego timestampu (milisekundy)
+            double timeMs = (double) point.getTime().toEpochMilli();
+
+            // Zwracamy tablicę [szerokość, długość, czas]
+            double[] row = new double[]{latitude, longitude, timeMs};
+            coordinates.add(row);
         }
 
         return ResponseEntity.ok(coordinates);
-
     }
 
     @PostMapping("/upload")
