@@ -1,8 +1,24 @@
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 
 const Navbar = ({ onOpenUpload }) => {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = useRef(null);
     const navigate = useNavigate();
+
+    // Zamykanie menu, po kliknieciu poza
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setIsMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+
 
     const handleLogout = () => {
         authService.logout();
@@ -29,9 +45,36 @@ const Navbar = ({ onOpenUpload }) => {
 
                 <div style={styles.separator}></div>
 
-                <button onClick={handleLogout} style={styles.logoutBtn}>
-                    Wyloguj
-                </button>
+                {/* Nowe Menu Użytkownika */}
+                <div style={styles.userMenuContainer} ref={menuRef}>
+                    <button
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        style={styles.userMenuBtn}
+                    >
+                        👤 Konto <span style={{ fontSize: '0.7em', marginLeft: '4px' }}>▼</span>
+                    </button>
+
+                    {isMenuOpen && (
+                        <div style={styles.dropdown}>
+                            <button
+                                style={styles.dropdownItem}
+                                onClick={() => {
+                                    setIsMenuOpen(false);
+                                    navigate('/trips'); // <-- Podpięte przekierowanie
+                                }}
+                            >
+                                🗺️ Wgrane trasy
+                            </button>
+                            <button style={styles.dropdownItem} onClick={() => setIsMenuOpen(false)}>
+                                ⚙️ Ustawienia
+                            </button>
+                            <div style={styles.dropdownDivider}></div>
+                            <button onClick={handleLogout} style={{ ...styles.dropdownItem, ...styles.logoutText }}>
+                                🚪 Wyloguj
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
         </nav>
     );
@@ -99,12 +142,62 @@ const styles = {
         gap: '5px',
         boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
     },
-    logoutBtn: {
+    separator: {
+        width: '1px',
+        height: '30px',
+        backgroundColor: '#ddd'
+    },
+    userMenuContainer: {
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center'
+    },
+    userMenuBtn: {
         background: 'none',
         border: 'none',
         color: '#333',
         cursor: 'pointer',
         fontSize: '0.95rem',
+        fontWeight: '600',
+        display: 'flex',
+        alignItems: 'center',
+        padding: '6px 12px',
+        borderRadius: '6px',
+    },
+    dropdown: {
+        position: 'absolute',
+        top: 'calc(100% + 10px)',
+        right: '0',
+        backgroundColor: '#fff',
+        border: '1px solid #ddd',
+        borderRadius: '8px',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+        display: 'flex',
+        flexDirection: 'column',
+        minWidth: '180px',
+        overflow: 'hidden',
+        zIndex: 1001
+    },
+    dropdownItem: {
+        background: 'none',
+        border: 'none',
+        padding: '12px 16px',
+        textAlign: 'left',
+        cursor: 'pointer',
+        fontSize: '0.9rem',
+        color: '#444',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        width: '100%'
+    },
+    dropdownDivider: {
+        height: '1px',
+        backgroundColor: '#eee',
+        margin: '4px 0'
+    },
+    logoutText: {
+        color: '#dc2626',
         fontWeight: '600'
     }
 };

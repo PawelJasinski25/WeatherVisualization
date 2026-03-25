@@ -2,10 +2,12 @@ import { useState } from "react";
 import TripMap from "../components/TripMap.jsx";
 import Navbar from "../components/Navbar.jsx";
 import FileUploadModal from "../components/FileUploadModal.jsx";
+import { useLocation } from "react-router-dom";
 import SidePanel from "../components/SidePanel.jsx";
 
 function DashboardPage() {
-    const [currentTripId, setCurrentTripId] = useState(null);
+    const location = useLocation();
+    const [currentTripId, setCurrentTripId] = useState(location.state?.tripId || null);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
     const [selectedPrimary, setSelectedPrimary] = useState(['wind', 'temp']);

@@ -4,6 +4,7 @@ import RegisterPage from './pages/RegisterPage.jsx';
 import DashboardPage from "./pages/DashboardPage.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import 'leaflet/dist/leaflet.css';
+import TripsPage from "./pages/TripsPage.jsx";
 
 function App() {
     return (
@@ -14,6 +15,7 @@ function App() {
 
                 <Route element={<ProtectedRoute />}>
                     <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/trips" element={<TripsPage />} />
                 </Route>
 
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />

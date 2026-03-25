@@ -13,6 +13,9 @@ public class Trip {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(name = "file_hash", length = 64)
+    private String fileHash;
+
     private String name;
 
     public Long getId() {
@@ -37,5 +40,13 @@ public class Trip {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getFileHash() {
+        return fileHash;
+    }
+
+    public void setFileHash(String fileHash) {
+        this.fileHash = fileHash;
     }
 }

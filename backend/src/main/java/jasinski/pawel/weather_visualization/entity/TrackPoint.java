@@ -27,6 +27,9 @@ public class TrackPoint {
     @JoinColumn(name = "trip_id", nullable = false)
     private Trip trip;
 
+    @Column(name = "segment_id")
+    private Integer segmentId;
+
     public Long getId() {
         return id;
     }
@@ -65,5 +68,13 @@ public class TrackPoint {
 
     public void setTrip(Trip trip) {
         this.trip = trip;
+    }
+
+    public Integer getSegmentId() {
+        return segmentId;
+    }
+
+    public void setSegmentId(Integer segmentId) {
+        this.segmentId = segmentId;
     }
 }

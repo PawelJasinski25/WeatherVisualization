@@ -1,4 +1,5 @@
 package jasinski.pawel.weather_visualization.service;
+
 import io.jenetics.jpx.*;
 import jakarta.transaction.Transactional;
 import jasinski.pawel.weather_visualization.entity.TrackPoint;
@@ -16,9 +17,12 @@ import org.locationtech.jts.geom.Point;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.Instant;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class TripService {
@@ -34,17 +38,40 @@ public class TripService {
         this.userRepository = userRepository;
     }
 
-    @Transactional
-    public Long processGpxFile(MultipartFile file, String email) throws IOException {
+    private String calculateFileHash(byte[] fileBytes) throws NoSuchAlgorithmException {
+        java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+        byte[] hashBytes = digest.digest(fileBytes);
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hashBytes) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) hexString.append('0');
+            hexString.append(hex);
+        }
+        return hexString.toString();
+    }
 
-        //wczytywanie pliku
+    @Transactional
+    public Long processGpxFile(MultipartFile file, String email) throws IOException, NoSuchAlgorithmException {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Brak użytkownika"));
+
+
+        byte[] fileBytes = file.getBytes();
+        String fileHash = calculateFileHash(fileBytes);
+
+
+        java.util.Optional<Trip> existingTrip = tripRepository.findByFileHashAndUser_Email(fileHash, email);
+        if (existingTrip.isPresent()) {
+            System.out.println("Trasa już istnieje! Pomijam przetwarzanie i zwracam ID: " + existingTrip.get().getId());
+            return existingTrip.get().getId();
+        }
+
         InputStream inputStream = file.getInputStream();
         GPX gpx = GPX.Reader.DEFAULT.read(inputStream);
         inputStream.close();
 
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Brak użytkownika o podanym adresie email"));
 
-        //zapisywanie wycieczki
         Trip trip = new Trip();
         String tripName = file.getOriginalFilename();
         if (gpx.getMetadata().isPresent() && gpx.getMetadata().get().getName().isPresent()) {
@@ -52,28 +79,32 @@ public class TripService {
         }
         trip.setName(tripName);
         trip.setUser(user);
+        trip.setFileHash(fileHash);
+
         Trip savedTrip = tripRepository.save(trip);
-
-
-        //przetwarzanie punktów
 
         List<TrackPoint> batchPoints = new ArrayList<>();
         int counter = 0;
+        int currentSegmentId = 0;
 
         for(Track track : gpx.getTracks()) {
             for(TrackSegment segment : track.getSegments()) {
+                currentSegmentId++;
+
                 for(WayPoint gpxPoint : segment.getPoints()) {
                     if(gpxPoint.getTime().isEmpty()){
                         continue;
                     }
+
                     TrackPoint trackPoint = new TrackPoint();
                     trackPoint.setTrip(savedTrip);
                     trackPoint.setTime(gpxPoint.getTime().get());
 
+                    trackPoint.setSegmentId(currentSegmentId);
+
                     if(gpxPoint.getElevation().isPresent()){
                         trackPoint.setElevation(gpxPoint.getElevation().get().doubleValue());
-                    }
-                    else {
+                    } else {
                         trackPoint.setElevation(0.0);
                     }
 
@@ -87,22 +118,45 @@ public class TripService {
 
                     if (batchPoints.size() >= 1000) {
                         trackPointRepository.saveAll(batchPoints);
-                        trackPointRepository.flush();
                         batchPoints.clear();
                     }
                 }
-
             }
-
         }
 
         if (!batchPoints.isEmpty()) {
             trackPointRepository.saveAll(batchPoints);
         }
-        System.out.println("KONIEC! Łącznie zapisano: " + counter + " punktów.");
+        System.out.println("KONIEC! Łącznie zapisano: " + counter + " punktów w " + currentSegmentId + " segmentach.");
 
         return savedTrip.getId();
+    }
 
+
+    public List<Trip> getUserTrips(String email){
+        return tripRepository.findByUser_Email(email);
+    }
+
+    @Transactional
+    public Trip updateTripName(Long tripId, String newName, String email){
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono trasy"));
+
+        trip.setName(newName);
+        return tripRepository.save(trip);
+    }
+
+    @Transactional
+    public void deleteTrip(Long tripId, String email){
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono trasy"));
+
+        if (!trip.getUser().getEmail().equals(email)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień do usunięcia tej trasy");
+        }
+
+        trackPointRepository.deleteByTripId(tripId);
+        tripRepository.delete(trip);
     }
 
 

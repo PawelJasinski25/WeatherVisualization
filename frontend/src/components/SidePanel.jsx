@@ -1,48 +1,94 @@
 import React, { useState } from 'react';
 
 const primaryParams = [
-    { id: 'wind', label: 'Siła wiatru', icon: '/icons/wind.png', color: '#3b82f6' },
-    { id: 'gusts', label: 'Porywy wiatru', icon: '🍃', color: '#6366f1' },
-    { id: 'temp', label: 'Temperatura', icon: '/icons/temperature.png', color: '#f97316' },
-    { id: 'dew', label: 'Punkt rosy', icon: '💧', color: '#0ea5e9' },
-    { id: 'wave_h', label: 'Wysokość fal', icon: '🌊', color: '#0284c7' },
-    { id: 'wave_p', label: 'Okres fal', icon: '⏱️', color: '#0369a1' }
+    { id: 'wind', label: 'Siła wiatru', icon: '/icons/wind.png', scale: 1.2 },
+    { id: 'gusts', label: 'Porywy wiatru', icon: '/icons/wind.png', scale: 1.2 },
+    { id: 'temp', label: 'Temperatura', icon: '/icons/temperature.png' },
+    { id: 'dew', label: 'Punkt rosy', icon: '/icons/dewpoint.png' },
+    { id: 'wave_h', label: 'Wysokość fal', icon: '/icons/wave.png' },
+    { id: 'wave_p', label: 'Okres fal', icon: '/icons/wave.png' },
+    { id: 'rain', label: 'Deszcz', icon: '/icons/rain.png', scale: 1.1 },
+    { id: 'humidity', label: 'Wilgotność', icon: '/icons/humidity.png' },
+    { id: 'pressure', label: 'Ciśnienie', icon: '/icons/air_pressure.png', scale: 1.6 },
+    { id: 'clouds', label: 'Zachmurzenie', icon: '/icons/cloud.png', scale: 1.4 },
+    { id: 'clouds_low', label: 'Chmury niskie', icon: '/icons/cloud_low.png', scale: 1.4 },
+    { id: 'clouds_mid', label: 'Chmury średnie', icon: '/icons/cloud_mid.png', scale: 1.4 },
+    { id: 'clouds_high', label: 'Chmury wysokie', icon: '/icons/cloud_high.png', scale: 1.4 }
 ];
 
 const secondaryParams = [
-    { id: 'wind_dir', label: 'Kierunek wiatru', icon: '🌬️', color: '#3b82f6' },
-    { id: 'rain', label: 'Deszcz', icon: '🌧️', color: '#3b82f6' },
-    { id: 'humidity', label: 'Wilgotność', icon: '💦', color: '#3b82f6' },
-    { id: 'pressure', label: 'Ciśnienie', icon: '📉', color: '#3b82f6' },
-    { id: 'wave_dir', label: 'Kierunek fal', icon: '🌊', color: '#3b82f6' },
-    { id: 'clouds', label: 'Zachmurzenie', icon: '☁️', color: '#3b82f6' }
+    { id: 'wind_dir', label: 'Kierunek wiatru', icon: '/icons/direction.png' },
+    { id: 'wave_dir', label: 'Kierunek fal', icon: '/icons/direction.png' },
+    { id: 'wind', label: 'Siła wiatru', icon: '/icons/wind.png', scale: 1.2 },
+    { id: 'gusts', label: 'Porywy wiatru', icon: '/icons/wind.png', scale: 1.2 },
+    { id: 'temp', label: 'Temperatura', icon: '/icons/temperature.png' },
+    { id: 'dew', label: 'Punkt rosy', icon: '/icons/dewpoint.png' },
+    { id: 'wave_h', label: 'Wysokość fal', icon: '/icons/wave.png' },
+    { id: 'wave_p', label: 'Okres fal', icon: '/icons/wave.png' },
+    { id: 'rain', label: 'Deszcz', icon: '/icons/rain.png', scale: 1.1 },
+    { id: 'humidity', label: 'Wilgotność', icon: '/icons/humidity.png' },
+    { id: 'pressure', label: 'Ciśnienie', icon: '/icons/air_pressure.png', scale: 1.6 },
+    { id: 'clouds', label: 'Zachmurzenie', icon: '/icons/cloud.png', scale: 1.4 },
+    { id: 'clouds_low', label: 'Chmury niskie', icon: '/icons/cloud_low.png', scale: 1.4 },
+    { id: 'clouds_mid', label: 'Chmury średnie', icon: '/icons/cloud_mid.png', scale: 1.4 },
+    { id: 'clouds_high', label: 'Chmury wysokie', icon: '/icons/cloud_high.png', scale: 1.4 }
 ];
 
 const SidePanel = ({ selectedPrimary, setSelectedPrimary, selectedSecondary, setSelectedSecondary }) => {
     const [isOpen, setIsOpen] = useState(true);
 
     const togglePrimary = (id) => {
-        if (selectedPrimary.includes(id)) {
-            setSelectedPrimary(selectedPrimary.filter(item => item !== id));
+        const index = selectedPrimary.indexOf(id);
+        if (index !== -1) {
+            const newArr = [...selectedPrimary];
+            newArr[index] = null;
+            setSelectedPrimary(newArr);
         } else {
-            setSelectedPrimary([...selectedPrimary, id]);
+            const nullIndex = selectedPrimary.indexOf(null);
+            if (nullIndex !== -1) {
+                const newArr = [...selectedPrimary];
+                newArr[nullIndex] = id;
+                setSelectedPrimary(newArr);
+            } else if (selectedPrimary.length < 2) {
+                setSelectedPrimary([...selectedPrimary, id]);
+            }
         }
     };
 
     const toggleSecondary = (id) => {
-        if (selectedSecondary.includes(id)) {
-            setSelectedSecondary(selectedSecondary.filter(item => item !== id));
+        const index = selectedSecondary.indexOf(id);
+        if (index !== -1) {
+            const newArr = [...selectedSecondary];
+            newArr[index] = null;
+            setSelectedSecondary(newArr);
         } else {
-            setSelectedSecondary([...selectedSecondary, id]);
+            const nullIndex = selectedSecondary.indexOf(null);
+            if (nullIndex !== -1) {
+                const newArr = [...selectedSecondary];
+                newArr[nullIndex] = id;
+                setSelectedSecondary(newArr);
+            } else if (selectedSecondary.length < 2) {
+                setSelectedSecondary([...selectedSecondary, id]);
+            }
         }
     };
 
-    const renderButton = (param, isSelected, onClick) => {
+    const renderButton = (param, selectedArray, onClick) => {
+        const index = selectedArray.indexOf(param.id);
+        const isSelected = index !== -1;
+
+        const BLUE = '#3b82f6';
+        const ORANGE = '#f97316';
+        const INACTIVE_COLOR = '#000';
+
+        let themeColor = INACTIVE_COLOR;
+        if (isSelected) {
+            themeColor = index === 0 ? BLUE : ORANGE;
+        }
+
         const activeStyle = isSelected ? {
-            borderColor: param.color,
-            backgroundColor: `${param.color}15`,
-            color: '#000',
-            fontWeight: '600'
+            borderColor: themeColor,
+            backgroundColor: `${themeColor}15`
         } : {};
 
         return (
@@ -51,42 +97,55 @@ const SidePanel = ({ selectedPrimary, setSelectedPrimary, selectedSecondary, set
                 style={{ ...styles.button, ...activeStyle }}
                 onClick={() => onClick(param.id)}
             >
-                <span style={styles.icon}>
-                    {param.icon.includes('.png') || param.icon.includes('.svg') || param.icon.includes('http') ? (
-                        <img src={param.icon} alt={param.label} style={styles.imgIcon} />
-                    ) : (
-                        param.icon
-                    )}
-                </span>
+                <div style={styles.iconContainer}>
+                    <div style={{
+                        ...styles.imgIcon,
+                        backgroundColor: themeColor,
+                        WebkitMaskImage: `url(${param.icon})`,
+                        WebkitMaskSize: 'contain',
+                        WebkitMaskRepeat: 'no-repeat',
+                        WebkitMaskPosition: 'center',
+                        maskImage: `url(${param.icon})`,
+                        maskSize: 'contain',
+                        maskRepeat: 'no-repeat',
+                        maskPosition: 'center',
+                        transform: `scale(${param.scale || 1})`
+                    }} />
+                </div>
                 <span style={styles.label}>{param.label}</span>
             </button>
         );
     };
 
     return (
-        <div style={{ ...styles.panelContainer, right: isOpen ? '20px' : '-320px' }}>
+        <div style={{
+            ...styles.wrapper,
+            transform: isOpen ? 'translateX(-20px)' : 'translateX(100%)'
+        }}>
 
             <button onClick={() => setIsOpen(!isOpen)} style={styles.toggleBtn}>
                 {isOpen ? '▶' : '◀'}
             </button>
 
-            <div style={styles.section}>
-                <h3 style={styles.title}>Parametry podstawowe</h3>
-                <p style={styles.subtitle}>wyświetlane jako gradienty na trasie</p>
-                <div style={styles.grid}>
-                    {primaryParams.map(param =>
-                        renderButton(param, selectedPrimary.includes(param.id), togglePrimary)
-                    )}
+            <div style={styles.panelContent}>
+                <div style={styles.section}>
+                    <h3 style={styles.title}>Parametry podstawowe</h3>
+                    <p style={styles.subtitle}>wyświetlane jako gradienty na trasie (max 2)</p>
+                    <div style={styles.grid}>
+                        {primaryParams.map(param =>
+                            renderButton(param, selectedPrimary, togglePrimary)
+                        )}
+                    </div>
                 </div>
-            </div>
 
-            <div style={styles.section}>
-                <h3 style={styles.title}>Parametry dodatkowe</h3>
-                <p style={styles.subtitle}>wyświetlane jako etykieta po przybliżeniu</p>
-                <div style={styles.grid}>
-                    {secondaryParams.map(param =>
-                        renderButton(param, selectedSecondary.includes(param.id), toggleSecondary)
-                    )}
+                <div style={styles.section}>
+                    <h3 style={styles.title}>Parametry dodatkowe</h3>
+                    <p style={styles.subtitle}>wyświetlane jako etykieta po przybliżeniu (max 2)</p>
+                    <div style={styles.grid}>
+                        {secondaryParams.map(param =>
+                            renderButton(param, selectedSecondary, toggleSecondary)
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -95,25 +154,33 @@ const SidePanel = ({ selectedPrimary, setSelectedPrimary, selectedSecondary, set
 };
 
 const styles = {
-    panelContainer: {
+    wrapper: {
         position: 'absolute',
         top: '20px',
-        width: '320px',
+        right: '0',
+        zIndex: 1000,
+        transition: 'transform 0.3s ease-in-out',
+    },
+
+    panelContent: {
+        width: 'min(90vw, 350px)',
+        maxHeight: 'calc(100vh - 100px)',
+        overflowY: 'auto',
         boxSizing: 'border-box',
         backgroundColor: 'rgba(255, 255, 255, 0.95)',
         backdropFilter: 'blur(5px)',
         borderRadius: '8px',
         boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
-        padding: '20px',
-        zIndex: 1000,
+        padding: 'clamp(15px, 2vw, 20px)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '20px'
+        gap: 'clamp(10px, 1.5vw, 20px)',
     },
+
     toggleBtn: {
         position: 'absolute',
         left: '-32px',
-        top: '20px',
+        top: '0px',
         width: '32px',
         height: '48px',
         backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -130,10 +197,11 @@ const styles = {
         backdropFilter: 'blur(5px)'
     },
 
+
     imgIcon: {
         width: '28px',
         height: '28px',
-        objectFit: 'contain',
+        display: 'inline-block',
         marginBottom: '4px'
     },
 
@@ -170,9 +238,11 @@ const styles = {
         transition: 'all 0.2s ease',
         color: '#444'
     },
-    icon: {
-        fontSize: '1.4rem',
-        marginBottom: '4px'
+    iconContainer: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0
     },
     label: {
         fontSize: '0.75rem',
