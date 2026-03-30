@@ -30,6 +30,10 @@ public class TrackPoint {
     @Column(name = "segment_id")
     private Integer segmentId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "weather_id")
+    private Weather weather;
+
     public Long getId() {
         return id;
     }
@@ -76,5 +80,13 @@ public class TrackPoint {
 
     public void setSegmentId(Integer segmentId) {
         this.segmentId = segmentId;
+    }
+
+    public Weather getWeather() {
+        return weather;
+    }
+
+    public void setWeather(Weather weather) {
+        this.weather = weather;
     }
 }

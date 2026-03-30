@@ -12,6 +12,7 @@ function DashboardPage() {
 
     const [selectedPrimary, setSelectedPrimary] = useState(['wind', 'temp']);
     const [selectedSecondary, setSelectedSecondary] = useState(['wind_dir']);
+    const [isSidePanelOpen, setIsSidePanelOpen] = useState(true);
 
     return (
         <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
@@ -24,7 +25,7 @@ function DashboardPage() {
                 onUploadSuccess={(id) => setCurrentTripId(id)}
             />
 
-            <div style={{ flex: 1, position: "relative", backgroundColor: "#f0f0f0", zIndex: 0 }}>
+            <div style={{ flex: 1, position: "relative", backgroundColor: "#f0f0f0", zIndex: 0, overflow: "hidden" }}>
 
                 {currentTripId && (
                     <SidePanel
@@ -32,12 +33,18 @@ function DashboardPage() {
                         setSelectedPrimary={setSelectedPrimary}
                         selectedSecondary={selectedSecondary}
                         setSelectedSecondary={setSelectedSecondary}
+                        isOpen={isSidePanelOpen}
+                        setIsOpen={setIsSidePanelOpen}
                     />
                 )}
 
-
                 {currentTripId ? (
-                    <TripMap tripId={currentTripId} />
+                    <TripMap
+                        tripId={currentTripId}
+                        selectedPrimary={selectedPrimary}
+                        selectedSecondary={selectedSecondary}
+                        isPanelOpen={isSidePanelOpen}
+                    />
                 ) : (
                     <div style={styles.emptyState}>
                         <div style={{ fontSize: '4rem' }}>🗺️</div>

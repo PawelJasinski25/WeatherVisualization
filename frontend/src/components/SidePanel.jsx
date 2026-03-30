@@ -1,4 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
+
+
+const COLORS = {
+    PRIMARY: ['#3b82f6', '#f97316'],
+    SECONDARY: ['#109346', '#a11ecf'],
+    INACTIVE: '#000'
+};
 
 const primaryParams = [
     { id: 'wind', label: 'Siła wiatru', icon: '/icons/wind.png', scale: 1.2 },
@@ -8,6 +15,7 @@ const primaryParams = [
     { id: 'wave_h', label: 'Wysokość fal', icon: '/icons/wave.png' },
     { id: 'wave_p', label: 'Okres fal', icon: '/icons/wave.png' },
     { id: 'rain', label: 'Deszcz', icon: '/icons/rain.png', scale: 1.1 },
+    { id: 'snow', label: 'Śnieg', icon: '/icons/snowflake.png', scale: 1.0 },
     { id: 'humidity', label: 'Wilgotność', icon: '/icons/humidity.png' },
     { id: 'pressure', label: 'Ciśnienie', icon: '/icons/air_pressure.png', scale: 1.6 },
     { id: 'clouds', label: 'Zachmurzenie', icon: '/icons/cloud.png', scale: 1.4 },
@@ -26,6 +34,7 @@ const secondaryParams = [
     { id: 'wave_h', label: 'Wysokość fal', icon: '/icons/wave.png' },
     { id: 'wave_p', label: 'Okres fal', icon: '/icons/wave.png' },
     { id: 'rain', label: 'Deszcz', icon: '/icons/rain.png', scale: 1.1 },
+    { id: 'snow', label: 'Śnieg', icon: '/icons/snowflake.png', scale: 1.0 },
     { id: 'humidity', label: 'Wilgotność', icon: '/icons/humidity.png' },
     { id: 'pressure', label: 'Ciśnienie', icon: '/icons/air_pressure.png', scale: 1.6 },
     { id: 'clouds', label: 'Zachmurzenie', icon: '/icons/cloud.png', scale: 1.4 },
@@ -34,8 +43,7 @@ const secondaryParams = [
     { id: 'clouds_high', label: 'Chmury wysokie', icon: '/icons/cloud_high.png', scale: 1.4 }
 ];
 
-const SidePanel = ({ selectedPrimary, setSelectedPrimary, selectedSecondary, setSelectedSecondary }) => {
-    const [isOpen, setIsOpen] = useState(true);
+const SidePanel = ({ selectedPrimary, setSelectedPrimary, selectedSecondary, setSelectedSecondary, isOpen, setIsOpen }) => {
 
     const togglePrimary = (id) => {
         const index = selectedPrimary.indexOf(id);
@@ -73,22 +81,19 @@ const SidePanel = ({ selectedPrimary, setSelectedPrimary, selectedSecondary, set
         }
     };
 
-    const renderButton = (param, selectedArray, onClick) => {
+    const renderButton = (param, selectedArray, onClick, colorPalette) => {
         const index = selectedArray.indexOf(param.id);
         const isSelected = index !== -1;
 
-        const BLUE = '#3b82f6';
-        const ORANGE = '#f97316';
-        const INACTIVE_COLOR = '#000';
-
-        let themeColor = INACTIVE_COLOR;
+        let themeColor = COLORS.INACTIVE;
         if (isSelected) {
-            themeColor = index === 0 ? BLUE : ORANGE;
+            themeColor = index === 0 ? colorPalette[0] : colorPalette[1];
         }
 
         const activeStyle = isSelected ? {
             borderColor: themeColor,
-            backgroundColor: `${themeColor}15`
+            backgroundColor: `${themeColor}16`,
+            color: '#000'
         } : {};
 
         return (
@@ -133,7 +138,7 @@ const SidePanel = ({ selectedPrimary, setSelectedPrimary, selectedSecondary, set
                     <p style={styles.subtitle}>wyświetlane jako gradienty na trasie (max 2)</p>
                     <div style={styles.grid}>
                         {primaryParams.map(param =>
-                            renderButton(param, selectedPrimary, togglePrimary)
+                            renderButton(param, selectedPrimary, togglePrimary, COLORS.PRIMARY)
                         )}
                     </div>
                 </div>
@@ -143,12 +148,11 @@ const SidePanel = ({ selectedPrimary, setSelectedPrimary, selectedSecondary, set
                     <p style={styles.subtitle}>wyświetlane jako etykieta po przybliżeniu (max 2)</p>
                     <div style={styles.grid}>
                         {secondaryParams.map(param =>
-                            renderButton(param, selectedSecondary, toggleSecondary)
+                            renderButton(param, selectedSecondary, toggleSecondary, COLORS.SECONDARY)
                         )}
                     </div>
                 </div>
             </div>
-
         </div>
     );
 };
@@ -161,7 +165,6 @@ const styles = {
         zIndex: 1000,
         transition: 'transform 0.3s ease-in-out',
     },
-
     panelContent: {
         width: 'min(90vw, 350px)',
         maxHeight: 'calc(100vh - 100px)',
@@ -176,7 +179,6 @@ const styles = {
         flexDirection: 'column',
         gap: 'clamp(10px, 1.5vw, 20px)',
     },
-
     toggleBtn: {
         position: 'absolute',
         left: '-32px',
@@ -196,15 +198,12 @@ const styles = {
         boxShadow: '-4px 4px 10px rgba(0,0,0,0.05)',
         backdropFilter: 'blur(5px)'
     },
-
-
     imgIcon: {
         width: '28px',
         height: '28px',
         display: 'inline-block',
         marginBottom: '4px'
     },
-
     section: {
         display: 'flex',
         flexDirection: 'column'
@@ -247,7 +246,7 @@ const styles = {
     label: {
         fontSize: '0.75rem',
         textAlign: 'center',
-        fontWeight: '500'
+        fontWeight: '600'
     }
 };
 
