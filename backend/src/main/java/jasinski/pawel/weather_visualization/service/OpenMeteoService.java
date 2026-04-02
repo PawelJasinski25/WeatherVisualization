@@ -36,7 +36,7 @@ public class OpenMeteoService {
 
             String marineUrl = String.format(Locale.US,
                     "https://marine-api.open-meteo.com/v1/marine?latitude=%f&longitude=%f&start_date=%s&end_date=%s" +
-                            "&hourly=wave_height,wave_period,wave_direction",
+                            "&hourly=wave_height,wave_period,wave_direction,wind_wave_height,wind_wave_period,swell_wave_height,swell_wave_period,ocean_current_velocity,ocean_current_direction,sea_surface_temperature",
                     lat, lon, dateStr, dateStr);
 
             int maxRetries = 3;
@@ -54,6 +54,13 @@ public class OpenMeteoService {
                             response.hourly.wave_height = marineRes.hourly.wave_height;
                             response.hourly.wave_period = marineRes.hourly.wave_period;
                             response.hourly.wave_direction = marineRes.hourly.wave_direction;
+                            response.hourly.wind_wave_height = marineRes.hourly.wind_wave_height;
+                            response.hourly.wind_wave_period = marineRes.hourly.wind_wave_period;
+                            response.hourly.swell_wave_height = marineRes.hourly.swell_wave_height;
+                            response.hourly.swell_wave_period = marineRes.hourly.swell_wave_period;
+                            response.hourly.ocean_current_velocity = marineRes.hourly.ocean_current_velocity;
+                            response.hourly.ocean_current_direction = marineRes.hourly.ocean_current_direction;
+                            response.hourly.sea_surface_temperature = marineRes.hourly.sea_surface_temperature;
                         }
                     } catch (Exception e) {
                         System.out.println("--- Punkt na lądzie, omijam dane morskie.");
@@ -105,6 +112,13 @@ public class OpenMeteoService {
                     weather.setWaveHeight(response.hourly.wave_height.get(index));
                     weather.setWavePeriod(response.hourly.wave_period.get(index));
                     weather.setWaveDirection(response.hourly.wave_direction.get(index));
+                    weather.setWindWaveHeight(response.hourly.wind_wave_height != null ? response.hourly.wind_wave_height.get(index) : null);
+                    weather.setWindWavePeriod(response.hourly.wind_wave_period != null ? response.hourly.wind_wave_period.get(index) : null);
+                    weather.setSwellWaveHeight(response.hourly.swell_wave_height != null ? response.hourly.swell_wave_height.get(index) : null);
+                    weather.setSwellWavePeriod(response.hourly.swell_wave_period != null ? response.hourly.swell_wave_period.get(index) : null);
+                    weather.setOceanCurrentVelocity(response.hourly.ocean_current_velocity != null ? response.hourly.ocean_current_velocity.get(index) : null);
+                    weather.setOceanCurrentDirection(response.hourly.ocean_current_direction != null ? response.hourly.ocean_current_direction.get(index) : null);
+                    weather.setSeaTemperature(response.hourly.sea_surface_temperature != null ? response.hourly.sea_surface_temperature.get(index) : null);
                 }
 
                 return weather;
@@ -132,6 +146,13 @@ public class OpenMeteoService {
         public List<Double> wave_height;
         public List<Double> wave_period;
         public List<Integer> wave_direction;
+        public List<Double> wind_wave_height;
+        public List<Double> wind_wave_period;
+        public List<Double> swell_wave_height;
+        public List<Double> swell_wave_period;
+        public List<Double> ocean_current_velocity;
+        public List<Integer> ocean_current_direction;
+        public List<Double> sea_surface_temperature;;
     }
 
     public static class MarineResponse { public MarineHourlyData hourly; }
@@ -139,5 +160,12 @@ public class OpenMeteoService {
         public List<Double> wave_height;
         public List<Double> wave_period;
         public List<Integer> wave_direction;
+        public List<Double> wind_wave_height;
+        public List<Double> wind_wave_period;
+        public List<Double> swell_wave_height;
+        public List<Double> swell_wave_period;
+        public List<Double> ocean_current_velocity;
+        public List<Integer> ocean_current_direction;
+        public List<Double> sea_surface_temperature;;
     }
 }

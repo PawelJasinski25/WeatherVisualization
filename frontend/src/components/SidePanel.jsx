@@ -12,8 +12,6 @@ const primaryParams = [
     { id: 'gusts', label: 'Porywy wiatru', icon: '/icons/wind.png', scale: 1.2 },
     { id: 'temp', label: 'Temperatura', icon: '/icons/temperature.png' },
     { id: 'dew', label: 'Punkt rosy', icon: '/icons/dewpoint.png' },
-    { id: 'wave_h', label: 'Wysokość fal', icon: '/icons/wave.png' },
-    { id: 'wave_p', label: 'Okres fal', icon: '/icons/wave.png' },
     { id: 'rain', label: 'Deszcz', icon: '/icons/rain.png', scale: 1.1 },
     { id: 'snow', label: 'Śnieg', icon: '/icons/snowflake.png', scale: 1.0 },
     { id: 'humidity', label: 'Wilgotność', icon: '/icons/humidity.png' },
@@ -21,18 +19,24 @@ const primaryParams = [
     { id: 'clouds', label: 'Zachmurzenie', icon: '/icons/cloud.png', scale: 1.4 },
     { id: 'clouds_low', label: 'Chmury niskie', icon: '/icons/cloud_low.png', scale: 1.4 },
     { id: 'clouds_mid', label: 'Chmury średnie', icon: '/icons/cloud_mid.png', scale: 1.4 },
-    { id: 'clouds_high', label: 'Chmury wysokie', icon: '/icons/cloud_high.png', scale: 1.4 }
+    { id: 'clouds_high', label: 'Chmury wysokie', icon: '/icons/cloud_high.png', scale: 1.4 },
+    { id: 'wave_h', label: 'Wysokość fal', icon: '/icons/wave.png' },
+    { id: 'wave_p', label: 'Okres fal', icon: '/icons/wave.png' },
+    { id: 'wind_wave_h', label: 'Wysokość fal wiatrowych', icon: '/icons/wind_wave.png', scale:1.2 },
+    { id: 'wind_wave_p', label: 'Okres fal wiatrowych', icon: '/icons/wind_wave.png', scale:1.2 },
+    { id: 'swell_wave_h', label: 'Wysokość fal martwych', icon: '/icons/swell_wave.png' },
+    { id: 'swell_wave_p', label: 'Okres fal martwych', icon: '/icons/swell_wave.png' },
+    { id: 'ocean_current_velocity', label: 'Prędkość prądów', icon: '/icons/ocean_current.png' },
+    { id: 'sea_temperature', label: 'Temperatura morza', icon: '/icons/sea.png', scale:1.8 }
+
 ];
 
 const secondaryParams = [
     { id: 'wind_dir', label: 'Kierunek wiatru', icon: '/icons/direction.png' },
-    { id: 'wave_dir', label: 'Kierunek fal', icon: '/icons/direction.png' },
     { id: 'wind', label: 'Siła wiatru', icon: '/icons/wind.png', scale: 1.2 },
     { id: 'gusts', label: 'Porywy wiatru', icon: '/icons/wind.png', scale: 1.2 },
     { id: 'temp', label: 'Temperatura', icon: '/icons/temperature.png' },
     { id: 'dew', label: 'Punkt rosy', icon: '/icons/dewpoint.png' },
-    { id: 'wave_h', label: 'Wysokość fal', icon: '/icons/wave.png' },
-    { id: 'wave_p', label: 'Okres fal', icon: '/icons/wave.png' },
     { id: 'rain', label: 'Deszcz', icon: '/icons/rain.png', scale: 1.1 },
     { id: 'snow', label: 'Śnieg', icon: '/icons/snowflake.png', scale: 1.0 },
     { id: 'humidity', label: 'Wilgotność', icon: '/icons/humidity.png' },
@@ -40,7 +44,17 @@ const secondaryParams = [
     { id: 'clouds', label: 'Zachmurzenie', icon: '/icons/cloud.png', scale: 1.4 },
     { id: 'clouds_low', label: 'Chmury niskie', icon: '/icons/cloud_low.png', scale: 1.4 },
     { id: 'clouds_mid', label: 'Chmury średnie', icon: '/icons/cloud_mid.png', scale: 1.4 },
-    { id: 'clouds_high', label: 'Chmury wysokie', icon: '/icons/cloud_high.png', scale: 1.4 }
+    { id: 'clouds_high', label: 'Chmury wysokie', icon: '/icons/cloud_high.png', scale: 1.4 },
+    { id: 'wave_h', label: 'Wysokość fal', icon: '/icons/wave.png' },
+    { id: 'wave_p', label: 'Okres fal', icon: '/icons/wave.png' },
+    { id: 'wind_wave_h', label: 'Wysokość fal wiatrowych', icon: '/icons/wind_wave.png', scale:1.2 },
+    { id: 'wind_wave_p', label: 'Okres fal wiatrowych', icon: '/icons/wind_wave.png', scale:1.2 },
+    { id: 'swell_wave_h', label: 'Wysokość fal martwych', icon: '/icons/swell_wave.png' },
+    { id: 'swell_wave_p', label: 'Okres fal martwych', icon: '/icons/swell_wave.png' },
+    { id: 'ocean_current_velocity', label: 'Prędkość prądów', icon: '/icons/ocean_current.png' },
+    { id: 'sea_temperature', label: 'Temperatura morza', icon: '/icons/sea.png', scale:1.8 },
+    { id: 'ocean_current_direction', label: 'Kierunek prądów', icon: '/icons/direction.png' },
+    { id: 'wave_dir', label: 'Kierunek fal', icon: '/icons/direction.png' }
 ];
 
 const SidePanel = ({ selectedPrimary, setSelectedPrimary, selectedSecondary, setSelectedSecondary, isOpen, setIsOpen }) => {
@@ -166,7 +180,7 @@ const styles = {
         transition: 'transform 0.3s ease-in-out',
     },
     panelContent: {
-        width: 'min(90vw, 350px)',
+        width: 'min(90vw, 450px)',
         maxHeight: 'calc(100vh - 100px)',
         overflowY: 'auto',
         boxSizing: 'border-box',

@@ -1,7 +1,9 @@
 package jasinski.pawel.weather_visualization.controller;
 
+import jasinski.pawel.weather_visualization.dto.TrackPointDto;
 import jasinski.pawel.weather_visualization.entity.TrackPoint;
 import jasinski.pawel.weather_visualization.entity.Trip;
+import jasinski.pawel.weather_visualization.entity.Weather;
 import jasinski.pawel.weather_visualization.repository.TrackPointRepository;
 import jasinski.pawel.weather_visualization.service.TripService;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +13,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -29,71 +30,12 @@ public class TripController {
 
 
     @GetMapping("/{id}/coordinates")
-    public ResponseEntity<List<Double[]>> getTripCoordinates(@PathVariable Long id){
-
+    public ResponseEntity<List<TrackPointDto>> getTripCoordinates(@PathVariable Long id) {
         List<TrackPoint> points = trackPointRepository.findByTripIdOrderByTimeAsc(id);
-        List<Double[]> coordinates = new ArrayList<>();
 
-        for (TrackPoint point : points) {
-            double latitude = point.getLocation().getY();
-            double longitude = point.getLocation().getX();
-            double segment = point.getSegmentId() != null ? point.getSegmentId() : 0.0;
-            double timeMs = point.getTime() != null ? (double) point.getTime().toEpochMilli() : 0.0;
-
-
-            Double windSpeed = null, temp = null, gusts = null, dewPoint = null;
-            Double rain = null, snowfall = null, humidity = null, pressure = null, windDir = null;
-            Double cloudCover = null, cloudLow = null, cloudMid = null, cloudHigh = null;
-            Double waveHeight = null, wavePeriod = null, waveDir = null;
-
-
-            if (point.getWeather() != null) {
-                jasinski.pawel.weather_visualization.entity.Weather w = point.getWeather();
-
-                windSpeed = w.getWindSpeed();
-                temp = w.getTemp();
-                gusts = w.getWindGusts();
-                dewPoint = w.getDewPoint();
-                rain = w.getRain();
-                snowfall = w.getSnowfall();
-                pressure = w.getPressure();
-
-                humidity = w.getHumidity() != null ? w.getHumidity().doubleValue() : null;
-                windDir = w.getWindDir() != null ? w.getWindDir().doubleValue() : null;
-                cloudCover = w.getCloudCover() != null ? w.getCloudCover().doubleValue() : null;
-                cloudLow = w.getCloudCoverLow() != null ? w.getCloudCoverLow().doubleValue() : null;
-                cloudMid = w.getCloudCoverMid() != null ? w.getCloudCoverMid().doubleValue() : null;
-                cloudHigh = w.getCloudCoverHigh() != null ? w.getCloudCoverHigh().doubleValue() : null;
-                waveHeight = w.getWaveHeight();
-                wavePeriod = w.getWavePeriod();
-                waveDir = w.getWaveDirection() != null ? w.getWaveDirection().doubleValue() : null;
-            }
-
-            Double[] row = new Double[]{
-                    latitude,   // 0
-                    longitude,  // 1
-                    segment,    // 2
-                    timeMs,     // 3
-                    windSpeed,  // 4
-                    temp,       // 5
-                    gusts,      // 6
-                    dewPoint,   // 7
-                    rain,       // 8
-                    humidity,   // 9
-                    pressure,   // 10
-                    cloudCover, // 11
-                    cloudLow,   // 12
-                    cloudMid,   // 13
-                    cloudHigh,  // 14
-                    windDir,     // 15
-                    snowfall,    //16
-                    waveHeight, // 17
-                    wavePeriod, // 18
-                    waveDir     // 19
-            };
-
-            coordinates.add(row);
-        }
+        List<TrackPointDto> coordinates = points.stream()
+                .map(this::mapToDto)
+                .toList();
 
         return ResponseEntity.ok(coordinates);
     }
@@ -127,6 +69,29 @@ public class TripController {
             String email = authentication.getName();
             tripService.deleteTrip(id, email);
             return ResponseEntity.ok().build();
+    }
+
+    private TrackPointDto mapToDto(TrackPoint point) {
+        Weather w = point.getWeather();
+
+        double lat = point.getLocation().getY();
+        double lon = point.getLocation().getX();
+        double segmentId = point.getSegmentId() != null ? point.getSegmentId() : 0.0;
+        double timeMs = point.getTime() != null ? (double) point.getTime().toEpochMilli() : 0.0;
+
+        if (w == null) {
+            return new TrackPointDto(lat, lon, segmentId, timeMs);
+        }
+
+        return new TrackPointDto(
+                lat, lon, segmentId, timeMs,
+                w.getWindSpeed(), w.getTemp(), w.getWindGusts(), w.getDewPoint(), w.getRain(),
+                w.getHumidity(), w.getPressure(), w.getCloudCover(), w.getCloudCoverLow(),
+                w.getCloudCoverMid(), w.getCloudCoverHigh(), w.getWindDir(), w.getSnowfall(),
+                w.getWaveHeight(), w.getWavePeriod(), w.getWaveDirection(), w.getWindWaveHeight(),
+                w.getWindWavePeriod(), w.getSwellWaveHeight(), w.getSwellWavePeriod(),
+                w.getOceanCurrentVelocity(), w.getSeaTemperature(), w.getOceanCurrentDirection()
+        );
     }
 
 }

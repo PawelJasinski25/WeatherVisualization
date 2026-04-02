@@ -64,6 +64,27 @@ public class Weather {
     @Column(name = "wave_direction")
     private Integer waveDirection;
 
+    @Column(name = "wind_wave_height")
+    private Double windWaveHeight;
+
+    @Column(name = "wind_wave_period")
+    private Double windWavePeriod;
+
+    @Column(name = "swell_wave_height")
+    private Double swellWaveHeight;
+
+    @Column(name = "swell_wave_period")
+    private Double swellWavePeriod;
+
+    @Column(name = "ocean_current_velocity")
+    private Double oceanCurrentVelocity;
+
+    @Column(name = "ocean_current_direction")
+    private Integer oceanCurrentDirection;
+
+    @Column(name = "sea_temperature")
+    private Double seaTemperature;
+
     public Long getId() {
         return id;
     }
@@ -230,5 +251,61 @@ public class Weather {
 
     public void setWaveDirection(Integer waveDirection) {
         this.waveDirection = waveDirection;
+    }
+
+    public Double getWindWaveHeight() {
+        return windWaveHeight;
+    }
+
+    public void setWindWaveHeight(Double windWaveHeight) {
+        this.windWaveHeight = windWaveHeight;
+    }
+
+    public Double getWindWavePeriod() {
+        return windWavePeriod;
+    }
+
+    public void setWindWavePeriod(Double windWavePeriod) {
+        this.windWavePeriod = windWavePeriod;
+    }
+
+    public Double getSwellWaveHeight() {
+        return swellWaveHeight;
+    }
+
+    public void setSwellWaveHeight(Double swellWaveHeight) {
+        this.swellWaveHeight = swellWaveHeight;
+    }
+
+    public Double getSwellWavePeriod() {
+        return swellWavePeriod;
+    }
+
+    public void setSwellWavePeriod(Double swellWavePeriod) {
+        this.swellWavePeriod = swellWavePeriod;
+    }
+
+    public Double getOceanCurrentVelocity() {
+        return oceanCurrentVelocity;
+    }
+
+    public void setOceanCurrentVelocity(Double oceanCurrentVelocity) {
+        this.oceanCurrentVelocity = oceanCurrentVelocity;
+    }
+
+    public Integer getOceanCurrentDirection() {
+        return oceanCurrentDirection;
+    }
+
+    public void setOceanCurrentDirection(Integer oceanCurrentDirection) {
+        this.oceanCurrentDirection = oceanCurrentDirection;
+    }
+
+    public Double getSeaTemperature() {
+        return seaTemperature;
+    }
+
+    public void setSeaTemperature(Double seaTemperature) {
+        this.seaTemperature = seaTemperature;
     }
 }
