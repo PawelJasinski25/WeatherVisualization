@@ -7,6 +7,7 @@ import { metricConfig } from "../config/metricConfig.js";
 import { generateSegmentsData, generateSampledPoints } from "../utils/mapProcessors.js";
 import MapLegend from "./MapLegend.jsx";
 import MetricMarker from "./MetricMarker.jsx";
+import "../styles/map-elements.css";
 
 const OSM_STYLE = {
     version: 8,
@@ -20,7 +21,6 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
     const mapRef = useRef(null);
 
     const activeMetrics = selectedPrimary.filter(Boolean);
-
 
     useEffect(() => {
         if (tripId) {
@@ -38,13 +38,12 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
         }
     }, [tripId]);
 
-
     const segmentsData = useMemo(() => generateSegmentsData(tripData, activeMetrics), [tripData, activeMetrics]);
     const sampledPoints = useMemo(() => generateSampledPoints(tripData, selectedSecondary, currentZoom), [tripData, selectedSecondary, currentZoom]);
 
 
     return (
-        <div style={{ width: "100%", height: "100%", position: "relative" }}>
+        <div className="trip-map-wrapper">
             <Map
                 ref={mapRef}
                 initialViewState={{ longitude: 20, latitude: 55, zoom: 6 }}
@@ -109,7 +108,10 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
                 )}
             </Map>
 
-            <div style={{ position: "absolute", bottom: "20px", right: isPanelOpen ? "calc(min(90vw, 450px) + 40px)" : "20px", width: "280px", display: "flex", flexDirection: "column", gap: "10px", zIndex: 10, transition: "right 0.3s ease-in-out" }}>
+            <div
+                className="map-legend-container"
+                style={{ right: isPanelOpen ? "calc(min(90vw, 28rem) + 1.25rem)" : "1.25rem" }}
+            >
                 {activeMetrics.map((metricId, index) => (
                     <MapLegend key={`${metricId}-${index}`} metricId={metricId} />
                 ))}

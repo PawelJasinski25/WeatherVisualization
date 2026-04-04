@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import authService from "../services/authService.js";
+import "../styles/auth.css";
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -19,18 +20,18 @@ const LoginPage = () => {
     };
 
     return (
-        <div style={styles.container}>
-            <div style={styles.card}>
-                <h2 style={styles.title}>Logowanie</h2>
+        <div className="auth-container">
+            <div className="auth-card">
+                <h2 className="auth-title">Logowanie</h2>
 
-                <form onSubmit={handleLogin} style={styles.form}>
+                <form onSubmit={handleLogin} className="auth-form">
                     <input
                         type="email"
                         placeholder="Email"
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                         required
-                        style={styles.input}
+                        className="auth-input"
                     />
                     <input
                         type="password"
@@ -38,84 +39,21 @@ const LoginPage = () => {
                         value={password}
                         onChange={e => setPassword(e.target.value)}
                         required
-                        style={styles.input}
+                        className="auth-input"
                     />
-                    <button type="submit" style={styles.button}>
-                        Zaloguj
+                    <button type="submit" className="auth-button">
+                        Zaloguj się
                     </button>
                 </form>
 
-                {error && <p style={styles.error}>{error}</p>}
+                {error && <p className="auth-error">{error}</p>}
 
-                <p style={styles.footerText}>
-                    Nie masz konta? <Link to="/register" style={styles.link}>Zarejestruj się</Link>
-                </p>
+                <div className="auth-link">
+                    Nie masz konta? <Link to="/register">Zarejestruj się</Link>
+                </div>
             </div>
         </div>
     );
-};
-
-const styles = {
-    container: {
-        height: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "#f0f2f5"
-    },
-    card: {
-        background: "white",
-        padding: "40px",
-        borderRadius: "8px",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-        width: "350px",
-        display: 'flex',
-        flexDirection: 'column'
-    },
-    title: {
-        textAlign: "center",
-        marginBottom: "20px",
-        color: "#333"
-    },
-    form: {
-        display: "flex",
-        flexDirection: "column",
-        gap: "15px"
-    },
-    input: {
-        padding: "12px",
-        borderRadius: "6px",
-        border: "1px solid #ddd",
-        fontSize: "1rem"
-    },
-    button: {
-        padding: "12px",
-        background: "#007bff",
-        color: "white",
-        border: "none",
-        borderRadius: "6px",
-        cursor: "pointer",
-        fontWeight: "bold",
-        fontSize: "1rem",
-        transition: "background 0.2s"
-    },
-    error: {
-        color: "red",
-        marginTop: "15px",
-        textAlign: "center",
-        fontSize: "0.9rem"
-    },
-    footerText: {
-        marginTop: "20px",
-        textAlign: "center",
-        fontSize: "0.9rem",
-        color: "#666"
-    },
-    link: {
-        color: "#007bff",
-        textDecoration: "none",
-        fontWeight: "500"
-    }
-};
+};;
 
 export default LoginPage;

@@ -1,5 +1,5 @@
 import React from 'react';
-
+import '../styles/panel.css';
 
 const COLORS = {
     PRIMARY: ['#3b82f6', '#f97316'],
@@ -113,54 +113,45 @@ const SidePanel = ({ selectedPrimary, setSelectedPrimary, selectedSecondary, set
         return (
             <button
                 key={param.id}
-                style={{ ...styles.button, ...activeStyle }}
+                className="panel-btn"
+                style={activeStyle}
                 onClick={() => onClick(param.id)}
             >
-                <div style={styles.iconContainer}>
-                    <div style={{
-                        ...styles.imgIcon,
+                <div className="panel-icon-container">
+                    <div className="panel-icon" style={{
                         backgroundColor: themeColor,
-                        WebkitMaskImage: `url(${param.icon})`,
-                        WebkitMaskSize: 'contain',
-                        WebkitMaskRepeat: 'no-repeat',
-                        WebkitMaskPosition: 'center',
-                        maskImage: `url(${param.icon})`,
-                        maskSize: 'contain',
-                        maskRepeat: 'no-repeat',
-                        maskPosition: 'center',
+                        WebkitMaskImage: `url(${param.icon})`, WebkitMaskSize: 'contain', WebkitMaskRepeat: 'no-repeat', WebkitMaskPosition: 'center',
+                        maskImage: `url(${param.icon})`, maskSize: 'contain', maskRepeat: 'no-repeat', maskPosition: 'center',
                         transform: `scale(${param.scale || 1})`
                     }} />
                 </div>
-                <span style={styles.label}>{param.label}</span>
+                <span className="panel-label">{param.label}</span>
             </button>
         );
     };
 
     return (
-        <div style={{
-            ...styles.wrapper,
-            transform: isOpen ? 'translateX(-20px)' : 'translateX(100%)'
-        }}>
+        <div className="panel-wrapper" style={{ transform: isOpen ? 'translateX(-20px)' : 'translateX(100%)' }}>
 
-            <button onClick={() => setIsOpen(!isOpen)} style={styles.toggleBtn}>
+            <button onClick={() => setIsOpen(!isOpen)} className="panel-toggle-btn">
                 {isOpen ? '▶' : '◀'}
             </button>
 
-            <div style={styles.panelContent}>
-                <div style={styles.section}>
-                    <h3 style={styles.title}>Parametry podstawowe</h3>
-                    <p style={styles.subtitle}>wyświetlane jako gradienty na trasie (max 2)</p>
-                    <div style={styles.grid}>
+            <div className="panel-content">
+                <div className="panel-section">
+                    <h3 className="panel-title">Parametry podstawowe</h3>
+                    <p className="panel-subtitle">wyświetlane jako gradienty na trasie (max 2)</p>
+                    <div className="panel-grid">
                         {primaryParams.map(param =>
                             renderButton(param, selectedPrimary, togglePrimary, COLORS.PRIMARY)
                         )}
                     </div>
                 </div>
 
-                <div style={styles.section}>
-                    <h3 style={styles.title}>Parametry dodatkowe</h3>
-                    <p style={styles.subtitle}>wyświetlane jako etykieta po przybliżeniu (max 2)</p>
-                    <div style={styles.grid}>
+                <div className="panel-section">
+                    <h3 className="panel-title">Parametry dodatkowe</h3>
+                    <p className="panel-subtitle">wyświetlane jako etykieta po przybliżeniu (max 2)</p>
+                    <div className="panel-grid">
                         {secondaryParams.map(param =>
                             renderButton(param, selectedSecondary, toggleSecondary, COLORS.SECONDARY)
                         )}
@@ -169,99 +160,6 @@ const SidePanel = ({ selectedPrimary, setSelectedPrimary, selectedSecondary, set
             </div>
         </div>
     );
-};
-
-const styles = {
-    wrapper: {
-        position: 'absolute',
-        top: '20px',
-        right: '0',
-        zIndex: 1000,
-        transition: 'transform 0.3s ease-in-out',
-    },
-    panelContent: {
-        width: 'min(90vw, 450px)',
-        maxHeight: 'calc(100vh - 100px)',
-        overflowY: 'auto',
-        boxSizing: 'border-box',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(5px)',
-        borderRadius: '8px',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
-        padding: 'clamp(15px, 2vw, 20px)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'clamp(10px, 1.5vw, 20px)',
-    },
-    toggleBtn: {
-        position: 'absolute',
-        left: '-32px',
-        top: '0px',
-        width: '32px',
-        height: '48px',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        border: '1px solid #ddd',
-        borderRight: 'none',
-        borderRadius: '8px 0 0 8px',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#555',
-        fontSize: '1rem',
-        boxShadow: '-4px 4px 10px rgba(0,0,0,0.05)',
-        backdropFilter: 'blur(5px)'
-    },
-    imgIcon: {
-        width: '28px',
-        height: '28px',
-        display: 'inline-block',
-        marginBottom: '4px'
-    },
-    section: {
-        display: 'flex',
-        flexDirection: 'column'
-    },
-    title: {
-        margin: '0 0 2px 0',
-        fontSize: '1.05rem',
-        color: '#222'
-    },
-    subtitle: {
-        margin: '0 0 12px 0',
-        fontSize: '0.75rem',
-        fontStyle: 'italic',
-        color: '#666'
-    },
-    grid: {
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '8px'
-    },
-    button: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '10px 5px',
-        backgroundColor: '#fff',
-        border: '1px solid #ddd',
-        borderRadius: '6px',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-        color: '#444'
-    },
-    iconContainer: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0
-    },
-    label: {
-        fontSize: '0.75rem',
-        textAlign: 'center',
-        fontWeight: '600'
-    }
 };
 
 export default SidePanel;

@@ -4,6 +4,7 @@ import Navbar from "../components/Navbar.jsx";
 import FileUploadModal from "../components/FileUploadModal.jsx";
 import { useLocation } from "react-router-dom";
 import SidePanel from "../components/SidePanel.jsx";
+import "../styles/dashboard.css";
 
 function DashboardPage() {
     const location = useLocation();
@@ -15,9 +16,12 @@ function DashboardPage() {
     const [isSidePanelOpen, setIsSidePanelOpen] = useState(true);
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-
-            <Navbar onOpenUpload={() => setIsUploadModalOpen(true)} />
+        <div className="dashboard-wrapper">
+            <Navbar
+                onOpenUpload={() => setIsUploadModalOpen(true)}
+                activeTab="map"
+                currentTripId={currentTripId}
+            />
 
             <FileUploadModal
                 isOpen={isUploadModalOpen}
@@ -25,8 +29,7 @@ function DashboardPage() {
                 onUploadSuccess={(id) => setCurrentTripId(id)}
             />
 
-            <div style={{ flex: 1, position: "relative", backgroundColor: "#f0f0f0", zIndex: 0, overflow: "hidden" }}>
-
+            <div className="dashboard-content">
                 {currentTripId && (
                     <SidePanel
                         selectedPrimary={selectedPrimary}
@@ -46,10 +49,10 @@ function DashboardPage() {
                         isPanelOpen={isSidePanelOpen}
                     />
                 ) : (
-                    <div style={styles.emptyState}>
-                        <div style={{ fontSize: '4rem' }}>🗺️</div>
-                        <h2 style={{ color: '#555', marginBottom: '10px' }}>Witaj w Weather Visualization</h2>
-                        <p style={{ color: '#888' }}>
+                    <div className="dashboard-empty">
+                        <div className="dashboard-empty-icon">🗺️</div>
+                        <h2 className="dashboard-empty-title">Witaj w Weather Visualization</h2>
+                        <p className="dashboard-empty-text">
                             Kliknij przycisk <b>"Nowa Trasa"</b> w prawym górnym rogu,<br/>
                             aby wgrać plik GPX i zobaczyć wizualizację.
                         </p>
@@ -59,16 +62,5 @@ function DashboardPage() {
         </div>
     );
 }
-
-const styles = {
-    emptyState: {
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100%",
-        textAlign: "center"
-    }
-};
 
 export default DashboardPage;

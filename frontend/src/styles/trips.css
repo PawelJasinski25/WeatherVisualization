@@ -1,0 +1,83 @@
+.trips-container {
+    width: 100%;
+    max-width: 50rem;
+    margin: 1.5rem auto;
+    padding: 0 1.25rem;
+    box-sizing: border-box;
+}
+
+.trips-title {
+    color: #333;
+    margin-bottom: 1.25rem;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 0.625rem;
+}
+
+.trips-empty {
+    text-align: center;
+    color: #777;
+    padding: 2.5rem;
+    background-color: #fff;
+    border-radius: 0.5rem;
+}
+
+.trips-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.trip-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fff;
+    padding: 1.25rem;
+    border-radius: 0.625rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.trip-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.trip-info {
+    flex: 1;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #444;
+}
+
+.trip-actions {
+    display: flex;
+    gap: 0.625rem;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.3rem;
+    transition: opacity 0.2s;
+}
+
+.icon-btn:hover {
+    opacity: 0.7;
+}
+
+.edit-container {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.edit-input {
+    padding: 0.4rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
