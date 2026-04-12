@@ -110,7 +110,11 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
 
             <div
                 className="map-legend-container"
-                style={{ right: isPanelOpen ? "calc(min(90vw, 28rem) + 1.25rem)" : "1.25rem" }}
+                style={{
+                    right: isPanelOpen
+                        ? "calc(min(90vw, var(--panel-width)) + var(--panel-margin))"
+                        : "var(--panel-margin)"
+                }}
             >
                 {activeMetrics.map((metricId, index) => (
                     <MapLegend key={`${metricId}-${index}`} metricId={metricId} />

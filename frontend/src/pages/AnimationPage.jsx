@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -7,6 +7,7 @@ import Navbar from '../components/Navbar';
 import AnimationPanel from '../components/AnimationPanel';
 import api from '../api/axios';
 import { metricConfig } from '../config/metricConfig';
+import FileUploadModal from '../components/FileUploadModal.jsx';
 import "../styles/animation.css";
 
 const OSM_STYLE = {
@@ -17,6 +18,7 @@ const OSM_STYLE = {
 
 const AnimationPage = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const tripId = location.state?.tripId || null;
 
     const [tripData, setTripData] = useState([]);
@@ -27,6 +29,7 @@ const AnimationPage = () => {
     const [isPanelOpen, setIsPanelOpen] = useState(true);
     const [playbackSpeed, setPlaybackSpeed] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
     const mapRef = useRef(null);
 
@@ -131,10 +134,31 @@ const AnimationPage = () => {
 
     return (
         <div className="anim-wrapper">
-            <Navbar activeTab="animation" currentTripId={tripId} />
+            <Navbar
+                activeTab="animation"
+                currentTripId={tripId}
+                onOpenUpload={() => setIsUploadModalOpen(true)}
+            />
 
             <div className="anim-content">
-                <div className="anim-main" style={{ paddingRight: isPanelOpen ? 'calc(min(90vw, 400px) + 90px)' : '20px' }}>
+                <FileUploadModal
+                    isOpen={isUploadModalOpen}
+                    onClose={() => setIsUploadModalOpen(false)}
+                    onUploadSuccess={(id) => {
+                        setIsUploadModalOpen(false);
+                        navigate('/animation', { state: { tripId: id } });
+                        setCurrentIndex(0);
+                        setIsPlaying(false);
+                    }}
+                />
+                <div
+                    className="anim-main"
+                    style={{
+                        paddingRight: isPanelOpen
+                            ? "calc(min(90vw, var(--panel-width)) + 60px)"
+                            : "20px"
+                    }}
+                >
 
                     {/* MAPA */}
                     <div className="anim-map-box">

@@ -98,3 +98,50 @@
     text-align: center;
     font-weight: 600;
 }
+
+@media (max-width: 1300px) {
+    .panel-content {
+        width: min(90vw, 22rem) !important;
+        gap: 0.75rem !important;
+        padding: 0.8rem !important;
+    }
+
+    .panel-title {
+        font-size: 0.95rem !important;
+    }
+
+    .panel-subtitle {
+        font-size: 0.7rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .panel-btn {
+        padding: 0.4rem 0.2rem !important;
+    }
+
+    .panel-icon {
+        width: 1.4rem !important;
+        height: 1.4rem !important;
+    }
+
+    .panel-label {
+        font-size: 0.65rem !important;
+    }
+}
+
+:root {
+    --panel-width: 28rem;
+    --panel-margin: 1.25rem;
+}
+
+@media (max-width: 1300px) {
+    :root {
+        --panel-width: 22rem;
+        --panel-margin: 1rem;
+    }
+}
+
+.panel-content {
+    width: min(90vw, var(--panel-width)) !important;
+    max-height: calc(100vh - 6.25rem);
+}

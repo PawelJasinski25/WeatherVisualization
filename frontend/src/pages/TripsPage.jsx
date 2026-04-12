@@ -61,7 +61,7 @@ const TripsPage = () => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#f9fafb' }}>
-            <Navbar onOpenUpload={() => setIsUploadModalOpen(true)} />
+            <Navbar onOpenUpload={() => setIsUploadModalOpen(true)} activeTab="none" />
 
             <FileUploadModal
                 isOpen={isUploadModalOpen}
