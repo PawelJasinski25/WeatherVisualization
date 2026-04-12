@@ -5,11 +5,16 @@ import jasinski.pawel.weather_visualization.entity.TrackPoint;
 import jasinski.pawel.weather_visualization.entity.Trip;
 import jasinski.pawel.weather_visualization.entity.Weather;
 import jasinski.pawel.weather_visualization.repository.TrackPointRepository;
+import jasinski.pawel.weather_visualization.service.ReportService;
 import jasinski.pawel.weather_visualization.service.TripService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -22,10 +27,12 @@ public class TripController {
 
     private final TripService tripService;
     private final TrackPointRepository trackPointRepository;
+    private final ReportService reportService;
 
-    public TripController(TripService tripService, TrackPointRepository trackPointRepository) {
+    public TripController(TripService tripService, TrackPointRepository trackPointRepository, ReportService reportService) {
         this.tripService = tripService;
         this.trackPointRepository = trackPointRepository;
+        this.reportService = reportService;
     }
 
 
@@ -92,6 +99,44 @@ public class TripController {
                 w.getWindWavePeriod(), w.getSwellWaveHeight(), w.getSwellWavePeriod(),
                 w.getOceanCurrentVelocity(), w.getSeaTemperature(), w.getOceanCurrentDirection()
         );
+    }
+
+    @GetMapping("/{id}/report/csv")
+    public ResponseEntity<byte[]> downloadCsvReport(@PathVariable Long id, Authentication authentication) {
+
+        String email = authentication.getName();
+
+        boolean isOwner = tripService.getUserTrips(email).stream()
+                .anyMatch(trip -> trip.getId().equals(id));
+
+        if (!isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień do pobrania tego raportu");
+        }
+
+        Trip trip = tripService.getUserTrips(email).stream()
+                .filter(t -> t.getId().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień do pobrania tego raportu"));
+
+        String fileName = trip.getName();
+        fileName = fileName.replaceAll("(?i)\\.gpx$", "") + ".csv";
+
+
+
+        String csvContent = reportService.generateCsv(id);
+        byte[] csvBytes = csvContent.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] bom = new byte[] { (byte)0xEF, (byte)0xBB, (byte)0xBF };
+        byte[] finalBytes = new byte[bom.length + csvBytes.length];
+        System.arraycopy(bom, 0, finalBytes, 0, bom.length);
+        System.arraycopy(csvBytes, 0, finalBytes, bom.length, csvBytes.length);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"");
+        headers.setContentType(MediaType.parseMediaType("text/csv"));
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(finalBytes);
     }
 
 }

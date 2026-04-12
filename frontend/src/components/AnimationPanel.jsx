@@ -32,8 +32,6 @@ const AnimationPanel = ({ selectedParams, setSelectedParams, isOpen, setIsOpen }
         } else {
             if (selectedParams.length < 3) {
                 setSelectedParams([...selectedParams, id]);
-            } else {
-                alert("Możesz wybrać maksymalnie 3 parametry do animacji.");
             }
         }
     };
