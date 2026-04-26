@@ -27,7 +27,8 @@ const primaryParams = [
     { id: 'swell_wave_h', label: 'Wysokość fal martwych', icon: '/icons/swell_wave.png' },
     { id: 'swell_wave_p', label: 'Okres fal martwych', icon: '/icons/swell_wave.png' },
     { id: 'ocean_current_velocity', label: 'Prędkość prądów', icon: '/icons/ocean_current.png' },
-    { id: 'sea_temperature', label: 'Temperatura morza', icon: '/icons/sea.png', scale:1.8 }
+    { id: 'sea_temperature', label: 'Temperatura morza', icon: '/icons/sea.png', scale:1.8 },
+    { id: 'astronomy', label: 'Pory dnia', icon: '/icons/time.png', scale: 1.0 },
 
 ];
 

@@ -5,6 +5,7 @@ public record TrackPointDto(
         double longitude,
         double segmentId,
         double timeMs,
+        Integer dayPhase,
         Double windSpeed,
         Double temp,
         Double gusts,
@@ -29,8 +30,8 @@ public record TrackPointDto(
         Double seaTemp,
         Integer oceanCurrentDir
 ){
-    public TrackPointDto(double latitude, double longitude, double segmentId, double timeMs) {
-        this(latitude, longitude, segmentId, timeMs,
+    public TrackPointDto(double latitude, double longitude, double segmentId, double timeMs, Integer dayPhase) {
+        this(latitude, longitude, segmentId, timeMs, dayPhase,
                 null, null, null, null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null, null, null, null, null, null);
     }

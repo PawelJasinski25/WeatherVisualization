@@ -1,96 +1,150 @@
 package jasinski.pawel.weather_visualization.utils;
 
 import jasinski.pawel.weather_visualization.dto.AstronomyStats;
+import jasinski.pawel.weather_visualization.dto.TimelineEvent;
 import jasinski.pawel.weather_visualization.entity.TrackPoint;
 import org.shredzone.commons.suncalc.SunTimes;
 import org.shredzone.commons.suncalc.SunTimes.Twilight;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+import java.time.*;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 public class AstronomyAnalyzer {
 
-    public static AstronomyStats calculateSun(List<TrackPoint> pointsOfDay, ZoneId zoneId) {
+    // Kontener łączący czas z fizycznym punktem na trasie (jeśli wystąpił)
+    public record EventPoint(LocalTime time, TrackPoint point) {}
+
+    // Tolerancja: 15 minut. Zabezpiecza sytuacje na granicy zdarzeń.
+    private static final long TOLERANCE_SECONDS = 15 * 60;
+
+    // ZMIANA: Przyjmujemy List<TimelineEvent> wyliczoną przez MovementAnalyzer
+    public static AstronomyStats calculateSun(List<TrackPoint> pointsOfDay, List<TimelineEvent> eventsOfDay, ZoneId zoneId) {
         if (pointsOfDay == null || pointsOfDay.isEmpty()) {
-            return new AstronomyStats("--:--", "--:--", "--:--", "--:--", "--:--", "--:--", "--:--", "--:--");
+            return new AstronomyStats(
+                    null, null, null, null, null, null, null, null, null,
+                    null, null, null, null, null, null, null, null, null
+            );
         }
 
-        // Szybkie oszacowanie czasu zjawisk (na podstawie punktu ze środka)
         TrackPoint middlePoint = pointsOfDay.get(pointsOfDay.size() / 2);
-        double approxLat = middlePoint.getLocation().getY();
-        double approxLng = middlePoint.getLocation().getX();
+        double lat = middlePoint.getLocation().getY();
+        double lng = middlePoint.getLocation().getX();
         Instant baseTime = middlePoint.getTime();
 
-        Instant approxAstroDawn = getRawEventTime(baseTime, approxLat, approxLng, zoneId, Twilight.ASTRONOMICAL, true);
-        Instant approxNautDawn  = getRawEventTime(baseTime, approxLat, approxLng, zoneId, Twilight.NAUTICAL, true);
-        Instant approxCivilDawn = getRawEventTime(baseTime, approxLat, approxLng, zoneId, Twilight.CIVIL, true);
-        Instant approxSunrise   = getRawEventTime(baseTime, approxLat, approxLng, zoneId, Twilight.VISUAL, true);
+        // 1. Wyliczamy DOKŁADNE czasy zjawisk dla tego dnia i miejsca (obliczane od północy danego dnia)
+        Instant exactAstroDawn = getRawEventTime(baseTime, lat, lng, zoneId, Twilight.ASTRONOMICAL, true);
+        Instant exactNautDawn  = getRawEventTime(baseTime, lat, lng, zoneId, Twilight.NAUTICAL, true);
+        Instant exactCivilDawn = getRawEventTime(baseTime, lat, lng, zoneId, Twilight.CIVIL, true);
+        Instant exactSunrise   = getRawEventTime(baseTime, lat, lng, zoneId, Twilight.VISUAL, true);
+        Instant exactNoon      = getNoonTime(baseTime, lat, lng, zoneId);
+        Instant exactSunset    = getRawEventTime(baseTime, lat, lng, zoneId, Twilight.VISUAL, false);
+        Instant exactCivilDusk = getRawEventTime(baseTime, lat, lng, zoneId, Twilight.CIVIL, false);
+        Instant exactNautDusk  = getRawEventTime(baseTime, lat, lng, zoneId, Twilight.NAUTICAL, false);
+        Instant exactAstroDusk = getRawEventTime(baseTime, lat, lng, zoneId, Twilight.ASTRONOMICAL, false);
 
-        Instant approxSunset    = getRawEventTime(baseTime, approxLat, approxLng, zoneId, Twilight.VISUAL, false);
-        Instant approxCivilDusk = getRawEventTime(baseTime, approxLat, approxLng, zoneId, Twilight.CIVIL, false);
-        Instant approxNautDusk  = getRawEventTime(baseTime, approxLat, approxLng, zoneId, Twilight.NAUTICAL, false);
-        Instant approxAstroDusk = getRawEventTime(baseTime, approxLat, approxLng, zoneId, Twilight.ASTRONOMICAL, false);
+        // 2. Szukamy punktów GPS w oparciu o okresy z MovementAnalyzera
+        EventPoint aDawn = refineEventTime(pointsOfDay, eventsOfDay, exactAstroDawn, zoneId);
+        EventPoint nDawn = refineEventTime(pointsOfDay, eventsOfDay, exactNautDawn, zoneId);
+        EventPoint cDawn = refineEventTime(pointsOfDay, eventsOfDay, exactCivilDawn, zoneId);
+        EventPoint rise  = refineEventTime(pointsOfDay, eventsOfDay, exactSunrise, zoneId);
+        EventPoint noon  = refineEventTime(pointsOfDay, eventsOfDay, exactNoon, zoneId);
+        EventPoint set   = refineEventTime(pointsOfDay, eventsOfDay, exactSunset, zoneId);
+        EventPoint cDusk = refineEventTime(pointsOfDay, eventsOfDay, exactCivilDusk, zoneId);
+        EventPoint nDusk = refineEventTime(pointsOfDay, eventsOfDay, exactNautDusk, zoneId);
+        EventPoint aDusk = refineEventTime(pointsOfDay, eventsOfDay, exactAstroDusk, zoneId);
 
-        // Dostosowanie obliczeń
-        String exactAstroDawn = refineEventTime(pointsOfDay, approxAstroDawn, zoneId, Twilight.ASTRONOMICAL, true);
-        String exactNautDawn  = refineEventTime(pointsOfDay, approxNautDawn, zoneId, Twilight.NAUTICAL, true);
-        String exactCivilDawn = refineEventTime(pointsOfDay, approxCivilDawn, zoneId, Twilight.CIVIL, true);
-        String exactSunrise   = refineEventTime(pointsOfDay, approxSunrise, zoneId, Twilight.VISUAL, true);
-
-        String exactSunset    = refineEventTime(pointsOfDay, approxSunset, zoneId, Twilight.VISUAL, false);
-        String exactCivilDusk = refineEventTime(pointsOfDay, approxCivilDusk, zoneId, Twilight.CIVIL, false);
-        String exactNautDusk  = refineEventTime(pointsOfDay, approxNautDusk, zoneId, Twilight.NAUTICAL, false);
-        String exactAstroDusk = refineEventTime(pointsOfDay, approxAstroDusk, zoneId, Twilight.ASTRONOMICAL, false);
-
-        return new AstronomyStats(exactAstroDawn, exactNautDawn, exactCivilDawn, exactSunrise, exactSunset, exactCivilDusk, exactNautDusk, exactAstroDusk);
+        return new AstronomyStats(
+                aDawn.time(), nDawn.time(), cDawn.time(),
+                rise.time(), noon.time(), set.time(),
+                cDusk.time(), nDusk.time(), aDusk.time(),
+                aDawn.point(), nDawn.point(), cDawn.point(),
+                rise.point(), noon.point(), set.point(),
+                cDusk.point(), nDusk.point(), aDusk.point()
+        );
     }
 
-    private static Instant getRawEventTime(Instant time, double lat, double lng, ZoneId zoneId, Twilight twilight, boolean isRise) {
-        SunTimes times = SunTimes.compute().on(time).at(lat, lng).timezone(zoneId).twilight(twilight).execute();
-        if (isRise) {
-            if (times.getRise() != null) {
-                return times.getRise().toInstant();
+    private static EventPoint refineEventTime(List<TrackPoint> points, List<TimelineEvent> events, Instant exactEventTime, ZoneId zoneId) {
+        if (exactEventTime == null) return new EventPoint(null, null);
+
+        LocalTime eventLocalTime = LocalTime.ofInstant(exactEventTime, zoneId);
+        boolean isObserved = false;
+
+        // LOGIKA: Sprawdzamy czy zjawisko łapie się w JAKIKOLWIEK okres aktywności (RUCH, POSTÓJ, PRZERWA)
+        if (events != null && !events.isEmpty()) {
+            for (TimelineEvent ev : events) {
+
+                // ALTERNATYWA: Jeśli w tym czasie nie było sygnału GPS, udajemy, że nas tam nie było.
+                if ("BRAK DANYCH".equals(ev.type())) {
+                    continue; // Przeskakujemy ten okres i szukamy dalej
+                }
+
+                Instant expandedStart = ev.start().minusSeconds(TOLERANCE_SECONDS);
+                Instant expandedEnd = ev.end().plusSeconds(TOLERANCE_SECONDS);
+
+                if (!exactEventTime.isBefore(expandedStart) && !exactEventTime.isAfter(expandedEnd)) {
+                    isObserved = true;
+                    break;
+                }
             }
-            else {
-                return null;
+        } else {
+            // Fallback (awaryjnie, gdyby MovementAnalyzer nie zwrócił zdarzeń)
+            Instant firstPointTime = points.get(0).getTime().minusSeconds(TOLERANCE_SECONDS);
+            Instant lastPointTime = points.get(points.size() - 1).getTime().plusSeconds(TOLERANCE_SECONDS);
+            if (!exactEventTime.isBefore(firstPointTime) && !exactEventTime.isAfter(lastPointTime)) {
+                isObserved = true;
             }
         }
 
-        else {
-            if (times.getSet() != null) {
-                return times.getSet().toInstant();
-            }
-            else {
-                return null;
-            }
+        // Jeśli czas nie wpadł w żaden z wyliczonych okresów trasy -> zwracamy brak punktu
+        if (!isObserved) {
+            return new EventPoint(eventLocalTime, null);
         }
-    }
 
-    private static String refineEventTime(List<TrackPoint> points, Instant approxEventTime, ZoneId zoneId, Twilight twilight, boolean isRise) {
-        if (approxEventTime == null) return "--:--";
-
-        // Szukamy z trasy punktu GPS, w którym byliśmy fizycznie najbliżej czasu zjawiska
+        // Zjawisko wystąpiło w trakcie wycieczki - szukamy najbliższego mu punktu z tych dostępnych
         TrackPoint closestPoint = points.get(0);
         long minDiffMillis = Long.MAX_VALUE;
 
         for (TrackPoint p : points) {
-            long diff = Math.abs(Duration.between(p.getTime(), approxEventTime).toMillis());
+            long diff = Math.abs(Duration.between(p.getTime(), exactEventTime).toMillis());
             if (diff < minDiffMillis) {
                 minDiffMillis = diff;
                 closestPoint = p;
             }
         }
 
-        Instant exactEventTime = getRawEventTime(
-                closestPoint.getTime(),
-                closestPoint.getLocation().getY(),
-                closestPoint.getLocation().getX(),
-                zoneId, twilight, isRise);
+        return new EventPoint(eventLocalTime, closestPoint);
+    }
 
-        if (exactEventTime == null) return "--:--";
-        return DateTimeFormatter.ofPattern("HH:mm:ss").withZone(zoneId).format(exactEventTime);
+    private static Instant getRawEventTime(Instant time, double lat, double lng, ZoneId zoneId, Twilight twilight, boolean isRise) {
+        LocalDate targetDate = time.atZone(zoneId).toLocalDate();
+        SunTimes times = SunTimes.compute()
+                .on(targetDate.atStartOfDay(zoneId))
+                .at(lat, lng)
+                .twilight(twilight)
+                .execute();
+
+        Instant result = isRise ? (times.getRise() != null ? times.getRise().toInstant() : null)
+                : (times.getSet() != null ? times.getSet().toInstant() : null);
+
+        // FIX "BIAŁYCH NOCY": Upewniamy się, że zjawisko faktycznie występuje tego dnia (lub blisko północy).
+        // Jeśli słońce nie chowa się za horyzont latem, biblioteka wyrzuca datę np. za 2 miesiące. Odrzucamy ją!
+        if (result != null) {
+            LocalDate resultDate = result.atZone(zoneId).toLocalDate();
+            long daysBetween = Math.abs(ChronoUnit.DAYS.between(targetDate, resultDate));
+            if (daysBetween > 1) {
+                return null; // Zjawisko w ogóle nie występuje o tej porze roku
+            }
+        }
+
+        return result;
+    }
+
+    private static Instant getNoonTime(Instant time, double lat, double lng, ZoneId zoneId) {
+        SunTimes times = SunTimes.compute()
+                .on(time.atZone(zoneId).toLocalDate().atStartOfDay(zoneId)) // PRZYWRÓCONY FIX
+                .at(lat, lng)
+                .execute();
+        return times.getNoon() != null ? times.getNoon().toInstant() : null;
     }
 }

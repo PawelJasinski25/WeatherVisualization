@@ -25,6 +25,118 @@
     transition: right 0.3s ease-in-out;
 }
 
+/*legenda dla pór dnia*/
+.astro-legend-padding {
+    padding: 15px;
+}
+
+.astro-legend-header {
+    margin-bottom: 15px;
+}
+
+.astro-legend-body {
+    display: flex;
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.astro-color-bar {
+    width: 16px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.2);
+}
+
+.astro-labels-container {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 16px;
+    right: 0;
+}
+
+.astro-event-row {
+    position: absolute;
+    transform: translateY(-50%);
+    left: 0;
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    color: #333;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.astro-tick {
+    width: 10px;
+    height: 1px;
+    background: rgba(0,0,0,0.6);
+    margin-right: 6px;
+}
+
+
+
+/* popup dla zjawisk astronomicznych */
+.custom-astro-popup .maplibregl-popup-content {
+    background: #ffffff !important;
+    border-radius: 12px !important;
+    padding: 0 !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
+    overflow: hidden;
+}
+
+.custom-astro-popup .maplibregl-popup-tip {
+    border-top-color: #ffffff !important;
+}
+
+.custom-astro-popup .maplibregl-popup-close-button {
+    color: #000000;
+    font-size: 14px;
+    padding: 2px 6px;
+    right: 0;
+    top: 0;
+}
+
+
+.astro-popup-content {
+    padding: 8px 16px 10px 16px;
+    text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.astro-popup-accent {
+    height: 3px;
+    width: 100%;
+}
+
+
+.astro-type {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #000000;
+    margin-bottom: 2px;
+}
+
+
+.astro-time-main {
+    font-size: 18px;
+    font-weight: 900;
+    color: #000000;
+    line-height: 1.1;
+    letter-spacing: -0.5px;
+}
+
+.astro-date-sub {
+    font-size: 10px;
+    font-weight: 500;
+    color: #000000;
+    margin-top: 1px;
+}
+
+
 @media (max-width: 1300px) {
     .map-legend-container {
         width: 14rem;

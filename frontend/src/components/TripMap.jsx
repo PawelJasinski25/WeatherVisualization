@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import Map, { Source, Layer } from "react-map-gl/maplibre";
+import Map, { Source, Layer, Marker } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import api from "../api/axios.js";
 
 import { metricConfig } from "../config/metricConfig.js";
-import { generateSegmentsData, generateSampledPoints } from "../utils/mapProcessors.js";
+import { generateSegmentsData, generateSampledPoints, sharpenMapboxGradient, calculateMarkersOffset } from "../utils/mapProcessors.js";
+import { getEventDotColor } from "../config/mapColors.js";
 import MapLegend from "./MapLegend.jsx";
 import MetricMarker from "./MetricMarker.jsx";
+import AstroPopup from "./AstroPopup.jsx";
 import "../styles/map-elements.css";
 
 const OSM_STYLE = {
@@ -19,28 +21,45 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
     const [tripData, setTripData] = useState([]);
     const [currentZoom, setCurrentZoom] = useState(6);
     const mapRef = useRef(null);
+    const [astroMarkers, setAstroMarkers] = useState([]);
+    const [selectedAstroMarker, setSelectedAstroMarker] = useState(null);
 
     const activeMetrics = selectedPrimary.filter(Boolean);
 
     useEffect(() => {
         if (tripId) {
+            setSelectedAstroMarker(null);
+
             api.get(`/trips/${tripId}/coordinates`).then(res => {
-                setTripData(res.data);
-                if (res.data && res.data.length > 0 && mapRef.current) {
-                    const lats = res.data.map(d => d.latitude);
-                    const lngs = res.data.map(d => d.longitude);
-                    mapRef.current.getMap().fitBounds(
-                        [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
-                        { padding: 40 }
-                    );
+                const points = res.data.route || [];
+                const markers = res.data.astronomyMarkers || [];
+
+                setTripData(points);
+                setAstroMarkers(markers);
+
+                if (points && points.length > 0 && mapRef.current) {
+                    const lats = points.map(d => d.latitude);
+                    const lngs = points.map(d => d.longitude);
+
+                    setTimeout(() => {
+                        if (mapRef.current && mapRef.current.getMap()) {
+                            mapRef.current.getMap().fitBounds(
+                                [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+                                { padding: 40 }
+                            );
+                        }
+                    }, 100);
                 }
-            });
+            }).catch(err => console.error("Błąd pobierania trasy:", err));
         }
     }, [tripId]);
 
     const segmentsData = useMemo(() => generateSegmentsData(tripData, activeMetrics), [tripData, activeMetrics]);
     const sampledPoints = useMemo(() => generateSampledPoints(tripData, selectedSecondary, currentZoom), [tripData, selectedSecondary, currentZoom]);
 
+    const markersWithOffset = useMemo(() => calculateMarkersOffset(astroMarkers), [astroMarkers]);
+
+    const showAstro = selectedPrimary.includes('astronomy') && currentZoom >= 9;
 
     return (
         <div className="trip-map-wrapper">
@@ -50,44 +69,47 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
                 mapStyle={OSM_STYLE}
                 style={{ width: "100%", height: "100%" }}
                 onMove={(e) => setCurrentZoom(e.viewState.zoom)}
+                onClick={() => setSelectedAstroMarker(null)}
             >
-                {/* Renderowanie linii  */}
                 {segmentsData.map(seg => {
                     const GRADIENT_WIDTH = 8;
                     const CONTOUR_THICKNESS = 2;
 
                     return (
                         <Source key={seg.id} id={seg.id} type="geojson" data={seg.geojson} lineMetrics>
-                            {/* Domyślna czarna warstwa */}
                             {activeMetrics.length === 0 && (
                                 <Layer key={`${seg.id}-default`} id={`${seg.id}-default`} type="line" paint={{ "line-color": "#000000", "line-width": 8 }} layout={{ "line-join": "round", "line-cap": "round" }} />
                             )}
 
-                            {/* Kontury */}
                             {activeMetrics.map((metricId, index) => {
                                 if (!metricConfig[metricId]) return null;
                                 const offset = activeMetrics.length === 2 ? (index === 0 ? -((GRADIENT_WIDTH / 2) + (CONTOUR_THICKNESS / 2)) : ((GRADIENT_WIDTH / 2) + (CONTOUR_THICKNESS / 2))) : 0;
+                                let lineGradient = seg.contourGradients[metricId];
+                                if (metricId === 'astronomy') lineGradient = sharpenMapboxGradient(lineGradient);
+
                                 return (
                                     <Layer
                                         key={`${seg.id}-${metricId}-contour`}
                                         id={`${seg.id}-${metricId}-contour`}
                                         type="line"
-                                        paint={{ "line-gradient": seg.contourGradients[metricId], "line-width": GRADIENT_WIDTH + (CONTOUR_THICKNESS * 2), "line-offset": offset }}
+                                        paint={{ "line-gradient": lineGradient, "line-width": GRADIENT_WIDTH + (CONTOUR_THICKNESS * 2), "line-offset": offset }}
                                         layout={{ "line-join": "round", "line-cap": "round" }}
                                     />
                                 );
                             })}
 
-                            {/* Gradienty */}
                             {activeMetrics.map((metricId, index) => {
                                 if (!metricConfig[metricId]) return null;
                                 const offset = activeMetrics.length === 2 ? (index === 0 ? -((GRADIENT_WIDTH / 2) + (CONTOUR_THICKNESS / 2)) : ((GRADIENT_WIDTH / 2) + (CONTOUR_THICKNESS / 2))) : 0;
+                                let lineGradient = seg.gradients[metricId];
+                                if (metricId === 'astronomy') lineGradient = sharpenMapboxGradient(lineGradient);
+
                                 return (
                                     <Layer
                                         key={`${seg.id}-${metricId}-gradient`}
                                         id={`${seg.id}-${metricId}-gradient`}
                                         type="line"
-                                        paint={{ "line-width": GRADIENT_WIDTH, "line-offset": offset, "line-gradient": seg.gradients[metricId] }}
+                                        paint={{ "line-width": GRADIENT_WIDTH, "line-offset": offset, "line-gradient": lineGradient }}
                                         layout={{ "line-join": "round", "line-cap": "round" }}
                                     />
                                 );
@@ -100,12 +122,45 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
                     );
                 })}
 
-                {/* Renderowanie etykiet/strzałek dla punktów */}
                 {sampledPoints.map((pt, i) =>
                     selectedSecondary.map((metricId, index) => (
                         <MetricMarker key={`sec-${i}-${metricId}`} pt={pt} metricId={metricId} index={index} />
                     ))
                 )}
+
+                {/* Rysowanie kropek astronomicznych */}
+                {showAstro && markersWithOffset.map((marker, idx) => {
+                    const isMajor = ['WSCHÓD', 'ZACHÓD', 'KULMINACJA'].includes(marker.type);
+
+                    return (
+                        <Marker
+                            key={`astro-${idx}`}
+                            longitude={marker.lng}
+                            latitude={marker.lat}
+                            anchor="center"
+                            offset={[marker.offsetX, marker.offsetY]}
+                        >
+                            <div
+                                onClick={(e) => {
+                                    e.originalEvent?.stopPropagation();
+                                    e.stopPropagation();
+                                    setSelectedAstroMarker(marker);
+                                }}
+                                style={{
+                                    width: '12px',
+                                    height: '12px',
+                                    borderRadius: '50%',
+                                    background: getEventDotColor(marker.type),
+                                    border: '2px solid white',
+                                    boxShadow: '0 0 4px rgba(0,0,0,0.6)',
+                                    cursor: 'pointer',
+                                    zIndex: isMajor ? 10 : 5
+                                }}
+                            />
+                        </Marker>
+                    );
+                })}
+                {showAstro && <AstroPopup marker={selectedAstroMarker} onClose={() => setSelectedAstroMarker(null)} />}
             </Map>
 
             <div

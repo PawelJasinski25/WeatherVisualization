@@ -9,6 +9,7 @@ export const generateSegmentsData = (tripData, activeMetrics) => {
     let currentSegment = [];
     let lastPt = null;
 
+    //dzielimy całą trasę na segmenty zgodnie z segmentId
     tripData.forEach(d => {
         const cut = lastPt && d.segmentId !== undefined && lastPt.segmentId !== undefined && d.segmentId !== lastPt.segmentId;
         if (cut) {
@@ -27,6 +28,7 @@ export const generateSegmentsData = (tripData, activeMetrics) => {
         const allContourGradients = {};
         let separatorStops = null;
 
+        //liczymy dystanse między punktami w segmencie
         let totalDist = 0;
         const dists = [0];
         for (let i = 1; i < seg.length; i++) {
@@ -42,6 +44,7 @@ export const generateSegmentsData = (tripData, activeMetrics) => {
             let lastProgress = -1;
             let prevIsNull = false;
 
+            //liczymy progres dla rysowania gradientu
             seg.forEach((pt, i) => {
                 let progress = totalDist === 0 ? (i / (seg.length - 1)) : (dists[i] / totalDist);
                 if (progress <= lastProgress) progress = lastProgress + 0.00000001;
@@ -121,6 +124,7 @@ export const generateSampledPoints = (tripData, selectedSecondary, currentZoom) 
     let currentSegment = [];
     let lastPt = null;
 
+    //dzielenie na segmenty
     tripData.forEach(d => {
         const cut = lastPt && d.segmentId !== undefined && lastPt.segmentId !== undefined && d.segmentId !== lastPt.segmentId;
         if (cut) {
@@ -136,6 +140,7 @@ export const generateSampledPoints = (tripData, selectedSecondary, currentZoom) 
     let INTERVAL_KM = 10;
     const points = [];
 
+    //obliczamy kierunek, w któym biegnie trasa
     allSegments.forEach(segment => {
         let accumulatedDist = 0;
         let lastLat = segment[0].latitude;
@@ -148,6 +153,7 @@ export const generateSampledPoints = (tripData, selectedSecondary, currentZoom) 
 
         points.push({ ...segment[0], lat: segment[0].latitude, lng: segment[0].longitude, routeBearing: initialBearing });
 
+        //rozmieszczenie punktow mniej wiecej co interval
         for (let i = 1; i < segment.length; i++) {
             const lat = segment[i].latitude;
             const lng = segment[i].longitude;
@@ -191,4 +197,83 @@ export const generateSampledPoints = (tripData, selectedSecondary, currentZoom) 
     });
 
     return points;
+};
+
+
+// Funkcja odcinająca płynne kolory dla MapLibre
+export const sharpenMapboxGradient = (gradientExp) => {
+    if (!Array.isArray(gradientExp) || gradientExp[0] !== 'interpolate') {
+        return gradientExp;
+    }
+
+    const sharpExp = ['interpolate', ['linear'], ['line-progress']];
+    const EPSILON = 0.000001;
+
+    let lastProg = -1;
+    let lastCol = null;
+
+    for (let i = 3; i < gradientExp.length; i += 2) {
+        let prog = gradientExp[i];
+        const col = gradientExp[i + 1];
+
+        if (prog > 1.0) prog = 1.0;
+        if (prog < lastProg) prog = lastProg;
+
+        if (lastCol === null) {
+            sharpExp.push(prog, col);
+            lastProg = prog;
+            lastCol = col;
+            continue;
+        }
+
+        if (col !== lastCol) {
+            let cutProg = prog - EPSILON;
+
+            if (cutProg <= lastProg) {
+                cutProg = lastProg + EPSILON;
+                prog = cutProg + EPSILON;
+
+                if (prog > 1.0) {
+                    cutProg = 1.0 - EPSILON;
+                    prog = 1.0;
+                }
+            }
+
+            sharpExp.push(cutProg, lastCol);
+            sharpExp.push(prog, col);
+
+            lastProg = prog;
+            lastCol = col;
+        } else {
+            lastProg = prog;
+        }
+    }
+    if (lastProg > sharpExp[sharpExp.length - 2]) {
+        sharpExp.push(lastProg, lastCol);
+    }
+
+    if (sharpExp.length < 5) return gradientExp;
+    return sharpExp;
+};
+
+export const calculateMarkersOffset = (markers) => {
+    if (!markers || markers.length === 0) return [];
+
+    const groups = {};
+    markers.forEach(marker => {
+        const key = `${marker.lat.toFixed(5)}-${marker.lng.toFixed(5)}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(marker);
+    });
+
+    const result = [];
+    Object.values(groups).forEach(group => {
+        const total = group.length;
+        group.forEach((marker, i) => {
+            const offsetX = total > 1 ? (i - (total - 1) / 2) * 14 : 0;
+            result.push({ ...marker, offsetX, offsetY: 0 });
+        });
+    });
+
+    return result;
 };

@@ -5,6 +5,28 @@ import {
 } from "./mapColors";
 
 export const metricConfig = {
+    astronomy: {
+        label: "Pory dnia",
+        unit: "",
+        getValue: pt => pt.dayPhase,
+        palette: [
+            [0, [8, 12, 25]],     // Noc
+            [1, [26, 54, 150]],   // Świt Astronomiczny
+            [2, [66, 170, 245]],  // Świt Nautyczny
+            [3, [245, 80, 180]],  // Świt Cywilny
+            [4, [255, 220, 0]],   // Dzień
+            [5, [245, 110, 0]],   // Zmierzch Cywilny
+            [6, [210, 30, 30]],   // Zmierzch Nautyczny
+            [7, [110, 20, 160]],  // Zmierzch Astronomiczny
+            [8, [8, 12, 25]]      // Noc
+        ],
+        formatValue: val => {
+            const labels = ["Noc", "Świt A.", "Świt N.", "Świt C.", "Dzień", "Zmierzch C.", "Zmierzch N.", "Zmierzch A.", "Noc"];
+            return labels[Math.round(val)] || val;
+        },
+        labelCount: 9
+    },
+
     wind: { label: "Wiatr", unit: "km/h", palette: windColors, getValue: pt => pt.windSpeed, formatValue: val => Number(val).toFixed(1), labelCount: 7 },
     gusts: { label: "Porywy", unit: "km/h", palette: gustsColors, getValue: pt => pt.gusts, formatValue: val => Number(val).toFixed(1), labelCount: 7 },
     temp: { label: "Temperatura", unit: "°C", palette: tempColors, getValue: pt => pt.temp !== null ? pt.temp + 273.15 : null, formatValue: val => (val - 273.15).toFixed(1), labelCount: 7 },

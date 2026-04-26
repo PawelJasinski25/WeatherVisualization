@@ -1,3 +1,5 @@
+
+//zamienia na wspolrzedne w projekcji Mercatora
 export const getProjectedCoords = (lat, lon) => {
     const toRad = Math.PI / 180;
     const x = lon * toRad;
@@ -5,6 +7,7 @@ export const getProjectedCoords = (lat, lon) => {
     return { x, y };
 };
 
+//wraca do zwyklych wspolrzednych
 export const unprojectMercator = (x, y) => {
     const toDeg = 180 / Math.PI;
     const lon = x * toDeg;
@@ -12,12 +15,14 @@ export const unprojectMercator = (x, y) => {
     return { lat, lon };
 };
 
+//liczy dystans na mapie
 export const getProjectedDistance = (lat1, lon1, lat2, lon2) => {
     const p1 = getProjectedCoords(lat1, lon1);
     const p2 = getProjectedCoords(lat2, lon2);
     return Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
 };
 
+//liczy dystans na ziemi (wzór Haversine)
 export const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
     const R = 6371;
     const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -30,6 +35,7 @@ export const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
     return R * c;
 };
 
+//liczy kierunek miedzy punktami
 export const getBearing = (lat1, lon1, lat2, lon2) => {
     const toRad = Math.PI / 180;
     const toDeg = 180 / Math.PI;

@@ -23,6 +23,13 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.HashMap;
+
+
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -66,7 +73,7 @@ public class TripService {
         byte[] fileBytes = file.getBytes();
         String fileHash = calculateFileHash(fileBytes);
 
-        java.util.Optional<Trip> existingTrip = tripRepository.findByFileHashAndUser_Email(fileHash, email);
+        Optional<Trip> existingTrip = tripRepository.findByFileHashAndUser_Email(fileHash, email);
         if (existingTrip.isPresent()) {
             System.out.println("Trasa już istnieje! Pomijam przetwarzanie i zwracam ID: " + existingTrip.get().getId());
             return existingTrip.get().getId();
@@ -93,9 +100,9 @@ public class TripService {
 
         List<Weather> tripWeatherList = new ArrayList<>();
 
-        java.util.Map<String, OpenMeteoService.OpenMeteoResponse> dailyWeatherCache = new java.util.HashMap<>();
-        java.util.Map<String, Weather> savedWeatherCache = new java.util.HashMap<>();
-        java.util.Set<String> processedGridHours = new java.util.HashSet<>();
+        Map<String, OpenMeteoService.OpenMeteoResponse> dailyWeatherCache = new HashMap<>();
+        Map<String, Weather> savedWeatherCache = new HashMap<>();
+        Set<String> processedGridHours = new HashSet<>();
 
         for(Track track : gpx.getTracks()) {
             for(TrackSegment segment : track.getSegments()) {
@@ -149,7 +156,7 @@ public class TripService {
                     if (currentPointWeather != null) {
                         trackPoint.setWeather(currentPointWeather);
                     }
-                    // -----------------------------------------------
+
 
                     batchPoints.add(trackPoint);
                     counter++;

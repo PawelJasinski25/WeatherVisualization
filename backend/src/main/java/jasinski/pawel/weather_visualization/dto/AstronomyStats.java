@@ -1,12 +1,27 @@
 package jasinski.pawel.weather_visualization.dto;
 
+import jasinski.pawel.weather_visualization.entity.TrackPoint;
+
+import java.time.LocalTime;
+
 public record AstronomyStats(
-        String astronomicalDawn, // Świt astronomiczny
-        String nauticalDawn,     // Świt nautyczny
-        String civilDawn,        // Świt cywilny
-        String sunrise,          // Wschód słońca
-        String sunset,           // Zachód słońca
-        String civilDusk,        // Zmierzch cywilny
-        String nauticalDusk,     // Zmierzch nautyczny
-        String astronomicalDusk  // Zmierzch astronomiczny
+        LocalTime astronomicalDawn,
+        LocalTime nauticalDawn,
+        LocalTime civilDawn,
+        LocalTime sunrise,
+        LocalTime solarNoon,
+        LocalTime sunset,
+        LocalTime civilDusk,
+        LocalTime nauticalDusk,
+        LocalTime astronomicalDusk,
+
+        TrackPoint astronomicalDawnPt,
+        TrackPoint nauticalDawnPt,
+        TrackPoint civilDawnPt,
+        TrackPoint sunrisePt,
+        TrackPoint noonPt,
+        TrackPoint sunsetPt,
+        TrackPoint civilDuskPt,
+        TrackPoint nauticalDuskPt,
+        TrackPoint astronomicalDuskPt
 ) {}

@@ -4,6 +4,7 @@ import jasinski.pawel.weather_visualization.dto.WeatherStats;
 import jasinski.pawel.weather_visualization.entity.TrackPoint;
 import jasinski.pawel.weather_visualization.entity.Weather;
 
+import java.time.Duration;
 import java.util.List;
 
 public class WeatherAnalyzer {
@@ -22,19 +23,51 @@ public class WeatherAnalyzer {
         Summer rain = new Summer(), snowfall = new Summer();
         AngleAverager windDir = new AngleAverager(), waveDir = new AngleAverager(), oceanDir = new AngleAverager();
 
-        for (TrackPoint p : points) {
+        for (int i = 0; i < points.size(); i++) {
+            TrackPoint p = points.get(i);
             Weather w = p.getWeather();
             if (w == null) continue;
 
-            temp.add(w.getTemp()); windSpeed.add(w.getWindSpeed()); dewPoint.add(w.getDewPoint()); windGusts.add(w.getWindGusts());
-            humidity.add(w.getHumidity()); pressure.add(w.getPressure());
-            cloud.add(w.getCloudCover()); cloudLow.add(w.getCloudCoverLow()); cloudMid.add(w.getCloudCoverMid()); cloudHigh.add(w.getCloudCoverHigh());
-            waveH.add(w.getWaveHeight()); waveP.add(w.getWavePeriod()); windWaveH.add(w.getWindWaveHeight()); windWaveP.add(w.getWindWavePeriod());
-            swellH.add(w.getSwellWaveHeight()); swellP.add(w.getSwellWavePeriod()); oceanCurVel.add(w.getOceanCurrentVelocity()); seaTemp.add(w.getSeaTemperature());
+            // 1. OBLICZANIE WAGI (CZASU TRWANIA)
+            long weightSeconds = 60; // Domyślnie 60s dla ostatniego punktu
+            if (i < points.size() - 1) {
+                TrackPoint nextP = points.get(i + 1);
+                weightSeconds = Math.abs(Duration.between(p.getTime(), nextP.getTime()).getSeconds());
 
-            rain.add(w.getRain()); snowfall.add(w.getSnowfall());
+                // Zabezpieczenie przed "Brak Danych" - limitujemy wagę maksymalnie do 1 godziny (3600s)
+                // Zapobiega to sytuacji, gdzie 10-godzinna przerwa w GPS całkowicie niszczy średnią
+                if (weightSeconds > 3600) {
+                    weightSeconds = 3600;
+                }
+            }
 
-            windDir.add(w.getWindDir()); waveDir.add(w.getWaveDirection()); oceanDir.add(w.getOceanCurrentDirection());
+            // 2. PRZEKAZYWANIE DANYCH Z WAGĄ CZASOWĄ
+            temp.add(w.getTemp(), weightSeconds);
+            windSpeed.add(w.getWindSpeed(), weightSeconds);
+            dewPoint.add(w.getDewPoint(), weightSeconds);
+            windGusts.add(w.getWindGusts(), weightSeconds);
+            humidity.add(w.getHumidity(), weightSeconds);
+            pressure.add(w.getPressure(), weightSeconds);
+            cloud.add(w.getCloudCover(), weightSeconds);
+            cloudLow.add(w.getCloudCoverLow(), weightSeconds);
+            cloudMid.add(w.getCloudCoverMid(), weightSeconds);
+            cloudHigh.add(w.getCloudCoverHigh(), weightSeconds);
+            waveH.add(w.getWaveHeight(), weightSeconds);
+            waveP.add(w.getWavePeriod(), weightSeconds);
+            windWaveH.add(w.getWindWaveHeight(), weightSeconds);
+            windWaveP.add(w.getWindWavePeriod(), weightSeconds);
+            swellH.add(w.getSwellWaveHeight(), weightSeconds);
+            swellP.add(w.getSwellWavePeriod(), weightSeconds);
+            oceanCurVel.add(w.getOceanCurrentVelocity(), weightSeconds);
+            seaTemp.add(w.getSeaTemperature(), weightSeconds);
+
+            // Sumatory dla opadów
+            rain.add(w.getRain());
+            snowfall.add(w.getSnowfall());
+
+            windDir.add(w.getWindDir(), weightSeconds);
+            waveDir.add(w.getWaveDirection(), weightSeconds);
+            oceanDir.add(w.getOceanCurrentDirection(), weightSeconds);
         }
 
         return new WeatherStats(
@@ -47,15 +80,39 @@ public class WeatherAnalyzer {
     }
 
 
+
     private static class Averager {
-        private double sum = 0; private int count = 0;
-        public void add(Number val) {
-            if (val != null) {
-                sum += val.doubleValue();
-                count++;
+        private double weightedSum = 0;
+        private long totalSeconds = 0;
+
+        public void add(Number val, long weightSeconds) {
+            if (val != null && weightSeconds > 0) {
+                weightedSum += val.doubleValue() * weightSeconds;
+                totalSeconds += weightSeconds;
             }
         }
-        public Double get() { return count == 0 ? null : Math.round((sum / count) * 100.0) / 100.0; }
+        public Double get() {
+            return totalSeconds == 0 ? null : Math.round((weightedSum / totalSeconds) * 100.0) / 100.0;
+        }
+    }
+
+    private static class AngleAverager {
+        private double sinSum = 0, cosSum = 0;
+        private long totalSeconds = 0;
+
+        public void add(Number angle, long weightSeconds) {
+            if (angle != null && weightSeconds > 0) {
+                double rad = Math.toRadians(angle.doubleValue());
+                sinSum += Math.sin(rad) * weightSeconds;
+                cosSum += Math.cos(rad) * weightSeconds;
+                totalSeconds += weightSeconds;
+            }
+        }
+        public Integer get() {
+            if (totalSeconds == 0 || (sinSum == 0 && cosSum == 0)) return null;
+            double angle = Math.toDegrees(Math.atan2(sinSum / totalSeconds, cosSum / totalSeconds));
+            return (int) Math.round(angle < 0 ? angle + 360 : angle);
+        }
     }
 
     private static class Summer {
@@ -66,21 +123,5 @@ public class WeatherAnalyzer {
             }
         }
         public Double get() { return Math.round(sum * 100.0) / 100.0; }
-    }
-
-    private static class AngleAverager {
-        private double sinSum = 0, cosSum = 0; private int count = 0;
-        public void add(Number angle) {
-            if (angle != null) {
-                sinSum += Math.sin(Math.toRadians(angle.doubleValue()));
-                cosSum += Math.cos(Math.toRadians(angle.doubleValue()));
-                count++;
-            }
-        }
-        public Integer get() {
-            if (count == 0 || (sinSum == 0 && cosSum == 0)) return null;
-            double angle = Math.toDegrees(Math.atan2(sinSum / count, cosSum / count));
-            return (int) Math.round(angle < 0 ? angle + 360 : angle);
-        }
     }
 }

@@ -8,7 +8,8 @@ public record DailySummary(
         LocalDate date,
         List<TrackPoint> points,
         DayMovementStats movementStats,
-        WeatherStats weatherStats,
+        WeatherStats overallWeatherStats,
+        WeatherStats movingWeatherStats,
         AstronomyStats astroStats,
-        List<StopPlace> stops
+        List<TimelineEvent> timelineEvents
 ) {}

@@ -43,7 +43,6 @@ const AnimationPanel = ({ selectedParams, setSelectedParams, isOpen, setIsOpen }
             </button>
 
             <div className="panel-content">
-                {/* DODANY DIV: */}
                 <div className="panel-section">
                     <h3 className="panel-title">Wybór parametrów</h3>
                     <p className="panel-subtitle">Wybierz maksymalnie 3 parametry do śledzenia</p>
