@@ -1,41 +1,176 @@
 package jasinski.pawel.weather_visualization.service;
-
 import jasinski.pawel.weather_visualization.dto.*;
 import jasinski.pawel.weather_visualization.entity.TrackPoint;
 import jasinski.pawel.weather_visualization.entity.Trip;
 import jasinski.pawel.weather_visualization.repository.TrackPointRepository;
-import jasinski.pawel.weather_visualization.utils.AstronomyAnalyzer;
-import jasinski.pawel.weather_visualization.utils.MovementAnalyzer;
-import jasinski.pawel.weather_visualization.utils.TimelineChartGenerator;
-import jasinski.pawel.weather_visualization.utils.WeatherAnalyzer;
+import jasinski.pawel.weather_visualization.utils.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 @Service
 public class ReportService {
     private final TrackPointRepository trackPointRepository;
     private final GeoNamesService geoNamesService;
     private final TripService tripService;
+    private final RestTemplate restTemplate;
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Europe/Warsaw");
 
-    public ReportService(TrackPointRepository trackPointRepository, GeoNamesService geoNamesService, TripService tripService){
+    @Autowired
+    public ReportService(TrackPointRepository trackPointRepository, GeoNamesService geoNamesService, TripService tripService, RestTemplate restTemplate){
         this.trackPointRepository = trackPointRepository;
         this.geoNamesService = geoNamesService;
         this.tripService = tripService;
+        this.restTemplate = restTemplate;
+    }
+
+    private TripAnalysisContext analyzeTrip(Long tripId) {
+        List<TrackPoint> allPoints = trackPointRepository.findByTripIdOrderByTimeAsc(tripId);
+        if (allPoints.isEmpty()) {
+            return new TripAnalysisContext(new ArrayList<>(), new TreeMap<>(), new ArrayList<>());
+        }
+
+        Map<LocalDate, DayData> dailyMovements = MovementAnalyzer.analyzeTripTimeline(allPoints, DEFAULT_ZONE);
+        List<EnrichedSegment> allSegments = createEnrichedSegments(allPoints, dailyMovements, DEFAULT_ZONE);
+
+        return new TripAnalysisContext(allPoints, dailyMovements, allSegments);
+    }
+
+
+    public List<DailySummary> generateDailySummaries(TripAnalysisContext context) {
+        if (context.points().isEmpty()) return new ArrayList<>();
+
+        Map<LocalDate, List<TrackPoint>> pointsByDay = new TreeMap<>();
+        for (TrackPoint point : context.points()) {
+            LocalDate date = LocalDate.ofInstant(point.getTime(), DEFAULT_ZONE);
+            pointsByDay.computeIfAbsent(date, k -> new ArrayList<>()).add(point);
+        }
+
+        Set<LocalDate> allDates = new TreeSet<>();
+        allDates.addAll(context.dailyMovements().keySet());
+        allDates.addAll(pointsByDay.keySet());
+
+        List<DailySummary> summaries = new ArrayList<>();
+
+        for (LocalDate day : allDates) {
+            List<TrackPoint> pointsInDay = pointsByDay.getOrDefault(day, new ArrayList<>());
+            DayData movData = context.dailyMovements().get(day);
+
+            DayMovementStats stats = movData != null ?
+                    new DayMovementStats(movData.movingSeconds, movData.stoppedSeconds, movData.gapSeconds) :
+                    new DayMovementStats(0, 0, 0);
+
+            List<TimelineEvent> events = new ArrayList<>();
+            if (movData != null && movData.events != null) {
+                for (TimelineEvent ev : movData.events) {
+                    String placeName = null;
+                    if ("POSTÓJ".equals(ev.type()) && ev.lat() != 0.0 && ev.lon() != 0.0) {
+                        placeName = geoNamesService.getPlaceName(ev.lat(), ev.lon());
+                    }
+                    events.add(new TimelineEvent(ev.type(), ev.start(), ev.end(), ev.lat(), ev.lon(), placeName));
+                }
+            }
+            AstronomyStats astro = AstronomyAnalyzer.calculateSun(pointsInDay, events, DEFAULT_ZONE);
+
+            List<EnrichedSegment> dailySegments = context.segments().stream()
+                    .filter(s -> LocalDate.ofInstant(s.p1().getTime(), DEFAULT_ZONE).equals(day))
+                    .toList();
+
+            List<EnrichedSegment> dailyMovingSegments = dailySegments.stream()
+                    .filter(EnrichedSegment::isMoving)
+                    .toList();
+
+            SpeedStats speedStats = SpeedAnalyzer.calculateSpeed(dailySegments);
+            WeatherStats overallWeatherStats = WeatherAnalyzer.analyzeWeather(dailySegments);
+            WeatherStats movingWeatherStats = WeatherAnalyzer.analyzeWeather(dailyMovingSegments);
+
+            summaries.add(new DailySummary(day, dailySegments, stats, overallWeatherStats, movingWeatherStats, speedStats, astro, events));
+        }
+
+        return summaries;
+    }
+
+    public TripReportDataDto getTripReportData(Long tripId, String email) {
+        Trip trip = tripService.getUserTrips(email).stream()
+                .filter(t -> t.getId().equals(tripId))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień"));
+
+        TripAnalysisContext context = analyzeTrip(tripId);
+        List<DailySummary> dailySummaries = generateDailySummaries(context);
+
+        long totalMoving = 0, totalStopped = 0, totalGap = 0;
+        for (DailySummary ds : dailySummaries) {
+            totalMoving += ds.movementStats().movingSeconds();
+            totalStopped += ds.movementStats().stoppedSeconds();
+            totalGap += ds.movementStats().gapSeconds();
+        }
+        DayMovementStats overallMovement = new DayMovementStats(totalMoving, totalStopped, totalGap);
+
+        List<EnrichedSegment> allMovingSegments = context.segments().stream()
+                .filter(EnrichedSegment::isMoving)
+                .toList();
+
+        SpeedStats overallSpeed = SpeedAnalyzer.calculateSpeed(context.segments());
+        WeatherStats overallWeather = WeatherAnalyzer.analyzeWeather(context.segments());
+        WeatherStats overallMovingWeather = WeatherAnalyzer.analyzeWeather(allMovingSegments);
+
+        List<ReportDailySummaryDto> reportDailySummaries = dailySummaries.stream()
+                .map(ReportDailySummaryDto::from)
+                .toList();
+
+        return new TripReportDataDto(trip.getName(), overallMovement, overallSpeed, overallWeather, overallMovingWeather, reportDailySummaries);
+    }
+
+    private List<EnrichedSegment> createEnrichedSegments(
+            List<TrackPoint> points,
+            Map<LocalDate, DayData> dailyMovements,
+            ZoneId zoneId) {
+
+        List<EnrichedSegment> segments = new ArrayList<>();
+
+        for (int i = 0; i < points.size() - 1; i++) {
+            TrackPoint p1 = points.get(i);
+            TrackPoint p2 = points.get(i + 1);
+
+            if (p1.getSegmentId() != null && p1.getSegmentId().equals(p2.getSegmentId())) {
+                double dist = GeoUtils.calculateDistance(p1.getLocation(), p2.getLocation());
+                double dur = Math.abs(Duration.between(p1.getTime(), p2.getTime()).toMillis()) / 1000.0;
+
+                if (dur > 0) {
+                    double speed = (dist / dur) * 3.6;
+
+                    boolean isMoving = false;
+                    LocalDate date = LocalDate.ofInstant(p1.getTime(), zoneId);
+                    DayData movData = dailyMovements.get(date);
+
+                    if (movData != null && movData.events != null) {
+                        for (TimelineEvent ev : movData.events) {
+                            if ("RUCH".equals(ev.type()) && !p1.getTime().isBefore(ev.start()) && !p1.getTime().isAfter(ev.end())) {
+                                isMoving = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    segments.add(new EnrichedSegment(p1, p2, dist, dur, speed, isMoving));
+                }
+            }
+        }
+        return segments;
     }
 
     public ReportResource getCsvReportResource(Long tripId, String email) {
-
         Trip trip = tripService.getUserTrips(email).stream()
                 .filter(t -> t.getId().equals(tripId))
                 .findFirst()
@@ -54,69 +189,9 @@ public class ReportService {
         return new ReportResource(finalBytes, fileName);
     }
 
-    public List<DailySummary> generateDailySummaries(Long tripId) {
-        List<TrackPoint> allPoints = trackPointRepository.findByTripIdOrderByTimeAsc(tripId);
-        if (allPoints.isEmpty()) return new ArrayList<>();
-
-        ZoneId zoneId = ZoneId.of("Europe/Warsaw");
-
-        Map<LocalDate,DayData> dailyMovements = MovementAnalyzer.analyzeTripTimeline(allPoints, zoneId);
-
-        Map<LocalDate, List<TrackPoint>> pointsByDay = new TreeMap<>();
-        for (TrackPoint point : allPoints) {
-            LocalDate date = LocalDate.ofInstant(point.getTime(), zoneId);
-            pointsByDay.computeIfAbsent(date, k -> new ArrayList<>()).add(point);
-        }
-
-        Set<LocalDate> allDates = new TreeSet<>();
-        allDates.addAll(dailyMovements.keySet());
-        allDates.addAll(pointsByDay.keySet());
-
-        List<DailySummary> summaries = new ArrayList<>();
-
-        for (LocalDate day : allDates) {
-            List<TrackPoint> pointsInDay = pointsByDay.getOrDefault(day, new ArrayList<>());
-            DayData movData = dailyMovements.get(day);
-
-            DayMovementStats stats = movData != null ?
-                    new DayMovementStats(movData.movingSeconds, movData.stoppedSeconds, movData.gapSeconds) :
-                    new DayMovementStats(0, 0, 0);
-
-            List<TimelineEvent> events = movData != null ? movData.events : new ArrayList<>();
-            AstronomyStats astro = AstronomyAnalyzer.calculateSun(pointsInDay, events, zoneId);
-
-            // Filtrowanie punktów tylko podczs ruchu
-            List<TrackPoint> movingPointsOnly = new ArrayList<>();
-            if (movData != null && movData.events != null) {
-                for (TrackPoint p : pointsInDay) {
-                    boolean isMoving = false;
-                    for (TimelineEvent ev : movData.events) {
-                        if ("RUCH".equals(ev.type()) && !p.getTime().isBefore(ev.start()) && !p.getTime().isAfter(ev.end())) {
-                            isMoving = true;
-                            break;
-                        }
-                    }
-                    if (isMoving) {
-                        movingPointsOnly.add(p);
-                    }
-                }
-            }
-
-            WeatherStats overallWeatherStats = WeatherAnalyzer.analyzeWeather(pointsInDay);     // Z całego dnia
-            WeatherStats movingWeatherStats = WeatherAnalyzer.analyzeWeather(movingPointsOnly); // Tylko z momentów ruchu
-
-            summaries.add(new DailySummary(day, pointsInDay, stats, overallWeatherStats, movingWeatherStats, astro, events));
-        }
-
-        return summaries;
-    }
-
-    private void appendCsv(StringBuilder sb, Object value) {
-        sb.append(value != null ? value : "--").append(";");
-    }
-
     public String generateCsv(Long tripId) {
-        List<DailySummary> summaries = generateDailySummaries(tripId);
+        TripAnalysisContext context = analyzeTrip(tripId);
+        List<DailySummary> summaries = generateDailySummaries(context);
         StringBuilder csv = new StringBuilder();
 
         int maxEvents = 0;
@@ -146,7 +221,7 @@ public class ReportService {
         }
         csv.append("\n");
 
-        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.of("Europe/Warsaw"));
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss").withZone(DEFAULT_ZONE);
 
         for (DailySummary summary : summaries) {
             appendCsv(csv, summary.date());
@@ -214,7 +289,6 @@ public class ReportService {
             appendCsv(csv, oWs.avgOceanCurrentDirection()); appendCsv(csv, mWs.avgOceanCurrentDirection());
             appendCsv(csv, oWs.avgSeaTemperature()); appendCsv(csv, mWs.avgSeaTemperature());
 
-
             AstronomyStats astro = summary.astroStats();
             appendAstroTime(csv, astro.astronomicalDawn(), astro.astronomicalDawnPt());
             appendAstroTime(csv, astro.nauticalDawn(), astro.nauticalDawnPt());
@@ -226,7 +300,6 @@ public class ReportService {
             appendAstroTime(csv, astro.nauticalDusk(), astro.nauticalDuskPt());
             appendAstroTime(csv, astro.astronomicalDusk(), astro.astronomicalDuskPt());
 
-
             for (int i = 0; i < maxEvents; i++) {
                 if (summary.timelineEvents() != null && i < summary.timelineEvents().size()) {
                     TimelineEvent ev = summary.timelineEvents().get(i);
@@ -236,9 +309,8 @@ public class ReportService {
                     appendCsv(csv, timeFormatter.format(ev.end()));
                     appendCsv(csv, formatSeconds(ev.durationSeconds()));
 
-                    if ("POSTÓJ".equals(ev.type()) && ev.lat() != 0.0 && ev.lon() != 0.0) {
-                        String placeName = geoNamesService.getPlaceName(ev.lat(), ev.lon());
-                        appendCsv(csv, placeName);
+                    if (ev.placeName() != null && !ev.placeName().isEmpty()) {
+                        appendCsv(csv, ev.placeName());
                     } else {
                         appendCsv(csv, "--");
                     }
@@ -252,34 +324,28 @@ public class ReportService {
         return csv.toString();
     }
 
-    public byte[] generateAllTimelinesZip(Long tripId) {
-        List<DailySummary> summaries = generateDailySummaries(tripId);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
-        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
-            int dayNumber = 1;
+    public byte[] generatePdfReport(Long tripId, String email, Map<String, Object> formData) {
+        TripReportDataDto data = getTripReportData(tripId, email);
 
-            for (DailySummary summary : summaries) {
-                byte[] imageBytes = TimelineChartGenerator.generateDailyTimelineChart(
-                        summary.date(), summary.timelineEvents(), ZoneId.of("Europe/Warsaw"), geoNamesService
-                );
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> payload = mapper.convertValue(data, new TypeReference<Map<String, Object>>() {});
 
-                String fileName = "(" + dayNumber + ") " + dateFormatter.format(summary.date()) + ".png";
-
-                ZipEntry zipEntry = new ZipEntry(fileName);
-                zos.putNextEntry(zipEntry);
-                zos.write(imageBytes);
-                zos.closeEntry();
-                dayNumber++;
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Błąd podczas tworzenia paczki ZIP", e);
+        if (formData != null) {
+            payload.putAll(formData);
         }
 
-        return baos.toByteArray();
+        String pythonUrl = "http://localhost:8000/generate-pdf";
+        try {
+            return restTemplate.postForObject(pythonUrl, payload, byte[].class);
+        } catch (Exception e) {
+            throw new RuntimeException("Błąd komunikacji z serwisem PDF: " + e.getMessage());
+        }
     }
 
+    private void appendCsv(StringBuilder sb, Object value) {
+        sb.append(value != null ? value : "--").append(";");
+    }
 
     private String formatSeconds(long totalSeconds) {
         long hours = totalSeconds / 3600;

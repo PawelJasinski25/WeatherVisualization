@@ -38,11 +38,13 @@ const AnimationPage = () => {
         if (tripId) {
             setIsLoading(true);
             api.get(`/trips/${tripId}/coordinates`).then(res => {
-                setTripData(res.data);
+                const points = res.data.route || [];
+                setTripData(points);
                 setIsLoading(false);
-                if (res.data.length > 0 && mapRef.current) {
-                    const lats = res.data.map(d => d.latitude);
-                    const lngs = res.data.map(d => d.longitude);
+
+                if (points.length > 0 && mapRef.current) {
+                    const lats = points.map(d => d.latitude);
+                    const lngs = points.map(d => d.longitude);
                     mapRef.current.getMap().fitBounds(
                         [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
                         { padding: 40 }
@@ -59,7 +61,7 @@ const AnimationPage = () => {
         let interval;
         if (isPlaying && tripData.length > 1) {
 
-            // 1. WYKRYWANIE GĘSTOŚCI TRASY
+
             const totalTimeMs = tripData[tripData.length - 1].timeMs - tripData[0].timeMs;
             const avgTimeBetweenPoints = totalTimeMs / tripData.length;
 

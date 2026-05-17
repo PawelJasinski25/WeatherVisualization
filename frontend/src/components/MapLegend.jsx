@@ -4,17 +4,25 @@ import '../styles/map-elements.css';
 
 const AstronomyLegend = ({ config }) => {
     const blockHeight = 26;
+
     const events = [
         { label: "Świt Astronomiczny", offset: 1},
         { label: "Świt Nautyczny", offset: 2},
         { label: "Świt Cywilny", offset: 3 },
         { label: "Wschód Słońca", offset: 4 },
-        { label: "Kulminacja", offset: 4.5 },
         { label: "Zachód Słońca", offset: 5 },
         { label: "Zmierzch Cywilny", offset: 6 },
         { label: "Zmierzch Nautyczny", offset: 7 },
         { label: "Zmierzch Astronomiczny", offset: 8},
     ];
+
+    const pointEvents = [
+        { label: "Kulminacja", color: "#FFFFFF", border: "#cbd5e1" },
+        { label: "Wschód Księżyca", color: "#5cd546", border: "#94a3b8" },
+        { label: "Zachód Księżyca", color: "#125c0c", border: "#475569" }
+    ];
+
+    const containerHeight = (config.palette ? config.palette.length : 9) * blockHeight;
 
     return (
         <div className="legend-box astro-legend-padding">
@@ -22,31 +30,49 @@ const AstronomyLegend = ({ config }) => {
                 <span className="legend-title">{config.label}</span>
             </div>
 
-            <div className="astro-legend-body">
-                <div className="astro-color-bar">
-                    {config.palette.map((stop, i) => (
-                        <div
-                            key={`color-${i}`}
-                            style={{
-                                height: `${blockHeight}px`,
-                                backgroundColor: `rgb(${stop[1].join(',')})`
-                            }}
-                        />
-                    ))}
+            <div className="astro-legend-body" style={{ flexDirection: 'column' }}>
+
+                <div style={{ position: 'relative', height: `${containerHeight}px` }}>
+                    <div className="astro-color-bar">
+                        {config.palette.map((stop, i) => (
+                            <div
+                                key={`color-${i}`}
+                                style={{
+                                    height: `${blockHeight}px`,
+                                    backgroundColor: `rgb(${stop[1].join(',')})`
+                                }}
+                            />
+                        ))}
+                    </div>
+
+                    <div className="astro-labels-container">
+                        {events.map((ev, i) => (
+                            <div
+                                key={`ev-${i}`}
+                                className="astro-event-row"
+                                style={{ top: `${ev.offset * blockHeight}px` }}
+                            >
+                                <div className="astro-tick" />
+                                <span>{ev.label}</span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="astro-labels-container">
-                    {events.map((ev, i) => (
-                        <div
-                            key={`ev-${i}`}
-                            className="astro-event-row"
-                            style={{ top: `${ev.offset * blockHeight}px` }}
-                        >
-                            <div className="astro-tick" />
-                            <span>{ev.icon} {ev.label}</span>
+                <div className="astro-point-events-wrapper">
+                    {pointEvents.map((pt, i) => (
+                        <div key={`pt-${i}`} className="astro-point-item">
+                            <div className="astro-point-dot" style={{
+                                backgroundColor: pt.color,
+                                border: `2px solid ${pt.border}`
+                            }} />
+                            <span className="astro-point-text">
+                                {pt.label}
+                            </span>
                         </div>
                     ))}
                 </div>
+
             </div>
         </div>
     );

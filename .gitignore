@@ -1,0 +1,17 @@
+.idea/
+Thumbs.db
+.DS_Store
+
+backend/target/
+*.class
+
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+pdf-service/__pycache__/
+pdf-service/venv/
+*.pyc
+
+.env
+*.local

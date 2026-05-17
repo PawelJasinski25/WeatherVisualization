@@ -33,6 +33,9 @@ import java.util.HashMap;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 @Service
 public class TripService {
@@ -117,6 +120,32 @@ public class TripService {
                     trackPoint.setTrip(savedTrip);
                     trackPoint.setTime(gpxPoint.getTime().get());
                     trackPoint.setSegmentId(currentSegmentId);
+
+                    Double extractedSpeed = null;
+                    if (gpxPoint.getExtensions().isPresent()) {
+                        Document extensionsDoc = gpxPoint.getExtensions().get();
+                        NodeList naviSpeedNodes = extensionsDoc.getElementsByTagName("*");
+                        for (int i = 0; i < naviSpeedNodes.getLength(); i++) {
+                            Node node = naviSpeedNodes.item(i);
+                            String localName = node.getLocalName();
+                            String fullName = node.getNodeName();
+
+                            if ("navionics_speed".equals(localName) || fullName.endsWith("navionics_speed")) {
+                                try {
+                                    double speed = Double.parseDouble(node.getTextContent());
+                                    extractedSpeed = speed * 3.6; // Konwersja na km/h
+                                    break;
+                                } catch (Exception ignored) {}
+                            } else if ("speed".equals(localName) || fullName.endsWith(":speed")) {
+                                try {
+                                    double ms = Double.parseDouble(node.getTextContent());
+                                    extractedSpeed = ms * 3.6;
+                                    break;
+                                } catch (Exception ignored) {}
+                            }
+                        }
+                    }
+                    trackPoint.setSpeed(extractedSpeed);
 
                     if(gpxPoint.getElevation().isPresent()){
                         trackPoint.setElevation(gpxPoint.getElevation().get().doubleValue());

@@ -5,6 +5,7 @@ import DashboardPage from "./pages/DashboardPage.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import 'leaflet/dist/leaflet.css';
 import TripsPage from "./pages/TripsPage.jsx";
+import ReportPage from "./pages/ReportPage.jsx";
 import AnimationPage from "./pages/AnimationPage.jsx";
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/trips" element={<TripsPage />} />
                     <Route path="/animation" element={<AnimationPage />} />
+                    <Route path="/report" element={<ReportPage />} />
                 </Route>
 
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -1,5 +1,6 @@
 package jasinski.pawel.weather_visualization.utils;
 
+import jasinski.pawel.weather_visualization.dto.EnrichedSegment;
 import jasinski.pawel.weather_visualization.dto.WeatherStats;
 import jasinski.pawel.weather_visualization.entity.TrackPoint;
 import jasinski.pawel.weather_visualization.entity.Weather;
@@ -9,8 +10,8 @@ import java.util.List;
 
 public class WeatherAnalyzer {
 
-    public static WeatherStats analyzeWeather(List<TrackPoint> points) {
-        if (points == null || points.isEmpty()) {
+    public static WeatherStats analyzeWeather(List<EnrichedSegment> segments) {
+        if (segments == null || segments.isEmpty()) {
             return new WeatherStats();
         }
 
@@ -20,28 +21,20 @@ public class WeatherAnalyzer {
         Averager waveH = new Averager(), waveP = new Averager(), windWaveH = new Averager(), windWaveP = new Averager();
         Averager swellH = new Averager(), swellP = new Averager(), oceanCurVel = new Averager(), seaTemp = new Averager();
 
-        Summer rain = new Summer(), snowfall = new Summer();
+        HourlyRateAccumulator rain = new HourlyRateAccumulator(), snowfall = new HourlyRateAccumulator();
         AngleAverager windDir = new AngleAverager(), waveDir = new AngleAverager(), oceanDir = new AngleAverager();
 
-        for (int i = 0; i < points.size(); i++) {
-            TrackPoint p = points.get(i);
-            Weather w = p.getWeather();
+        for (EnrichedSegment seg : segments) {
+            Weather w = seg.p1().getWeather();
             if (w == null) continue;
 
-            // 1. OBLICZANIE WAGI (CZASU TRWANIA)
-            long weightSeconds = 60; // Domyślnie 60s dla ostatniego punktu
-            if (i < points.size() - 1) {
-                TrackPoint nextP = points.get(i + 1);
-                weightSeconds = Math.abs(Duration.between(p.getTime(), nextP.getTime()).getSeconds());
+            long weightSeconds = (long) seg.durationSeconds();
 
-                // Zabezpieczenie przed "Brak Danych" - limitujemy wagę maksymalnie do 1 godziny (3600s)
-                // Zapobiega to sytuacji, gdzie 10-godzinna przerwa w GPS całkowicie niszczy średnią
-                if (weightSeconds > 3600) {
-                    weightSeconds = 3600;
-                }
+            // Zabezpieczenie przed brakiem danych
+            if (weightSeconds > 3600) {
+                weightSeconds = 3600;
             }
 
-            // 2. PRZEKAZYWANIE DANYCH Z WAGĄ CZASOWĄ
             temp.add(w.getTemp(), weightSeconds);
             windSpeed.add(w.getWindSpeed(), weightSeconds);
             dewPoint.add(w.getDewPoint(), weightSeconds);
@@ -61,9 +54,8 @@ public class WeatherAnalyzer {
             oceanCurVel.add(w.getOceanCurrentVelocity(), weightSeconds);
             seaTemp.add(w.getSeaTemperature(), weightSeconds);
 
-            // Sumatory dla opadów
-            rain.add(w.getRain());
-            snowfall.add(w.getSnowfall());
+            rain.add(w.getRain(), weightSeconds);
+            snowfall.add(w.getSnowfall(), weightSeconds);
 
             windDir.add(w.getWindDir(), weightSeconds);
             waveDir.add(w.getWaveDirection(), weightSeconds);
@@ -123,5 +115,20 @@ public class WeatherAnalyzer {
             }
         }
         public Double get() { return Math.round(sum * 100.0) / 100.0; }
+    }
+
+    private static class HourlyRateAccumulator {
+        private double accumulatedSum = 0;
+
+        public void add(Number ratePerHour, long weightSeconds) {
+            if (ratePerHour != null && weightSeconds > 0) {
+                double fractionOfHour = weightSeconds / 3600.0;
+                accumulatedSum += ratePerHour.doubleValue() * fractionOfHour;
+            }
+        }
+
+        public Double get() {
+            return Math.round(accumulatedSum * 100.0) / 100.0;
+        }
     }
 }

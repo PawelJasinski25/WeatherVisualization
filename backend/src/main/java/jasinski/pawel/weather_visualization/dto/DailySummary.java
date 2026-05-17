@@ -6,10 +6,11 @@ import java.util.List;
 
 public record DailySummary(
         LocalDate date,
-        List<TrackPoint> points,
+        List<EnrichedSegment> segments,
         DayMovementStats movementStats,
         WeatherStats overallWeatherStats,
         WeatherStats movingWeatherStats,
+        SpeedStats speedStats,
         AstronomyStats astroStats,
         List<TimelineEvent> timelineEvents
 ) {}

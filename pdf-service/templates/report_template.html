@@ -1,0 +1,419 @@
+{% extends "base.html" %}
+{% import 'macros.html' as m %}
+{% block content %}
+
+
+<!-- STRONA 1: KARTA REJSU-->
+
+<div class="form-title">
+    {{ data.tripName if data.tripName else 'Rejs po Zatoce Botnickiej' }}
+    <br>
+    <span style="font-size: 13px; font-weight: normal; margin-top: 4px; display: inline-block;">
+        {{ data.cruise.startDate if data.cruise else '01.08.2025' }} 
+        — 
+        {{ data.cruise.endDate if data.cruise else '16.09.2025' }}
+    </span>
+</div>
+
+<!-- INFORMACJE O KAPITANIE -->
+<table class="form-table">
+    <tr>
+        <th colspan="4">INFORMACJE O KAPITANIE</th>
+    </tr>
+    <tr>
+        <td colspan="2" style="width: 50%;">
+            <span class="label">Imię i nazwisko:</span>
+            <div class="val">{{ data.captain.name if data.captain else 'Jan Kowalski' }}</div>
+        </td>
+        <td colspan="2" style="width: 50%;">
+            <span class="label">stop. żegl./mot. i nr pat.:</span>
+            <div class="val">{{ data.captain.patent if data.captain else 'Kpt. Jachtowy nr 12345' }}</div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <span class="label">tel.:</span>
+            <div class="val">{{ data.captain.phone if data.captain else '+48 123 456 789' }}</div>
+        </td>
+        <td colspan="2">
+            <span class="label">adres e-mail:</span>
+            <div class="val">{{ data.captain.email if data.captain else 'jan.kowalski@example.com' }}</div>
+        </td>
+    </tr>
+</table>
+
+<!-- INFORMACJE O JACHCIE -->
+<table class="form-table">
+    <tr>
+        <th colspan="4">INFORMACJE O JACHCIE</th>
+    </tr>
+    <tr>
+        <td style="width: 25%;">
+            <span class="label">Nr rej.:</span>
+            <div class="val">{{ data.yacht.regNumber if data.yacht else 'POL 1234' }}</div>
+        </td>
+        <td style="width: 50%;" colspan="2">
+            <span class="label">nazwa jachtu:</span>
+            <div class="val">{{ data.yacht.name if data.yacht else 'Biała Mewa' }}</div>
+        </td>
+        <td style="width: 25%;">
+            <span class="label">Lc [m]:</span>
+            <div class="val">{{ data.yacht.length if data.yacht else '12.5' }}</div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="3">
+            <span class="label">port macierzysty:</span>
+            <div class="val">{{ data.yacht.homePort if data.yacht else 'Gdynia' }}</div>
+        </td>
+        <td>
+            <span class="label">moc silnika [kW]:</span>
+            <div class="val">{{ data.yacht.enginePower if data.yacht else '35' }}</div>
+        </td>
+    </tr>
+</table>
+
+<!-- INFORMACJE O REJSIE -->
+<table class="form-table">
+    <tr>
+        <th colspan="4">INFORMACJE O REJSIE</th>
+    </tr>
+    <tr>
+        <td colspan="4">
+            <span class="label">Wpisu dokonano na podstawie dziennika jachtowego*, nr pływania:</span>
+            <div class="val">{{ data.cruise.logbookNumber if data.cruise else '15/2025' }}</div>
+        </td>
+    </tr>
+    <tr>
+        <td style="width: 35%;">
+            <span class="label">Port zaokrętowania:</span>
+            <div class="val">{{ data.cruise.embarkPort if data.cruise else 'Gdynia' }}</div>
+        </td>
+        <td style="width: 25%;">
+            <span class="label">Data:</span>
+            <div class="val">{{ data.cruise.embarkDate if data.cruise else '01.08.2025' }}</div>
+        </td>
+        <td style="width: 40%;" colspan="2">
+            <span class="label">Pływowy:</span>
+            <div class="val">{{ data.cruise.embarkTidal if data.cruise else 'NIE' }}</div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <span class="label">Port wyokrętowania:</span>
+            <div class="val">{{ data.cruise.disembarkPort if data.cruise else 'Kalmar' }}</div>
+        </td>
+        <td>
+            <span class="label">Data:</span>
+            <div class="val">{{ data.cruise.disembarkDate if data.cruise else '16.09.2025' }}</div>
+        </td>
+        <td colspan="2">
+            <span class="label">Pływowy:</span>
+            <div class="val">{{ data.cruise.disembarkTidal if data.cruise else 'TAK' }}</div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="4">
+            <span class="label">Odwiedzone porty:</span>
+            <div class="val" style="min-height: 24px;">
+                {{ data.cruise.visitedPorts if data.cruise else 'Gdynia, Władysławowo, Łeba, Kalmar, Sztokholm' }}
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <span class="label">W tym liczba portów pływowych:</span>
+            <div class="val">{{ data.cruise.tidalPortsCount if data.cruise else '2' }}</div>
+        </td>
+        <td colspan="2">
+            <span class="label">Liczba dni rejsu:</span>
+            <div class="val">{{ data.cruise.daysCount if data.cruise else '46' }}</div>
+        </td>
+    </tr>
+</table>
+
+<!-- GODZINY / PRZEBIEG -->
+<table class="form-table">
+    <tr>
+        <th colspan="4">GODZINY ŻEGLUGI</th>
+        <th style="width: 20%;">GODZINY POSTOJU</th>
+        <th style="width: 20%;">PRZEBYTO MIL MORSKICH</th>
+    </tr>
+    <tr>
+        <td style="width: 15%;">
+            <span class="label">razem (żagle+silnik)</span>
+            <div class="val">{{ data.hours.total if data.hours else '120 h' }}</div>
+        </td>
+        <td style="width: 15%;">
+            <span class="label">pod żaglami</span>
+            <div class="val">{{ data.hours.sails if data.hours else '80 h' }}</div>
+        </td>
+        <td style="width: 15%;">
+            <span class="label">na silniku</span>
+            <div class="val">{{ data.hours.engine if data.hours else '40 h' }}</div>
+        </td>
+        <td style="width: 15%;">
+            <span class="label">wody pływowe</span>
+            <div class="val">{{ data.hours.tidal if data.hours else '10 h' }}</div>
+        </td>
+        <td>
+            <span class="label">w portach / kotwica</span>
+            <div class="val">{{ data.hours.stopped if data.hours else '30 h' }}</div>
+        </td>
+        <td>
+            <span class="label">łącznie</span>
+            <div class="val">{{ data.distance.nauticalMiles if data.distance else '450 Mm' }}</div>
+        </td>
+    </tr>
+</table>
+
+<!-- INFORMACJE O ZAŁODZE -->
+<table class="form-table">
+    <tr>
+        <th colspan="8">INFORMACJE O ZAŁODZE</th>
+    </tr>
+    <tr style="text-align: center; font-size: 9px; color: #475569; background-color: #f1f5f9;">
+        <td style="width: 4%; vertical-align: middle;">Lp.</td>
+        <td style="width: 21%; vertical-align: middle;">Imię i nazwisko</td>
+        <td style="width: 12%; vertical-align: middle;">stopień<br>żegl./mot.</td>
+        <td style="width: 13%; vertical-align: middle; border-right: 2px solid #000;">funkcja na<br>jachcie</td>
+        <td style="width: 4%; vertical-align: middle;">Lp.</td>
+        <td style="width: 21%; vertical-align: middle;">Imię i nazwisko</td>
+        <td style="width: 12%; vertical-align: middle;">stopień<br>żegl./mot.</td>
+        <td style="width: 13%; vertical-align: middle;">funkcja na<br>jachcie</td>
+    </tr>
+
+    {% for i in range(8) %}
+    <tr style="height: 24px;">
+        {% set left_idx = i %}
+        <td style="text-align: center; vertical-align: middle;">
+            <span class="val" style="font-size: 11px;">{{ left_idx + 1 }}</span>
+        </td>
+        <td style="vertical-align: middle;">
+            <span class="val">
+                {{ data.crew[left_idx].name if data.crew and data.crew|length > left_idx else ('Anna Nowak' if i == 0 else ('Piotr Wiśniewski' if i == 1 else '')) }}
+            </span>
+        </td>
+        <td style="vertical-align: middle;">
+            <span class="val">
+                {{ data.crew[left_idx].patent if data.crew and data.crew|length > left_idx else ('JSM' if i == 0 else ('ŻJ' if i == 1 else '')) }}
+            </span>
+        </td>
+        <td style="vertical-align: middle; border-right: 2px solid #000;">
+            <span class="val">
+                {{ data.crew[left_idx].function if data.crew and data.crew|length > left_idx else ('I Oficer' if i == 0 else ('Załoga' if i == 1 else '')) }}
+            </span>
+        </td>
+
+        {% set right_idx = i + 8 %}
+        <td style="text-align: center; vertical-align: middle;">
+            <span class="val" style="font-size: 11px;">{{ right_idx + 1 }}</span>
+        </td>
+        <td style="vertical-align: middle;">
+            <span class="val">
+                {{ data.crew[right_idx].name if data.crew and data.crew|length > right_idx else ('Katarzyna Kowalska' if i == 0 else ('Michał Lewandowski' if i == 1 else '')) }}
+            </span>
+        </td>
+        <td style="vertical-align: middle;">
+            <span class="val">
+                {{ data.crew[right_idx].patent if data.crew and data.crew|length > right_idx else ('ŻJ' if i == 0 else ('-' if i == 1 else '')) }}
+            </span>
+        </td>
+        <td style="vertical-align: middle;">
+            <span class="val">
+                {{ data.crew[right_idx].function if data.crew and data.crew|length > right_idx else ('Załoga' if i == 0 else ('Załoga' if i == 1 else '')) }}
+            </span>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<div class="page-break"></div>
+
+
+<!-- STRONA 2: PODSUMOWANIE TRASY               -->
+<div>
+    <div class="report-header">
+        <h1>PODSUMOWANIE TRASY</h1>
+        <p>{{ data.tripName }}</p>
+    </div>
+
+    <table style="width: 100%; border-collapse: collapse; border: none; margin-bottom: 5px;">
+        <tr>
+            <td style="width: 50%; vertical-align: top; padding-right: 5px;">
+
+                <div class="report-mock-section" style="margin-bottom: 5px;">
+                    <h3>Sumaryczny czas trasy</h3>
+                    <table class="report-table">
+                        <thead>
+                        <tr>
+                            <th>W ruchu</th>
+                            <th>Postoje</th>
+                            <th>Brak danych</th> <th>Łącznie</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% set m_sec = data.overallMovement.movingSeconds if data.overallMovement.movingSeconds else 0 %}
+                        {% set s_sec = data.overallMovement.stoppedSeconds if data.overallMovement.stoppedSeconds else 0 %}
+                        {% set g_sec = data.overallMovement.gapSeconds if data.overallMovement.gapSeconds else 0 %}
+                        <tr>
+                            <td><b>{{ m_sec | format_seconds }}</b></td>
+                            <td><b>{{ s_sec | format_seconds }}</b></td>
+                            <td><b>{{ g_sec | format_seconds }}</b></td>
+                            <td><b>{{ (m_sec + s_sec + g_sec) | format_seconds }}</b></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="report-mock-section" style="margin-bottom: 5px;">
+                    <h3>Osiągi jednostki</h3>
+                    {{ m.render_speed_table(data.overallSpeed) }}
+                </div>
+
+                <div class="report-mock-section" style="margin-bottom: 0;">
+                    <h3>Statystyki pogodowe</h3>
+                    {{ m.render_weather_table(data.overallWeather, data.overallMovingWeather) }}
+                </div>
+
+            </td>
+
+            <td style="width: 50%; vertical-align: top; padding-left: 5px;">
+
+                {% if data.overall_wind_rose or data.overall_wave_rose %}
+                <div class="chart-block" style="margin-bottom: 5px; padding: 4px;">
+                    <table class="layout-table" style="width: 100%; table-layout: fixed;">
+                        <tr>
+                            <td style="width: 50%; text-align: center; vertical-align: middle;">
+                                {% if data.overall_wind_rose %}
+                                <img src="data:image/png;base64,{{ data.overall_wind_rose }}" style="width: 100%; height: auto; display: block; margin: 0 auto;">
+                                {% endif %}
+                            </td>
+                            <td style="width: 50%; text-align: center; vertical-align: middle;">
+                                {% if data.overall_wave_rose %}
+                                <img src="data:image/png;base64,{{ data.overall_wave_rose }}" style="width: 100%; height: auto; display: block; margin: 0 auto;">
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                {% endif %}
+
+                {% if data.overall_route_map %}
+                <div class="chart-block" style="margin-bottom: 0; padding: 4px;">
+                    <h3 style="margin-bottom: 4px;">Mapa trasy</h3>
+                    <img class="chart-img" src="data:image/png;base64,{{ data.overall_route_map }}" style="width: 100%; height: auto; display: block; border-radius: 4px;">
+                </div>
+                {% endif %}
+
+            </td>
+        </tr>
+    </table>
+
+    {% if data.overall_meteogram_chart %}
+    <div class="chart-block" style="margin-bottom: 5px;">
+        <h3>Meteogram</h3>
+        <img class="chart-img" src="data:image/png;base64,{{ data.overall_meteogram_chart }}" style="padding: 0; background: transparent; max-height: 32vh;">
+    </div>
+    {% endif %}
+
+</div>
+
+
+<!-- STRONY 3+: PODSUMOWANIA DNI                -->
+{% for day in data.display_summaries %}
+
+{% if day.is_gap %}
+<div class="day-container" style="page-break-inside: avoid; text-align: center; padding: 40px 20px; background-color: #f8fafc; border: 2px dashed #cbd5e1; margin-bottom: 10px;">
+    <h3 style="color: #64748b; margin: 0 0 10px 0;">BRAK DANYCH</h3>
+    <p style="color: #94a3b8; font-size: 14px; margin: 0;">
+        {% if day.count == 1 %}
+        Dzień {{ day.start_index }} ({{ day.start_date }})
+        {% else %}
+        Dni {{ day.start_index }} – {{ day.end_index }} <br>
+        (od {{ day.start_date }} do {{ day.end_date }})
+        {% endif %}
+    </p>
+</div>
+
+{% else %}
+<div class="day-container">
+    <div class="report-header">
+        <h2>Dzień {{ day.day_index }} ({{ day.date }})</h2>
+    </div>
+
+    {% if day.timeline_chart or day.astro_timeline_chart %}
+    <div class="chart-block" style="margin-bottom: 5px; padding: 5px 10px;">
+        {% if day.timeline_chart %}
+        <img class="chart-img small-img" src="data:image/png;base64,{{ day.timeline_chart }}" style="padding: 0; background: transparent;">
+        {% endif %}
+
+        {% if day.astro_timeline_chart %}
+        <img class="chart-img small-img" src="data:image/png;base64,{{ day.astro_timeline_chart }}" style="padding: 0; background: transparent; margin-top: 2px;">
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <table style="width: 100%; border-collapse: collapse; border: none; margin-bottom: 5px;">
+        <tr>
+            <td style="width: 50%; vertical-align: top; padding-right: 5px;">
+
+                {% if day.speedStats %}
+                <div class="report-mock-section" style="margin-bottom: 5px;">
+                    <h3>Parametry nawigacyjne (SOG)</h3>
+                    {{ m.render_speed_table(day.speedStats) }}
+                </div>
+                {% endif %}
+
+                {% if day.overallWeatherStats %}
+                <div class="report-mock-section" style="margin-bottom: 0;">
+                    <h3>Statystyki pogodowe</h3>
+                    {{ m.render_weather_table(day.overallWeatherStats, day.movingWeatherStats) }}
+                </div>
+                {% endif %}
+            </td>
+
+            <td style="width: 50%; vertical-align: top; padding-left: 5px;">
+                {% if day.wind_rose or day.wave_rose %}
+                <div class="chart-block" style="margin-bottom: 5px; padding: 4px;">
+                    <table class="layout-table" style="width: 100%; table-layout: fixed;">
+                        <tr>
+                            <td style="width: 50%; text-align: center; vertical-align: middle;">
+                                {% if day.wind_rose %}
+                                <img src="data:image/png;base64,{{ day.wind_rose }}" style="width: 100%; height: auto; display: block; margin: 0 auto;">
+                                {% endif %}
+                            </td>
+
+                            <td style="width: 50%; text-align: center; vertical-align: middle;">
+                                {% if day.wave_rose %}
+                                <img src="data:image/png;base64,{{ day.wave_rose }}" style="width: 100%; height: auto; display: block; margin: 0 auto;">
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                {% endif %}
+
+                {% if day.route_map %}
+                <div class="chart-block" style="margin-bottom: 0; padding: 4px;">
+                    <h3 style="margin-bottom: 4px;">Mapa trasy</h3>
+                    <img src="data:image/png;base64,{{ day.route_map }}" style="width: 100%; height: auto; display: block; border-radius: 4px;">
+                </div>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    {% if day.meteogram_chart %}
+    <div class="chart-block" style="margin-bottom: 5px;">
+        <h3>Meteogram</h3>
+        <img class="chart-img" src="data:image/png;base64,{{ day.meteogram_chart }}" style="padding: 0; background: transparent; max-height: 32vh;">
+    </div>
+    {% endif %}
+
+</div>
+{% endif %}
+
+{% endfor %}
+
+{% endblock %}

@@ -19,6 +19,7 @@ public class TrackPoint {
 
     private Instant time;
     private double elevation;
+    private Double speed;
 
     @Column(columnDefinition = "geography(Point, 4326)")
     private Point location;
@@ -88,5 +89,13 @@ public class TrackPoint {
 
     public void setWeather(Weather weather) {
         this.weather = weather;
+    }
+
+    public Double getSpeed() {
+        return speed;
+    }
+
+    public void setSpeed(Double speed) {
+        this.speed = speed;
     }
 }

@@ -8,7 +8,8 @@ public record TimelineEvent(
         Instant start,
         Instant end,
         double lat,
-        double lon
+        double lon,
+        String placeName
 ) {
     public long durationSeconds() {
         return Math.abs(Duration.between(start, end).getSeconds());

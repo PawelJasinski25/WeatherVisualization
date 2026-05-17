@@ -14,6 +14,8 @@ public record AstronomyStats(
         LocalTime civilDusk,
         LocalTime nauticalDusk,
         LocalTime astronomicalDusk,
+        LocalTime moonRise,
+        LocalTime moonSet,
 
         TrackPoint astronomicalDawnPt,
         TrackPoint nauticalDawnPt,
@@ -23,5 +25,7 @@ public record AstronomyStats(
         TrackPoint sunsetPt,
         TrackPoint civilDuskPt,
         TrackPoint nauticalDuskPt,
-        TrackPoint astronomicalDuskPt
+        TrackPoint astronomicalDuskPt,
+        TrackPoint moonRisePt,
+        TrackPoint moonSetPt
 ) {}

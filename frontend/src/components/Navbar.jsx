@@ -43,7 +43,12 @@ const Navbar = ({ onOpenUpload, activeTab = 'map', currentTripId = null }) => {
                     🎞️ Animacja
                 </button>
                 <button className="navbar-tab">📊 Wykresy</button>
-                <button className="navbar-tab">📄 Raport</button>
+                <button
+                    className={`navbar-tab ${activeTab === 'report' ? 'active' : ''}`}
+                    onClick={() => navigate('/report', { state: { tripId: currentTripId } })}
+                >
+                    📄 Raport
+                </button>
             </div>
 
             <div className="navbar-right">

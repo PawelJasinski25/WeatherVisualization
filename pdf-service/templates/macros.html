@@ -1,0 +1,156 @@
+{% macro render_weather_table(overall, moving) %}
+<table class="report-table">
+    <thead>
+    <tr>
+        <th style="width: 33%">Parametr</th>
+        <th>Średnia</th>
+        {% if moving %}
+        <th>W ruchu</th>
+        {% endif %}
+        <th>Maks.</th>
+    </tr>
+    </thead>
+    <tbody>
+    <!-- SEKCJA: Temp. i Powietrze -->
+    <tr>
+        <th colspan="{{ 4 if moving else 3 }}" style="background-color: #e2e8f0; color: #000;">
+            Temp. i Powietrze
+        </th>
+    </tr>
+    <tr>
+        <td>Temperatura</td>
+        <td><b>{{ overall.avgTemp | format_val('°C') }}</b></td>
+        {% if moving %}
+        <td><b>{{ moving.avgTemp | format_val('°C') }}</b></td>
+        {% endif %}
+        <td><b>{{ overall.maxTemp | format_val('°C') }}</b></td>
+    </tr>
+    <tr>
+        <td>Wilgotność </td>
+        <td><b>{{ overall.avgHumidity | format_val('%', 0) }}</b></td>
+        {% if moving %}
+        <td><b>{{ moving.avgHumidity | format_val('%', 0) }}</b></td>
+        {% endif %}
+        <td><b>{{ overall.maxHumidity | format_val('%', 0) }}</b></td>
+    </tr>
+    <tr>
+        <td>Ciśnienie</td>
+        <td><b>{{ overall.avgPressure | format_val('hPa') }}</b></td>
+        {% if moving %}
+        <td><b>{{ moving.avgPressure | format_val('hPa') }}</b></td>
+        {% endif %}
+        <td><b>{{ overall.maxPressure | format_val('hPa') }}</b></td>
+    </tr>
+
+    <!-- SEKCJA: Wiatr -->
+    <tr>
+        <th colspan="{{ 4 if moving else 3 }}" style="background-color: #e2e8f0; color: #000;">
+            Wiatr
+        </th>
+    </tr>
+    <tr>
+        <td>Siła wiatru</td>
+        <td><b>{{ overall.avgWindSpeed | format_val('km/h') }}</b></td>
+        {% if moving %}
+        <td><b>{{ moving.avgWindSpeed | format_val('km/h') }}</b></td>
+        {% endif %}
+        <td><b>{{ overall.maxWindSpeed | format_val('km/h') }}</b></td>
+    </tr>
+    <tr>
+        <td>Porywy wiatru</td>
+        <td><b>{{ overall.avgWindGusts | format_val('km/h') }}</b></td>
+        {% if moving %}
+        <td><b>{{ moving.avgWindGusts | format_val('km/h') }}</b></td>
+        {% endif %}
+        <td><b>{{ overall.maxWindGusts | format_val('km/h') }}</b></td>
+    </tr>
+
+
+    <!-- SEKCJA: Opady / Chmury -->
+    <tr>
+        <th colspan="{{ 4 if moving else 3 }}" style="background-color: #e2e8f0; color: #000;">
+            Opady / Chmury
+        </th>
+    </tr>
+    <tr>
+        <td>Deszcz (suma)</td>
+        <td><b>{{ overall.sumRain | format_val('mm') }}</b></td>
+        {% if moving %}
+        <td><b>{{ moving.sumRain | format_val('mm') }}</b></td>
+        {% endif %}
+        <td>--</td> </tr>
+    <tr>
+        <td>Śnieg (suma)</td>
+        <td><b>{{ overall.sumSnowfall | format_val('cm') }}</b></td>
+        {% if moving %}
+        <td><b>{{ moving.sumSnowfall | format_val('cm') }}</b></td>
+        {% endif %}
+        <td>--</td> </tr>
+    <tr>
+        <td>Zachmurzenie</td>
+        <td><b>{{ overall.avgCloudCover | format_val('%', 0) }}</b></td>
+        {% if moving %}
+        <td><b>{{ moving.avgCloudCover | format_val('%', 0) }}</b></td>
+        {% endif %}
+        <td><b>{{ overall.maxCloudCover | format_val('%', 0) }}</b></td>
+    </tr>
+
+    <tr>
+        <th colspan="{{ 4 if moving else 3 }}" style="background-color: #e2e8f0; color: #000;">
+            Morze
+        </th>
+    </tr>
+    <tr>
+        <td>Temperatura morza</td>
+        <td><b>{{ overall.avgSeaTemperature | format_val('°C') }}</b></td>
+        {% if moving %}
+        <td><b>{{ moving.avgSeaTemperature | format_val('°C') }}</b></td>
+        {% endif %}
+        <td><b>{{ overall.maxSeaTemperature | format_val('°C') }}</b></td>
+    </tr>
+    <tr>
+        <td>Fale (wys. | okr.)</td>
+        <td><b>{{ overall.avgWaveHeight | format_val('m') }} | {{ overall.avgWavePeriod | format_val('s') }}</b></td>
+        {% if moving %}
+        <td><b>{{ moving.avgWaveHeight | format_val('m') }} | {{ moving.avgWavePeriod | format_val('s') }}</b></td>
+        {% endif %}
+        <td><b>{{ overall.maxWaveHeight | format_val('m') }} | {{ overall.maxWavePeriod | format_val('s') }}</b></td>
+    </tr>
+    <tr>
+        <td>Fale martwe (wys. | okr.)</td>
+        <td><b>{{ overall.avgSwellWaveHeight | format_val('m') }} | {{ overall.avgSwellWavePeriod | format_val('s') }}</b></td>
+        {% if moving %}
+        <td><b>{{ moving.avgSwellWaveHeight | format_val('m') }} | {{ moving.avgSwellWavePeriod | format_val('s') }}</b></td>
+        {% endif %}
+        <td><b>{{ overall.maxSwellWaveHeight | format_val('m') }} | {{ overall.maxSwellWavePeriod | format_val('s') }}</b></td>
+    </tr>
+    <tr>
+        <td>Prądy</td>
+        <td><b>{{ overall.avgOceanCurrentVelocity | format_val('m/s') }}</b></td>
+        {% if moving %}
+        <td><b>{{ moving.avgOceanCurrentVelocity | format_val('m/s') }}</b></td>
+        {% endif %}
+        <td><b>{{ overall.maxOceanCurrentVelocity | format_val('m/s') }}</b></td>
+    </tr>
+    </tbody>
+</table>
+{% endmacro %}
+
+{% macro render_speed_table(speed) %}
+<table class="report-table">
+    <thead>
+    <tr>
+        <th style="width: 33%;">Przebyty dystans</th>
+        <th style="width: 34%;">Prędkość średnia</th>
+        <th style="width: 33%;">Prędkość maks</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td><b>{{ speed.distanceKm | format_val }} km</b></td>
+        <td><b>{{ speed.avgSpeed | format_val }} km/h</b></td>
+        <td><b>{{ speed.maxSpeed | format_val }} km/h</b></td>
+    </tr>
+    </tbody>
+</table>
+{% endmacro %}

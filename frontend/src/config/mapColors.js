@@ -27,5 +27,7 @@ export const getEventDotColor = (type) => {
     if (type === 'ZMIERZCH CYWILNY') return 'rgb(210, 30, 30)';
     if (type === 'ZMIERZCH NAUTYCZNY') return 'rgb(110, 20, 160)';
     if (type === 'ZMIERZCH ASTRONOMICZNY') return 'rgb(8, 12, 25)';
+    if (type === 'WSCHÓD KSIĘŻYCA') return 'rgb(92,213,70)';
+    if (type === 'ZACHÓD KSIĘŻYCA') return 'rgb(18,92,12)';
     return '#000';
 };

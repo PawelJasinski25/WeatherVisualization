@@ -1,0 +1,168 @@
+
+.report-page-wrapper {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    background-color: #f0f0f0;
+    height: 100%;
+}
+
+/* LEWA STRONA */
+.report-main {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    padding: clamp(1rem, 2vw, 2rem);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* KONTENER ZE SCROLLEM */
+.report-scroll-area {
+    width: 100%;
+    max-width: 68rem;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-radius: 0.25rem;
+    box-sizing: border-box;
+}
+
+/* PRAWA STRONA (Sidebar) */
+.report-sidebar {
+    width: clamp(18rem, 25vw, 24rem);
+    background-color: rgba(255, 255, 255, 0.98);
+    border-left: 1px solid #e2e8f0;
+    box-shadow: -0.25rem 0 1.25rem rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    padding: clamp(1rem, 2vw, 1.5rem);
+    overflow: hidden;
+    z-index: 10;
+    box-sizing: border-box;
+}
+
+.report-sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+
+.a4-paper {
+    width: 100%;
+    min-height: 1122px;
+    height: auto;
+    margin-bottom: 2rem;
+    background: #ffffff;
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+    padding: clamp(1.5rem, 4vw, 3.5rem);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: #333;
+    border-radius: 0.25rem;
+    box-sizing: border-box;
+}
+
+.report-header {
+    border-bottom: 2px solid #111;
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+}
+
+.report-header h1 {
+    margin: 0;
+    font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+    text-transform: uppercase;
+}
+
+.report-mock-section {
+    margin-bottom: 2rem;
+    padding: 1.25rem;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 0.5rem;
+}
+
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    background-color: #fff;
+}
+
+.report-table th, .report-table td {
+    border: 1px solid #cbd5e1;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+}
+
+.report-table th {
+    background-color: #f1f5f9;
+    font-weight: 600;
+    color: #334155;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+}
+
+.report-table tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+
+@media print {
+    html, body, #root, .report-page-wrapper, .report-main {
+        height: auto !important;
+        overflow: visible !important;
+        position: static !important;
+        background: white !important;
+    }
+
+    .report-scroll-area {
+        overflow: visible !important;
+        height: auto !important;
+        max-width: none !important;
+        width: 100% !important;
+        padding: 0 !important;
+    }
+
+    .report-sidebar,
+    .panel-btn,
+    button,
+    .no-print {
+        display: none !important;
+    }
+
+    .a4-paper {
+        margin: 0 !important;
+        padding: 15mm !important;
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        min-height: 0 !important;
+        page-break-after: always !important;
+        break-after: page !important;
+    }
+    .report-table {
+        page-break-inside: auto !important;
+    }
+
+    .report-table tr {
+        page-break-inside: avoid !important;
+    }
+
+    .report-table thead {
+        display: table-header-group !important;
+    }
+
+
+    .report-mock-section {
+        page-break-inside: avoid !important;
+        border: 1px solid #eee !important;
+        background: white !important;
+    }
+
+    @page {
+        size: A4 portrait;
+        margin: 0;
+    }
+}

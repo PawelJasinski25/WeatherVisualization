@@ -35,7 +35,7 @@ const MetricMarker = ({ pt, metricId, index }) => {
             <Marker longitude={pt.lng} latitude={pt.lat} offset={[dx, dy]} anchor="center">
                 <svg
                     width="20" height="20" viewBox="0 0 24 24"
-                    style={{ transform: `rotate(${safeDir - 90}deg) scale(1.2, 0.6)`, transformOrigin: 'center', overflow: 'visible' }}
+                    style={{ transform: `rotate(${safeDir + 90}deg) scale(1.2, 0.6)`, transformOrigin: 'center', overflow: 'visible' }}
                 >
                     <path d="M3 3 L22 12 L3 21 L8 12 Z" fill="#000000" stroke={themeColor} strokeWidth={outlineWidth} strokeLinejoin="round" />
                 </svg>

@@ -56,6 +56,8 @@ public class TripMapService {
             addMarkerIfPresent(markers, "ZMIERZCH CYWILNY", astro.civilDuskPt(), astro.civilDusk(), currentDate);
             addMarkerIfPresent(markers, "ZMIERZCH NAUTYCZNY", astro.nauticalDuskPt(), astro.nauticalDusk(), currentDate);
             addMarkerIfPresent(markers, "ZMIERZCH ASTRONOMICZNY", astro.astronomicalDuskPt(), astro.astronomicalDusk(), currentDate);
+            addMarkerIfPresent(markers, "WSCHÓD KSIĘŻYCA", astro.moonRisePt(), astro.moonRise(), currentDate);
+            addMarkerIfPresent(markers, "ZACHÓD KSIĘŻYCA", astro.moonSetPt(), astro.moonSet(), currentDate);
 
             // Mapowanie punktów i wyliczanie fazy dnia
             for (TrackPoint point : dayPoints) {
@@ -138,7 +140,7 @@ public class TripMapService {
                 w.getCloudCoverMid(), w.getCloudCoverHigh(), w.getWindDir(), w.getSnowfall(),
                 w.getWaveHeight(), w.getWavePeriod(), w.getWaveDirection(), w.getWindWaveHeight(),
                 w.getWindWavePeriod(), w.getSwellWaveHeight(), w.getSwellWavePeriod(),
-                w.getOceanCurrentVelocity(), w.getSeaTemperature(), w.getOceanCurrentDirection()
+                w.getOceanCurrentVelocity(), w.getSeaTemperature(), w.getOceanCurrentDirection(), null
         );
     }
 }

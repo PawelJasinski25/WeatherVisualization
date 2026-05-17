@@ -5,7 +5,6 @@ import jasinski.pawel.weather_visualization.service.GeoNamesService;
 import jasinski.pawel.weather_visualization.service.ReportService;
 import jasinski.pawel.weather_visualization.service.TripMapService;
 import jasinski.pawel.weather_visualization.service.TripService;
-import jasinski.pawel.weather_visualization.utils.TimelineChartGenerator;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.time.ZoneId;
 import java.util.List;
 
 
@@ -70,6 +68,15 @@ public class TripController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/{id}/report-data")
+    public ResponseEntity<TripReportDataDto> getReportData(@PathVariable Long id, Authentication authentication) {
+
+        String email = authentication.getName();
+        TripReportDataDto reportData = reportService.getTripReportData(id, email);
+
+        return ResponseEntity.ok(reportData);
+    }
+
 
 
     @GetMapping("/{id}/report/csv")
@@ -83,29 +90,21 @@ public class TripController {
         return ResponseEntity.ok().headers(headers).body(report.content());
     }
 
-    @GetMapping(value = "/{tripId}/timeline/{dayIndex}/png", produces = MediaType.IMAGE_PNG_VALUE)
-    public ResponseEntity<byte[]> getDailyTimelineImage(@PathVariable Long tripId, @PathVariable int dayIndex) {
-        List<DailySummary> summaries = reportService.generateDailySummaries(tripId);
+    public record PdfDownloadRequest(List<String> modules, java.util.Map<String, Object> reportData) {}
 
-        if (dayIndex < 0 || dayIndex >= summaries.size()) {
-            return ResponseEntity.notFound().build();
-        }
+    @PostMapping("/{tripId}/download-pdf")
+    public ResponseEntity<byte[]> downloadReport(
+            @PathVariable Long tripId,
+            @RequestBody PdfDownloadRequest request,
+            Authentication authentication) {
 
-        DailySummary summary = summaries.get(dayIndex);
+        String email = authentication.getName();
 
-        byte[] imageBytes = TimelineChartGenerator.generateDailyTimelineChart(
-                summary.date(), summary.timelineEvents(), ZoneId.of("Europe/Warsaw"), geoNamesService
-        );
-
-        return ResponseEntity.ok(imageBytes);
-    }
-
-    @GetMapping(value = "/{tripId}/timeline/all/zip", produces = "application/zip")
-    public ResponseEntity<byte[]> getAllTimelinesZip(@PathVariable Long tripId) {
-        byte[] zipBytes = reportService.generateAllTimelinesZip(tripId);
+        byte[] pdfContent = reportService.generatePdfReport(tripId, email, request.reportData());
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"wykresy_" + tripId + ".zip\"")
-                .body(zipBytes);
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"raport_trasy_" + tripId + ".pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdfContent);
     }
 }
