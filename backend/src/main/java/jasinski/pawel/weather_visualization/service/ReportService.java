@@ -101,8 +101,9 @@ public class ReportService {
     }
 
     public TripReportDataDto getTripReportData(Long tripId, String email) {
-        Trip trip = tripService.getUserTrips(email).stream()
-                .filter(t -> t.getId().equals(tripId))
+
+        jasinski.pawel.weather_visualization.dto.TripResponseDto trip = tripService.getUserTrips(email).stream()
+                .filter(t -> t.id().equals(tripId))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień"));
 
@@ -129,7 +130,7 @@ public class ReportService {
                 .map(ReportDailySummaryDto::from)
                 .toList();
 
-        return new TripReportDataDto(trip.getName(), overallMovement, overallSpeed, overallWeather, overallMovingWeather, reportDailySummaries);
+        return new TripReportDataDto(trip.name(), overallMovement, overallSpeed, overallWeather, overallMovingWeather, reportDailySummaries);
     }
 
     private List<EnrichedSegment> createEnrichedSegments(
@@ -171,8 +172,8 @@ public class ReportService {
     }
 
     public ReportResource getCsvReportResource(Long tripId, String email) {
-        Trip trip = tripService.getUserTrips(email).stream()
-                .filter(t -> t.getId().equals(tripId))
+        jasinski.pawel.weather_visualization.dto.TripResponseDto trip = tripService.getUserTrips(email).stream()
+                .filter(t -> t.id().equals(tripId))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień"));
 
@@ -184,7 +185,7 @@ public class ReportService {
         System.arraycopy(bom, 0, finalBytes, 0, bom.length);
         System.arraycopy(csvBytes, 0, finalBytes, bom.length, csvBytes.length);
 
-        String fileName = trip.getName().replaceAll("(?i)\\.gpx$", "") + ".csv";
+        String fileName = trip.name().replaceAll("(?i)\\.gpx$", "") + ".csv";
 
         return new ReportResource(finalBytes, fileName);
     }

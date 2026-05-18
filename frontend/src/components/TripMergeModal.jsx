@@ -1,0 +1,216 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import api from '../api/axios.js';
+import '../styles/modal.css';
+
+const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => {
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [timeWindows, setTimeWindows] = useState({});
+    const [newTripName, setNewTripName] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    const formatToInputDateTime = (dateStr) => {
+        if (!dateStr) return '';
+        try {
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+                const tzOffset = d.getTimezoneOffset() * 60000;
+                return new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+            }
+        } catch (e) { console.error(e); }
+        return '';
+    };
+
+    useEffect(() => {
+        if (isOpen && availableTrips) {
+            setSelectedIds([]);
+            setNewTripName('');
+            setIsProcessing(false);
+
+            const initialWindows = {};
+            availableTrips.forEach(trip => {
+                initialWindows[trip.id] = {
+                    start: formatToInputDateTime(trip.startTime),
+                    end: formatToInputDateTime(trip.endTime),
+                    minOriginal: formatToInputDateTime(trip.startTime),
+                    maxOriginal: formatToInputDateTime(trip.endTime)
+                };
+            });
+            setTimeWindows(initialWindows);
+        }
+    }, [isOpen, availableTrips]);
+
+
+    const sortedTrips = useMemo(() => {
+        if (!availableTrips) return [];
+        return [...availableTrips].sort((a, b) => {
+            const timeA = a.startTime ? new Date(a.startTime).getTime() : 0;
+            const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
+            return timeA - timeB;
+        });
+    }, [availableTrips]);
+
+    if (!isOpen) return null;
+
+    const handleCheckboxChange = (id) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
+    };
+
+    const handleTimeChange = (id, field, value) => {
+        setTimeWindows(prev => ({
+            ...prev,
+            [id]: { ...prev[id], [field]: value }
+        }));
+    };
+
+    const handleTimeBlur = (id, field) => {
+        setTimeWindows(prev => {
+            const current = prev[id];
+            let newValue = current[field];
+
+            if (field === 'start') {
+                if (newValue < current.minOriginal) newValue = current.minOriginal;
+                if (newValue > current.end) newValue = current.end;
+            } else if (field === 'end') {
+                if (newValue > current.maxOriginal) newValue = current.maxOriginal;
+                if (newValue < current.start) newValue = current.start;
+            }
+
+            return { ...prev, [id]: { ...current, [field]: newValue } };
+        });
+    };
+
+    const handleMergeSubmit = async (e) => {
+        e.preventDefault();
+
+        if (selectedIds.length < 2) {
+            alert("Wybierz co najmniej 2 trasy do połączenia.");
+            return;
+        }
+        if (!newTripName.trim()) {
+            alert("Proszę podać nazwę dla nowej trasy.");
+            return;
+        }
+
+        for (const id of selectedIds) {
+            const tw = timeWindows[id];
+            if (tw.start < tw.minOriginal || tw.end > tw.maxOriginal) {
+                alert("Daty wykraczają poza oryginalne ramy czasowe!");
+                return;
+            }
+        }
+
+        setIsProcessing(true);
+
+        const segments = selectedIds.map(id => ({
+            tripId: id,
+            trimStartTime: new Date(timeWindows[id].start).toISOString(),
+            trimEndTime: new Date(timeWindows[id].end).toISOString()
+        }));
+
+        try {
+            await api.post('/trips/merge', { newTripName: newTripName.trim(), segments });
+            onMergeSuccess();
+            onClose();
+        } catch (error) {
+            console.error("Błąd podczas łączenia tras:", error);
+            alert("Wystąpił błąd podczas scalania tras.");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content modal-merge-width">
+                <div className="modal-header">
+                    <h3>Połącz trasy GPX</h3>
+                    <button type="button" onClick={onClose} className="modal-close-btn">&times;</button>
+                </div>
+
+                <form onSubmit={handleMergeSubmit}>
+                    <div className="modal-body custom-gap">
+                        <div className="form-group">
+                            <label className="form-label">Nazwa nowej, połączonej trasy:</label>
+                            <input
+                                type="text"
+                                className="interactive-input merge-name-input"
+                                placeholder="Nazwa"
+                                value={newTripName}
+                                onChange={e => setNewTripName(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Wybierz pliki do połączenia dostosuj ich zakresy czasowe:</label>
+                            <div className="merge-trips-list">
+                                {sortedTrips.map(trip => {
+                                    const isChecked = selectedIds.includes(trip.id);
+                                    const tw = timeWindows[trip.id];
+                                    return (
+                                        <div key={trip.id} className={`merge-trip-row ${isChecked ? 'active-row' : ''}`}>
+
+                                            <div className="merge-trip-info">
+                                                <input
+                                                    type="checkbox"
+                                                    id={`merge-trip-${trip.id}`}
+                                                    checked={isChecked}
+                                                    onChange={() => handleCheckboxChange(trip.id)}
+                                                    className="merge-checkbox"
+                                                />
+                                                <label htmlFor={`merge-trip-${trip.id}`} className="merge-trip-name">
+                                                    {trip.name}
+                                                </label>
+                                            </div>
+
+                                            <div className="merge-trip-dates">
+                                                <div className="date-input-group">
+                                                    <span className="date-label">OD:</span>
+                                                    <input
+                                                        type="datetime-local"
+                                                        value={tw?.start || ''}
+                                                        min={tw?.minOriginal}
+                                                        max={tw?.end}
+                                                        onChange={(e) => handleTimeChange(trip.id, 'start', e.target.value)}
+                                                        onBlur={() => handleTimeBlur(trip.id, 'start')}
+                                                        disabled={!isChecked}
+                                                        className={`merge-date-picker ${isChecked ? 'picker-enabled' : ''}`}
+                                                    />
+                                                </div>
+                                                <div className="date-input-group">
+                                                    <span className="date-label">DO:</span>
+                                                    <input
+                                                        type="datetime-local"
+                                                        value={tw?.end || ''}
+                                                        min={tw?.start}
+                                                        max={tw?.maxOriginal}
+                                                        onChange={(e) => handleTimeChange(trip.id, 'end', e.target.value)}
+                                                        onBlur={() => handleTimeBlur(trip.id, 'end')}
+                                                        disabled={!isChecked}
+                                                        className={`merge-date-picker ${isChecked ? 'picker-enabled' : ''}`}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="modal-footer">
+                        <button type="button" onClick={onClose} disabled={isProcessing} className="modal-btn btn-cancel">
+                            Anuluj
+                        </button>
+                        <button type="submit" disabled={isProcessing || selectedIds.length < 2 || !newTripName} className="modal-btn btn-submit">
+                            {isProcessing ? "Przetwarzanie..." : "Połącz wybrane trasy"}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+export default TripMergeModal;

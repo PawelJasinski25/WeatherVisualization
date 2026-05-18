@@ -2,6 +2,8 @@ package jasinski.pawel.weather_visualization.service;
 
 import io.jenetics.jpx.*;
 import jakarta.transaction.Transactional;
+import jasinski.pawel.weather_visualization.dto.TripMergeRequestDto;
+import jasinski.pawel.weather_visualization.dto.TripResponseDto;
 import jasinski.pawel.weather_visualization.entity.TrackPoint;
 import jasinski.pawel.weather_visualization.entity.Trip;
 import jasinski.pawel.weather_visualization.entity.User;
@@ -107,14 +109,18 @@ public class TripService {
         Map<String, Weather> savedWeatherCache = new HashMap<>();
         Set<String> processedGridHours = new HashSet<>();
 
+        Instant tripStart = null;
+        Instant tripEnd = null;
+
         for(Track track : gpx.getTracks()) {
             for(TrackSegment segment : track.getSegments()) {
                 currentSegmentId++;
-
                 for(WayPoint gpxPoint : segment.getPoints()) {
-                    if(gpxPoint.getTime().isEmpty()){
-                        continue;
-                    }
+                    if(gpxPoint.getTime().isEmpty()) continue;
+
+                    Instant ptTime = gpxPoint.getTime().get();
+                    if (tripStart == null || ptTime.isBefore(tripStart)) tripStart = ptTime;
+                    if (tripEnd == null || ptTime.isAfter(tripEnd)) tripEnd = ptTime;
 
                     TrackPoint trackPoint = new TrackPoint();
                     trackPoint.setTrip(savedTrip);
@@ -159,7 +165,7 @@ public class TripService {
                     trackPoint.setLocation(geomPoint);
 
 
-                    Instant ptTime = gpxPoint.getTime().get();
+                    ptTime = gpxPoint.getTime().get();
                     String currentHourKey = ptTime.toString().substring(0, 13); // np. "2023-07-15T14"
 
                     // Tworzymy siatkę ~11km (zaokrąglanie do 1 miejsca po przecinku)
@@ -201,13 +207,170 @@ public class TripService {
         if (!batchPoints.isEmpty()) {
             trackPointRepository.saveAll(batchPoints);
         }
+
+        savedTrip.setStartTime(tripStart);
+        savedTrip.setEndTime(tripEnd);
+        tripRepository.save(savedTrip);
+
         System.out.println("KONIEC! Łącznie zapisano: " + counter + " punktów w " + currentSegmentId + " segmentach.");
 
         return savedTrip.getId();
     }
 
-    public List<Trip> getUserTrips(String email){
-        return tripRepository.findByUser_Email(email);
+
+
+    @Transactional
+    public Long mergeTrips(TripMergeRequestDto request, String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Brak użytkownika"));
+
+        Trip newTrip = new Trip();
+        newTrip.setName(request.newTripName());
+        newTrip.setUser(user);
+        newTrip.setFileHash("merged_" + System.currentTimeMillis());
+        Trip savedTrip = tripRepository.save(newTrip);
+
+        List<TrackPoint> allPointsToClone = new ArrayList<>();
+
+        for (TripMergeRequestDto.TripMergeSegment segDto : request.segments()) {
+            Trip originalTrip = tripRepository.findById(segDto.tripId())
+                    .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono trasy"));
+
+            if (!originalTrip.getUser().getEmail().equals(email)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień");
+            }
+
+            List<TrackPoint> originalPoints = trackPointRepository.findByTripIdOrderByTimeAsc(segDto.tripId());
+            if (originalPoints.isEmpty()) continue;
+
+            Instant trimStart = Instant.parse(segDto.trimStartTime());
+            Instant trimEnd = Instant.parse(segDto.trimEndTime());
+
+            for (TrackPoint originalPt : originalPoints) {
+                if (originalPt.getTime().isBefore(trimStart) || originalPt.getTime().isAfter(trimEnd)) {
+                    continue;
+                }
+                allPointsToClone.add(originalPt);
+            }
+        }
+
+        if (allPointsToClone.isEmpty()) {
+            throw new IllegalStateException("Po przycięciu nie pozostał żaden punkt.");
+        }
+
+        allPointsToClone.sort((p1, p2) -> p1.getTime().compareTo(p2.getTime()));
+
+
+        Map<Long, Weather> clonedWeatherMap = new HashMap<>();
+        List<TrackPoint> batchPoints = new ArrayList<>();
+
+        int currentNewSegmentId = 1;
+        TrackPoint lastProcessedPoint = null;
+        Long lastOriginalTripId = null;
+        Integer lastOriginalSegmentId = null;
+
+        long MAX_TIME_GAP_SECONDS = 5 * 60;
+        double MAX_DISTANCE_METERS = 800.0;
+
+        for (TrackPoint originalPt : allPointsToClone) {
+
+
+            if (lastProcessedPoint != null) {
+                boolean isNewTripFile = !originalPt.getTrip().getId().equals(lastOriginalTripId);
+
+                if (isNewTripFile) {
+                    long timeGap = java.time.Duration.between(lastProcessedPoint.getTime(), originalPt.getTime()).abs().getSeconds();
+
+                    double distanceGap = jasinski.pawel.weather_visualization.utils.GeoUtils.calculateDistance(
+                            lastProcessedPoint.getLocation(), originalPt.getLocation());
+
+                    if (timeGap > MAX_TIME_GAP_SECONDS || distanceGap > MAX_DISTANCE_METERS) {
+                        currentNewSegmentId++;
+                    }
+                } else {
+                    if (!originalPt.getSegmentId().equals(lastOriginalSegmentId)) {
+                        currentNewSegmentId++;
+                    }
+                }
+            }
+
+            TrackPoint clonedPt = new TrackPoint();
+            clonedPt.setTrip(savedTrip);
+            clonedPt.setSegmentId(currentNewSegmentId);
+            clonedPt.setTime(originalPt.getTime());
+            clonedPt.setElevation(originalPt.getElevation());
+            clonedPt.setSpeed(originalPt.getSpeed());
+            clonedPt.setLocation(originalPt.getLocation());
+
+
+            if (originalPt.getWeather() != null) {
+                Long originalWeatherId = originalPt.getWeather().getId();
+                Weather clonedWeather = clonedWeatherMap.get(originalWeatherId);
+
+                if (clonedWeather == null) {
+                    Weather ow = originalPt.getWeather();
+                    clonedWeather = new Weather();
+                    clonedWeather.setTrip(savedTrip);
+                    clonedWeather.setTime(ow.getTime());
+                    clonedWeather.setLatitude(ow.getLatitude());
+                    clonedWeather.setLongitude(ow.getLongitude());
+                    clonedWeather.setTemp(ow.getTemp());
+                    clonedWeather.setWindSpeed(ow.getWindSpeed());
+                    clonedWeather.setWindDir(ow.getWindDir());
+                    clonedWeather.setDewPoint(ow.getDewPoint());
+                    clonedWeather.setWindGusts(ow.getWindGusts());
+                    clonedWeather.setRain(ow.getRain());
+                    clonedWeather.setSnowfall(ow.getSnowfall());
+                    clonedWeather.setHumidity(ow.getHumidity());
+                    clonedWeather.setPressure(ow.getPressure());
+                    clonedWeather.setCloudCover(ow.getCloudCover());
+                    clonedWeather.setCloudCoverLow(ow.getCloudCoverLow());
+                    clonedWeather.setCloudCoverMid(ow.getCloudCoverMid());
+                    clonedWeather.setCloudCoverHigh(ow.getCloudCoverHigh());
+                    clonedWeather.setWaveHeight(ow.getWaveHeight());
+                    clonedWeather.setWavePeriod(ow.getWavePeriod());
+                    clonedWeather.setWaveDirection(ow.getWaveDirection());
+                    clonedWeather.setWindWaveHeight(ow.getWindWaveHeight());
+                    clonedWeather.setWindWavePeriod(ow.getWindWavePeriod());
+                    clonedWeather.setSwellWaveHeight(ow.getSwellWaveHeight());
+                    clonedWeather.setSwellWavePeriod(ow.getSwellWavePeriod());
+                    clonedWeather.setOceanCurrentVelocity(ow.getOceanCurrentVelocity());
+                    clonedWeather.setOceanCurrentDirection(ow.getOceanCurrentDirection());
+                    clonedWeather.setSeaTemperature(ow.getSeaTemperature());
+
+                    clonedWeather = weatherRepository.save(clonedWeather);
+                    clonedWeatherMap.put(originalWeatherId, clonedWeather);
+                }
+                clonedPt.setWeather(clonedWeather);
+            }
+            batchPoints.add(clonedPt);
+
+            if (batchPoints.size() >= 1000) {
+                trackPointRepository.saveAll(batchPoints);
+                batchPoints.clear();
+            }
+
+            lastProcessedPoint = originalPt;
+            lastOriginalTripId = originalPt.getTrip().getId();
+            lastOriginalSegmentId = originalPt.getSegmentId();
+        }
+
+        if (!batchPoints.isEmpty()) {
+            trackPointRepository.saveAll(batchPoints);
+        }
+
+        savedTrip.setStartTime(allPointsToClone.get(0).getTime());
+        savedTrip.setEndTime(allPointsToClone.get(allPointsToClone.size() - 1).getTime());
+        tripRepository.save(savedTrip);
+
+        return savedTrip.getId();
+    }
+
+    public List<TripResponseDto> getUserTrips(String email){
+        return tripRepository.findByUser_Email(email).stream()
+                .map(t -> new jasinski.pawel.weather_visualization.dto.TripResponseDto(
+                        t.getId(), t.getName(), t.getFileHash(), t.getStartTime(), t.getEndTime()
+                )).toList();
     }
 
     @Transactional

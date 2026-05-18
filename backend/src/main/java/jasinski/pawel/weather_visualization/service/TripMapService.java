@@ -8,6 +8,7 @@ import jasinski.pawel.weather_visualization.entity.TrackPoint;
 import jasinski.pawel.weather_visualization.entity.Weather;
 import jasinski.pawel.weather_visualization.repository.TrackPointRepository;
 import jasinski.pawel.weather_visualization.utils.AstronomyAnalyzer;
+import jasinski.pawel.weather_visualization.utils.GeoUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -25,6 +26,8 @@ public class TripMapService {
 
     private static final ZoneId DEFAULT_ZONE = ZoneId.of("Europe/Warsaw");
     private static final DateTimeFormatter MARKER_FMT = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm");
+    private static final double MIN_DISTANCE_METERS = 15.0;
+    private static final long MIN_TIME_SECONDS = 15;
 
     private final TrackPointRepository trackPointRepository;
 
@@ -32,9 +35,15 @@ public class TripMapService {
         this.trackPointRepository = trackPointRepository;
     }
 
+
     public MapDataResponse getTripMapData(Long tripId) {
-        List<TrackPoint> points = trackPointRepository.findByTripIdOrderByTimeAsc(tripId);
-        if (points.isEmpty()) return new MapDataResponse(List.of(), List.of());
+
+        List<TrackPoint> rawPoints = trackPointRepository.findByTripIdOrderByTimeAsc(tripId);
+        if (rawPoints.isEmpty()) return new MapDataResponse(List.of(), List.of());
+
+        List<TrackPoint> points = filterPointsForMap(rawPoints, MIN_DISTANCE_METERS, MIN_TIME_SECONDS);
+        System.out.println("Optymalizacja mapy: Zredukowano z " + rawPoints.size() + " do " + points.size() + " punktów.");
+
 
         Map<LocalDate, List<TrackPoint>> pointsByDay = groupPointsByDay(points);
         List<TrackPointDto> route = new ArrayList<>();
@@ -142,5 +151,29 @@ public class TripMapService {
                 w.getWindWavePeriod(), w.getSwellWaveHeight(), w.getSwellWavePeriod(),
                 w.getOceanCurrentVelocity(), w.getSeaTemperature(), w.getOceanCurrentDirection(), null
         );
+    }
+
+    private List<TrackPoint> filterPointsForMap(List<TrackPoint> originalPoints, double minDistanceMeters, long minTimeSeconds) {
+        if (originalPoints == null || originalPoints.isEmpty()) {
+            return originalPoints;
+        }
+
+        List<TrackPoint> filtered = new ArrayList<>();
+
+        TrackPoint lastKeptPoint = originalPoints.get(0);
+        filtered.add(lastKeptPoint);
+
+        for (int i = 1; i < originalPoints.size(); i++) {
+            TrackPoint currentPoint = originalPoints.get(i);
+
+            double distance = GeoUtils.calculateDistance(lastKeptPoint.getLocation(), currentPoint.getLocation());
+            long timeGap = java.time.Duration.between(lastKeptPoint.getTime(), currentPoint.getTime()).abs().getSeconds();
+
+            if (distance >= minDistanceMeters || timeGap >= minTimeSeconds || i == originalPoints.size() - 1) {
+                filtered.add(currentPoint);
+                lastKeptPoint = currentPoint;
+            }
+        }
+        return filtered;
     }
 }

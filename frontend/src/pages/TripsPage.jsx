@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios.js';
 import Navbar from '../components/Navbar.jsx';
 import FileUploadModal from '../components/FileUploadModal.jsx';
+import TripMergeModal from '../components/TripMergeModal.jsx';
 
 import "../styles/trips.css";
 
@@ -12,6 +13,7 @@ const TripsPage = () => {
     const [editName, setEditName] = useState("");
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const navigate = useNavigate();
+    const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
 
     useEffect(() => {
         fetchTrips();
@@ -72,8 +74,30 @@ const TripsPage = () => {
                 }}
             />
 
+            {/* NOWE: Wywołanie komponentu modala */}
+            <TripMergeModal
+                isOpen={isMergeModalOpen}
+                onClose={() => setIsMergeModalOpen(false)}
+                availableTrips={trips}
+                onMergeSuccess={() => {
+                    fetchTrips();
+                    setIsMergeModalOpen(false);
+                }}
+            />
+
             <div className="trips-container">
-                <h2 className="trips-title">Moje Trasy</h2>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '2px solid #ddd', paddingBottom: '0.625rem' }}>
+                    <h2 className="trips-title" style={{ border: 'none', margin: 0, padding: 0 }}>Moje Trasy</h2>
+                    <button
+                        onClick={() => setIsMergeModalOpen(true)}
+                        className="upload-btn"
+                        style={{ backgroundColor: '#eff6ff', color: '#1e40af', borderColor: '#bfdbfe' }}
+                        disabled={trips.length < 2}
+                    >
+                        🔗 Połącz trasy
+                    </button>
+                </div>
 
                 {trips.length === 0 ? (
                     <div className="trips-empty">

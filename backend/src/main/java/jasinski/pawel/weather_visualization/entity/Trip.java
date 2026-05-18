@@ -2,6 +2,8 @@ package jasinski.pawel.weather_visualization.entity;
 
 import jakarta.persistence.*;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "trips")
 public class Trip {
@@ -17,6 +19,12 @@ public class Trip {
     private String fileHash;
 
     private String name;
+
+    @Column(name = "start_time")
+    private Instant startTime;
+
+    @Column(name = "end_time")
+    private Instant endTime;
 
     public Long getId() {
         return id;
@@ -48,5 +56,21 @@ public class Trip {
 
     public void setFileHash(String fileHash) {
         this.fileHash = fileHash;
+    }
+
+    public Instant getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(Instant startTime) {
+        this.startTime = startTime;
+    }
+
+    public Instant getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(Instant endTime) {
+        this.endTime = endTime;
     }
 }

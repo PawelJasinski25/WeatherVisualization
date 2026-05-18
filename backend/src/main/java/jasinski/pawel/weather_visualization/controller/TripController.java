@@ -48,7 +48,7 @@ public class TripController {
 
 
     @GetMapping
-    public ResponseEntity<List<Trip>> getUserTrips(Authentication authentication) {
+    public ResponseEntity<List<TripResponseDto>> getUserTrips(Authentication authentication) {
         String email = authentication.getName();
         return ResponseEntity.ok(tripService.getUserTrips(email));
     }
@@ -106,5 +106,12 @@ public class TripController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"raport_trasy_" + tripId + ".pdf\"")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfContent);
+    }
+
+    @PostMapping("/merge")
+    public ResponseEntity<Long> mergeTrips(@RequestBody TripMergeRequestDto request, Authentication authentication) {
+        String email = authentication.getName();
+        Long newTripId = tripService.mergeTrips(request, email);
+        return ResponseEntity.ok(newTripId);
     }
 }
