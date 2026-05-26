@@ -7,24 +7,27 @@ import 'leaflet/dist/leaflet.css';
 import TripsPage from "./pages/TripsPage.jsx";
 import ReportPage from "./pages/ReportPage.jsx";
 import AnimationPage from "./pages/AnimationPage.jsx";
+import { UnitProvider } from "./contexts/UnitContext.jsx";
 
 function App() {
     return (
-        <BrowserRouter>
-            <Routes>
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
+        <UnitProvider>
+            <BrowserRouter>
+                <Routes>
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegisterPage />} />
 
-                <Route element={<ProtectedRoute />}>
-                    <Route path="/dashboard" element={<DashboardPage />} />
-                    <Route path="/trips" element={<TripsPage />} />
-                    <Route path="/animation" element={<AnimationPage />} />
-                    <Route path="/report" element={<ReportPage />} />
-                </Route>
+                    <Route element={<ProtectedRoute />}>
+                        <Route path="/dashboard" element={<DashboardPage />} />
+                        <Route path="/trips" element={<TripsPage />} />
+                        <Route path="/animation" element={<AnimationPage />} />
+                        <Route path="/report" element={<ReportPage />} />
+                    </Route>
 
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-        </BrowserRouter>
+                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+            </BrowserRouter>
+        </UnitProvider>
     );
 }
 

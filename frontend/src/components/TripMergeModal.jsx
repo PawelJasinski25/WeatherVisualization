@@ -7,6 +7,8 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
     const [timeWindows, setTimeWindows] = useState({});
     const [newTripName, setNewTripName] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [filterStartDate, setFilterStartDate] = useState('');
+    const [filterEndDate, setFilterEndDate] = useState('');
 
     const formatToInputDateTime = (dateStr) => {
         if (!dateStr) return '';
@@ -25,6 +27,8 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
             setSelectedIds([]);
             setNewTripName('');
             setIsProcessing(false);
+            setFilterStartDate('');
+            setFilterEndDate('');
 
             const initialWindows = {};
             availableTrips.forEach(trip => {
@@ -40,14 +44,34 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
     }, [isOpen, availableTrips]);
 
 
-    const sortedTrips = useMemo(() => {
+    const filteredAndSortedTrips = useMemo(() => {
         if (!availableTrips) return [];
-        return [...availableTrips].sort((a, b) => {
+
+        const filtered = availableTrips.filter(trip => {
+            if (!trip.startTime) return false;
+
+            const tripStart = new Date(trip.startTime).getTime();
+
+            if (filterStartDate) {
+                const filterStart = new Date(filterStartDate).getTime();
+                if (tripStart < filterStart) return false;
+            }
+
+            if (filterEndDate) {
+                const filterEnd = new Date(filterEndDate);
+                filterEnd.setHours(23, 59, 59, 999);
+                if (tripStart > filterEnd.getTime()) return false;
+            }
+
+            return true;
+        });
+
+        return filtered.sort((a, b) => {
             const timeA = a.startTime ? new Date(a.startTime).getTime() : 0;
             const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
             return timeA - timeB;
         });
-    }, [availableTrips]);
+    }, [availableTrips, filterStartDate, filterEndDate]);
 
     if (!isOpen) return null;
 
@@ -141,27 +165,67 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
                             />
                         </div>
 
+                        <div className="form-group filter-container">
+                            <label className="form-label filter-label">
+                                Filtruj dostępne trasy po dacie (opcjonalne):
+                            </label>
+                            <div className="filter-inputs-wrapper">
+                                <div className="filter-input-group">
+                                    <span className="filter-date-label">Od:</span>
+                                    <input
+                                        type="date"
+                                        value={filterStartDate}
+                                        onChange={(e) => setFilterStartDate(e.target.value)}
+                                        className="merge-date-picker picker-enabled"
+                                    />
+                                </div>
+                                <div className="filter-input-group">
+                                    <span className="filter-date-label">Do:</span>
+                                    <input
+                                        type="date"
+                                        value={filterEndDate}
+                                        onChange={(e) => setFilterEndDate(e.target.value)}
+                                        className="merge-date-picker picker-enabled"
+                                    />
+                                </div>
+                                {(filterStartDate || filterEndDate) && (
+                                    <button
+                                        type="button"
+                                        onClick={() => { setFilterStartDate(''); setFilterEndDate(''); }}
+                                        className="filter-clear-btn"
+                                    >
+                                        Wyczyść
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
                         <div className="form-group">
                             <label className="form-label">Wybierz pliki do połączenia dostosuj ich zakresy czasowe:</label>
                             <div className="merge-trips-list">
-                                {sortedTrips.map(trip => {
-                                    const isChecked = selectedIds.includes(trip.id);
-                                    const tw = timeWindows[trip.id];
-                                    return (
-                                        <div key={trip.id} className={`merge-trip-row ${isChecked ? 'active-row' : ''}`}>
+                                {filteredAndSortedTrips.length === 0 ? (
+                                    <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b', fontSize: '0.9rem' }}>
+                                        Brak tras w podanym zakresie czasowym.
+                                    </div>
+                                ) : (
+                                    filteredAndSortedTrips.map(trip => {
+                                        const isChecked = selectedIds.includes(trip.id);
+                                        const tw = timeWindows[trip.id];
+                                        return (
+                                            <div key={trip.id} className={`merge-trip-row ${isChecked ? 'active-row' : ''}`}>
 
-                                            <div className="merge-trip-info">
-                                                <input
-                                                    type="checkbox"
-                                                    id={`merge-trip-${trip.id}`}
-                                                    checked={isChecked}
-                                                    onChange={() => handleCheckboxChange(trip.id)}
-                                                    className="merge-checkbox"
-                                                />
-                                                <label htmlFor={`merge-trip-${trip.id}`} className="merge-trip-name">
-                                                    {trip.name}
-                                                </label>
-                                            </div>
+                                                <div className="merge-trip-info">
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`merge-trip-${trip.id}`}
+                                                        checked={isChecked}
+                                                        onChange={() => handleCheckboxChange(trip.id)}
+                                                        className="merge-checkbox"
+                                                    />
+                                                    <label htmlFor={`merge-trip-${trip.id}`} className="merge-trip-name">
+                                                        {trip.name}
+                                                    </label>
+                                                </div>
 
                                             <div className="merge-trip-dates">
                                                 <div className="date-input-group">
@@ -192,9 +256,10 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
                                                 </div>
                                             </div>
 
-                                        </div>
-                                    );
-                                })}
+                                            </div>
+                                        );
+                                    })
+                                )}
                             </div>
                         </div>
                     </div>

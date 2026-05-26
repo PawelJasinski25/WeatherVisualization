@@ -5,6 +5,7 @@ import ReportPreview from './ReportPreview';
 import '../../styles/panel.css';
 import '../../styles/report-elements.css';
 import '../../styles/report-generator.css';
+import {useUnits} from "../../contexts/UnitContext.jsx";
 
 const ReportGenerator = ({ tripId }) => {
     const [includeCruiseCard, setIncludeCruiseCard] = useState(true);
@@ -12,6 +13,7 @@ const ReportGenerator = ({ tripId }) => {
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
     const [isGeneratingCsv, setIsGeneratingCsv] = useState(false);
     const [isFetchingData, setIsFetchingData] = useState(true);
+    const { units } = useUnits();
 
     const [formData, setFormData] = useState({
         tripName: '',
@@ -100,7 +102,10 @@ const ReportGenerator = ({ tripId }) => {
 
             const response = await api.post(`/trips/${tripId}/download-pdf`, {
                 modules: modulesToExport,
-                reportData: formData
+                reportData: {
+                    ...formData,
+                    preferences: units
+                }
             }, {
                 responseType: 'blob',
                 params: { t: new Date().getTime() }

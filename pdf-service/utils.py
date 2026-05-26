@@ -83,3 +83,77 @@ def get_font(size, bold=False, italic=False):
         else: return ImageFont.truetype("arial.ttf", size)
     except IOError:
         return ImageFont.load_default()
+
+def convert_raw(val, category, prefs):
+    if val is None or str(val).lower() == 'nan':
+        return float('nan')
+    try:
+        v = float(val)
+    except ValueError:
+        return float('nan')
+
+    pref = prefs.get(category, '')
+
+    if category == 'temp':
+        if pref == '°F': v = (v * 9/5) + 32
+    elif category in ['wind', 'speed']:
+        if pref == 'm/s': v /= 3.6
+        elif pref == 'kt': v /= 1.852
+        elif pref == 'mph': v /= 1.60934
+        elif pref == 'bft':
+            ms = v / 3.6
+            if ms < 0.3: return 0
+            elif ms < 1.6: return 1
+            elif ms < 3.4: return 2
+            elif ms < 5.5: return 3
+            elif ms < 8.0: return 4
+            elif ms < 10.8: return 5
+            elif ms < 13.9: return 6
+            elif ms < 17.2: return 7
+            elif ms < 20.8: return 8
+            elif ms < 24.5: return 9
+            elif ms < 28.5: return 10
+            elif ms < 32.7: return 11
+            else: return 12
+    elif category == 'currents':
+        if pref == 'km/h': v *= 3.6
+        elif pref == 'kt': v *= 1.94384
+        elif pref == 'mph': v *= 2.23694
+    elif category == 'pressure':
+        if pref == 'inHg': v *= 0.02953
+        elif pref == 'mmHg': v *= 0.75006
+    elif category == 'wave':
+        if pref == 'ft': v *= 3.28084
+    elif category == 'rain':
+        if pref == 'inch': v /= 25.4
+    elif category == 'snow':
+        if pref == 'mm': v *= 10
+        elif pref == 'inch': v /= 2.54
+    elif category == 'distance':
+        if pref == 'NM': v /= 1.852
+        elif pref == 'mi': v /= 1.60934
+
+    return v
+
+def format_metric(val, category, prefs, decimals=1):
+    v = convert_raw(val, category, prefs)
+    import math
+    if math.isnan(v):
+        return '--'
+
+    unit_str = prefs.get(category, '')
+
+    if not unit_str:
+        defaults = {
+            'speed': 'km/h', 'wind': 'km/h', 'temp': '°C',
+            'distance': 'km', 'pressure': 'hPa', 'rain': 'mm',
+            'snow': 'cm', 'wave': 'm', 'currents': 'm/s',
+            'clouds': '%', 'humidity': '%'
+        }
+        unit_str = defaults.get(category, '')
+
+    if unit_str == 'bft':
+        return f"{int(v)} bft"
+
+    space = "" if unit_str in ['°C', '°F', '%', '°'] else " "
+    return f"{v:.{decimals}f}{space}{unit_str}".strip()

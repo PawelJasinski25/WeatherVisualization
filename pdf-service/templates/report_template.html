@@ -268,12 +268,12 @@
 
                 <div class="report-mock-section" style="margin-bottom: 5px;">
                     <h3>Osiągi jednostki</h3>
-                    {{ m.render_speed_table(data.overallSpeed) }}
+                    {{ m.render_speed_table(data.overallSpeed, prefs) }}
                 </div>
 
                 <div class="report-mock-section" style="margin-bottom: 0;">
                     <h3>Statystyki pogodowe</h3>
-                    {{ m.render_weather_table(data.overallWeather, data.overallMovingWeather) }}
+                    {{ m.render_weather_table(data.overallWeather, data.overallMovingWeather, prefs) }}
                 </div>
 
             </td>
@@ -361,14 +361,14 @@
                 {% if day.speedStats %}
                 <div class="report-mock-section" style="margin-bottom: 5px;">
                     <h3>Parametry nawigacyjne (SOG)</h3>
-                    {{ m.render_speed_table(day.speedStats) }}
+                    {{ m.render_speed_table(day.speedStats, prefs) }}
                 </div>
                 {% endif %}
 
                 {% if day.overallWeatherStats %}
                 <div class="report-mock-section" style="margin-bottom: 0;">
                     <h3>Statystyki pogodowe</h3>
-                    {{ m.render_weather_table(day.overallWeatherStats, day.movingWeatherStats) }}
+                    {{ m.render_weather_table(day.overallWeatherStats, day.movingWeatherStats, prefs) }}
                 </div>
                 {% endif %}
             </td>

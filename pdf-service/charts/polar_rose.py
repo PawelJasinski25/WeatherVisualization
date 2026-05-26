@@ -7,8 +7,12 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import matplotlib.cm as cm
 
-def create_polar_rose(points, dir_key, mag_key, title):
+from utils import convert_raw
+
+def create_polar_rose(points, dir_key, mag_key, title, prefs):
     if not points: return None
+
+    category = 'wind' if 'wind' in mag_key.lower() else 'wave'
 
     dirs = []
     mags = []
@@ -17,8 +21,10 @@ def create_polar_rose(points, dir_key, mag_key, title):
         m = p.get(mag_key)
         if d is not None and m is not None and str(d).lower() != 'nan' and str(m).lower() != 'nan':
             try:
-                dirs.append(float(d))
-                mags.append(float(m))
+                m_converted = convert_raw(m, category, prefs)
+                if not np.isnan(m_converted):
+                    dirs.append(float(d))
+                    mags.append(m_converted)
             except Exception:
                 pass
 

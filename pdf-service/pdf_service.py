@@ -4,7 +4,7 @@ import os
 import time
 from concurrent.futures import ProcessPoolExecutor
 
-from utils import format_seconds, format_val, format_time, get_duration_seconds, format_place
+from utils import format_seconds, format_val, format_time, get_duration_seconds, format_place, format_metric, convert_raw
 
 from charts.meteogram import create_meteogram_chart
 from charts.polar_rose import create_polar_rose
@@ -12,6 +12,7 @@ from charts.route_map import create_route_map
 from charts.timelines import create_timeline_chart, create_astro_timeline_chart
 
 env = Environment(loader=FileSystemLoader('templates'))
+env.filters['format_metric'] = format_metric
 env.filters['format_seconds'] = format_seconds
 env.filters['format_val'] = format_val
 env.filters['format_time'] = format_time
@@ -66,6 +67,7 @@ def generate_report_pdf(report_data: dict) -> bytes:
     print("\n--- ROZPOCZĘCIE GENEROWANIA RAPORTU ---")
     start_total = time.time()
 
+    prefs = report_data.get('preferences', {})
     daily_summaries = report_data.get('dailySummaries', [])
     all_trip_points = report_data.get('points', [])
 
@@ -113,10 +115,10 @@ def generate_report_pdf(report_data: dict) -> bytes:
                 timeline_future = executor.submit(create_timeline_chart, day.get('date'), events) if events else None
                 astro_future = executor.submit(create_astro_timeline_chart, day.get('observedAstroEvents'))
 
-                day['meteogram_chart'] = create_meteogram_chart(meteo_points)
+                day['meteogram_chart'] = create_meteogram_chart(meteo_points, prefs)
 
-                day['wind_rose'] = create_polar_rose(rose_points, 'windDir', 'windSpeed', 'Róża wiatrów')
-                day['wave_rose'] = create_polar_rose(rose_points, 'waveDir', 'waveHeight', 'Róża falowania')
+                day['wind_rose'] = create_polar_rose(rose_points, 'windDir', 'windSpeed', 'Róża wiatrów', prefs)
+                day['wave_rose'] = create_polar_rose(rose_points, 'waveDir', 'waveHeight', 'Róża falowania', prefs)
 
                 day['route_map'] = map_future.result()
 
@@ -142,21 +144,21 @@ def generate_report_pdf(report_data: dict) -> bytes:
 
         overall_map_future = executor.submit(create_route_map, overall_map_points, 800, 555)
 
-        report_data['overall_wind_rose'] = create_polar_rose(overall_rose_points, 'windDir', 'windSpeed', 'Róża wiatrów')
-        report_data['overall_wave_rose'] = create_polar_rose(overall_rose_points, 'waveDir', 'waveHeight', 'Róża falowania')
+        report_data['overall_wind_rose'] = create_polar_rose(overall_rose_points, 'windDir', 'windSpeed', 'Róża wiatrów', prefs)
+        report_data['overall_wave_rose'] = create_polar_rose(overall_rose_points, 'waveDir', 'waveHeight', 'Róża falowania', prefs)
 
         overall_meteo_points = all_trip_points[::max(1, len(all_trip_points) // 120)] if all_trip_points else []
 
         if len(overall_meteo_points) > 1:
             try:
-                report_data['overall_meteogram_chart'] = create_meteogram_chart(overall_meteo_points)
+                report_data['overall_meteogram_chart'] = create_meteogram_chart(overall_meteo_points, prefs)
             except Exception:
                 pass
 
         report_data['overall_route_map'] = overall_map_future.result()
 
     template = env.get_template('report_template.html')
-    html_content = template.render(data=report_data)
+    html_content = template.render(data=report_data, prefs=prefs)
 
     base_dir = os.path.abspath('templates')
     pdf_bytes = HTML(string=html_content, base_url=base_dir).write_pdf()

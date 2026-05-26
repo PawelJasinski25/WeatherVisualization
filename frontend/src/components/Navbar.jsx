@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import '../styles/navbar.css';
+import SettingsModal from './SettingsModal';
 
 const Navbar = ({ onOpenUpload, activeTab = 'map', currentTripId = null }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const menuRef = useRef(null);
     const navigate = useNavigate();
 
@@ -42,7 +44,6 @@ const Navbar = ({ onOpenUpload, activeTab = 'map', currentTripId = null }) => {
                 >
                     🎞️ Animacja
                 </button>
-                <button className="navbar-tab">📊 Wykresy</button>
                 <button
                     className={`navbar-tab ${activeTab === 'report' ? 'active' : ''}`}
                     onClick={() => navigate('/report', { state: { tripId: currentTripId } })}
@@ -71,8 +72,8 @@ const Navbar = ({ onOpenUpload, activeTab = 'map', currentTripId = null }) => {
                             >
                                 🗺️ Wgrane trasy
                             </button>
-                            <button className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
-                                ⚙️ Ustawienia
+                            <button className="dropdown-item" onClick={() => { setIsMenuOpen(false); setIsSettingsOpen(true); }}>
+                                ⚙️ Jednostki
                             </button>
                             <div className="dropdown-divider"></div>
                             <button onClick={handleLogout} className="dropdown-item logout">
@@ -82,6 +83,7 @@ const Navbar = ({ onOpenUpload, activeTab = 'map', currentTripId = null }) => {
                     )}
                 </div>
             </div>
+            <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
         </nav>
     );
 };

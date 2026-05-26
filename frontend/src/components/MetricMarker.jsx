@@ -1,8 +1,11 @@
 import React from 'react';
 import { Marker } from "react-map-gl/maplibre";
-import { metricConfig } from '../config/metricConfig';
+import { useMetricConfig } from '../config/metricConfig';
 
 const MetricMarker = ({ pt, metricId, index }) => {
+
+    const metricConfig = useMetricConfig();
+
     if (!metricId) return null;
 
     const isArrow = metricId.includes('dir');
@@ -43,7 +46,12 @@ const MetricMarker = ({ pt, metricId, index }) => {
         );
     } else {
         const displayVal = metricConfig[metricId].formatValue ? metricConfig[metricId].formatValue(rawVal) : Math.round(rawVal);
-        const text = `${displayVal}${metricConfig[metricId].unit}`;
+        const unit = metricConfig[metricId].unit || "";
+
+        let text = `${displayVal} ${unit}`;
+        if (unit === '°C' || unit === '°F' || unit === '%') {
+            text = `${displayVal}${unit}`;
+        }
 
         let anchorY = "center";
         if (dy < -4) anchorY = "bottom";

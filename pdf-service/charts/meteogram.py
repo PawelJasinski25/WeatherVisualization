@@ -6,9 +6,9 @@ matplotlib.use('Agg')
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
-from utils import parse_dt
+from utils import parse_dt, convert_raw
 
-def create_meteogram_chart(points):
+def create_meteogram_chart(points, prefs):
     if not points: return None
 
     if len(points) > 120:
@@ -19,14 +19,21 @@ def create_meteogram_chart(points):
 
     x = np.arange(len(points_to_plot))
 
-    def get_data(key, default=np.nan):
+    def get_data(key, category=None, default=np.nan):
         arr = []
         for p in points_to_plot:
             val = p.get(key)
-            if val is not None and str(val).lower() != 'nan':
-                arr.append(float(val))
+            if category:
+                converted = convert_raw(val, category, prefs)
+                arr.append(converted if not np.isnan(converted) else default)
             else:
-                arr.append(default)
+                if val is not None and str(val).lower() != 'nan':
+                    try:
+                        arr.append(float(val))
+                    except ValueError:
+                        arr.append(default)
+                else:
+                    arr.append(default)
         return np.array(arr)
 
     def safe_max(arr, default_val):
@@ -37,25 +44,24 @@ def create_meteogram_chart(points):
         valid = arr[~np.isnan(arr)]
         return np.min(valid) if len(valid) > 0 else default_val
 
-    pressure = get_data('pressure')
-    temp = get_data('temp')
-    sea_temp = get_data('seaTemp')
-    wind_spd = get_data('windSpeed')
-    wind_gst = get_data('gusts')
+    pressure = get_data('pressure', 'pressure')
+    temp = get_data('temp', 'temp')
+    sea_temp = get_data('seaTemp', 'temp')
+    wind_spd = get_data('windSpeed', 'wind')
+    wind_gst = get_data('gusts', 'wind')
     wind_dir = get_data('windDir')
-    wave_hgt = get_data('waveHeight')
+    wave_hgt = get_data('waveHeight', 'wave')
     wave_per = get_data('wavePeriod')
     wave_dir = get_data('waveDir')
-    swell_hgt = get_data('swellWaveH')
+    swell_hgt = get_data('swellWaveH', 'wave')
     swell_per = get_data('swellWaveP')
     swell_dir = get_data('waveDir')
-    clouds = get_data('cloudCover')
-    rain = get_data('rain', default=0.0)
-    snow = get_data('snowfall', default=0.0)
-    speed = get_data('speed')
+    clouds = get_data('cloudCover', 'clouds')
+    rain = get_data('rain', 'rain', default=0.0)
+    snow = get_data('snowfall', 'snow', default=0.0)
+    speed = get_data('speed', 'speed')
 
     if np.all(np.isnan(temp)) and np.all(np.isnan(wind_spd)): return None
-
 
     has_waves = not np.all(np.isnan(wave_hgt))
     has_swell = not np.all(np.isnan(swell_hgt))
@@ -85,6 +91,14 @@ def create_meteogram_chart(points):
 
     ax_idx = 0
 
+    # Pobieranie jednostek do etykiet
+    u_p = prefs.get('pressure', 'hPa')
+    u_t = prefs.get('temp', '°C')
+    u_w = prefs.get('wind', 'km/h')
+    u_s = prefs.get('speed', 'km/h')
+    u_wave = prefs.get('wave', 'm')
+    u_rain = prefs.get('rain', 'mm')
+    u_snow = prefs.get('snow', 'cm')
 
     #PANEL 1: Ciśnienie + Temperatura
     ax1 = axes[ax_idx]
@@ -92,16 +106,16 @@ def create_meteogram_chart(points):
     ax1_twin = ax1.twinx()
 
     p_min = safe_min(pressure, 1000)
-    ax1.plot(x, pressure, color='#172554', lw=2, label='Ciśnienie (hPa)')
+    ax1.plot(x, pressure, color='#172554', lw=2, label=f'Ciśnienie ({u_p})')
     ax1.fill_between(x, p_min - 5, pressure, color='#d9f99d', alpha=0.5)
-    ax1.set_ylabel('Ciśnienie (hPa)', fontweight='bold', color='#172554', fontsize=9)
+    ax1.set_ylabel(f'Ciśnienie ({u_p})', fontweight='bold', color='#172554', fontsize=9)
     ax1.set_ylim(p_min - 2, safe_max(pressure, 1020) + 2)
 
-    ax1_twin.plot(x, temp, color='#ef4444', lw=2, label='Temperatura powietrza. (°C)')
+    ax1_twin.plot(x, temp, color='#ef4444', lw=2, label=f'Temperatura powietrza ({u_t})')
     if not np.all(np.isnan(sea_temp)):
-        ax1_twin.plot(x, sea_temp, color='#0284c7', lw=2, ls='--', label='Temperatura morza (°C)')
+        ax1_twin.plot(x, sea_temp, color='#0284c7', lw=2, ls='--', label=f'Temperatura morza ({u_t})')
 
-    ax1_twin.set_ylabel('Temperatura (°C)', fontweight='bold', color='#ef4444', fontsize=9)
+    ax1_twin.set_ylabel(f'Temperatura ({u_t})', fontweight='bold', color='#ef4444', fontsize=9)
     ax1_twin.spines['top'].set_visible(False)
     ax1_twin.tick_params(axis='y', labelsize=8)
 
@@ -172,35 +186,51 @@ def create_meteogram_chart(points):
     ax_wind = axes[ax_idx]
     ax_idx += 1
     setup_arrow_panel(
-        ax_wind, wind_spd, ['#bae6fd', '#0284c7'], ['Wiatr (km/h)'], wind_dir, 'Prędkość (km/h)', '#1e3a8a',
+        ax_wind, wind_spd, ['#bae6fd', '#0284c7'], [f'Wiatr ({u_w})'], wind_dir, f'Prędkość ({u_w})', '#1e3a8a',
         is_twin=False,
         secondary_data=wind_gst, secondary_label='Porywy', secondary_color='#1e3a8a',
-        tertiary_data=speed, tertiary_label='Prędkość jednostki', tertiary_color='#dc2626'
+        tertiary_data=speed, tertiary_label=f'Prędkość jednostki ({u_s})', tertiary_color='#dc2626'
     )
 
     #PANEL 3: Fale Główne
     if has_waves:
         ax_wave = axes[ax_idx]
         ax_idx += 1
-        setup_arrow_panel(ax_wave, wave_hgt, ['#99f6e4', '#0d9488'], ['Wys. fali (m)'], wave_dir, 'Fala (m)', '#0f766e', is_twin=True, secondary_data=wave_per, secondary_label='Okres (s)', secondary_color='#ea580c')
+        setup_arrow_panel(ax_wave, wave_hgt, ['#99f6e4', '#0d9488'], [f'Wys. fali ({u_wave})'], wave_dir, f'Fala ({u_wave})', '#0f766e', is_twin=True, secondary_data=wave_per, secondary_label='Okres (s)', secondary_color='#ea580c')
 
     #PANEL 4: Fale Martwe (Swell)
     if has_swell:
         ax_swell = axes[ax_idx]
         ax_idx += 1
-        setup_arrow_panel(ax_swell, swell_hgt, ['#e9d5ff', '#9333ea'], ['Wys. fali martwej (m)'], swell_dir, 'Fala (m)', '#7e22ce', is_twin=True, secondary_data=swell_per, secondary_label='Okres (s)', secondary_color='#be185d')
+        setup_arrow_panel(ax_swell, swell_hgt, ['#e9d5ff', '#9333ea'], [f'Wys. fali martwej ({u_wave})'], swell_dir, f'Fala ({u_wave})', '#7e22ce', is_twin=True, secondary_data=swell_per, secondary_label='Okres (s)', secondary_color='#be185d')
 
 
     #PANEL 5: Zachmurzenie + Deszcz + Śnieg
     ax5 = axes[ax_idx]
     ax5_twin = ax5.twinx()
 
-    ax5.bar(x, rain, color='#3b82f6', alpha=0.8, width=1.0, label='Deszcz (mm/h)')
-    ax5.bar(x, snow, bottom=rain, color='#2dd4bf', alpha=0.8, width=1.0, label='Śnieg (cm/h)')
+    r_unit = prefs.get('rain', 'mm')
+    s_unit = prefs.get('snow', 'cm')
 
-    ax5.set_ylabel('Natężenie', fontweight='bold', color='#2563eb', fontsize=9)
+    plot_rain = rain.copy()
+    plot_snow = snow.copy()
 
-    max_precip = safe_max(rain + snow, 10.0)
+    if s_unit == 'cm':
+        plot_snow = plot_snow * 10
+    elif s_unit == 'inch':
+        plot_snow = plot_snow * 25.4
+
+    if r_unit == 'inch':
+        plot_rain = plot_rain * 25.4
+
+
+    width = 0.4
+    ax5.bar(x - width/2, plot_rain, width=width, color='#3b82f6', alpha=0.8, label=f'Deszcz (mm/h)')
+    ax5.bar(x + width/2, plot_snow, width=width, color='#2dd4bf', alpha=0.8, label=f'Śnieg (mm/h)')
+
+    ax5.set_ylabel('Opady (mm/h)', fontweight='bold', color='#2563eb', fontsize=9)
+
+    max_precip = safe_max(np.concatenate([plot_rain, plot_snow]), 10.0)
     ax5.set_ylim(0, max(1.0, max_precip * 1.5))
 
     ax5_twin.fill_between(x, 0, clouds, color='#cbd5e1', alpha=0.5)

@@ -9,6 +9,7 @@ import api from '../api/axios';
 import { metricConfig } from '../config/metricConfig';
 import FileUploadModal from '../components/FileUploadModal.jsx';
 import "../styles/animation.css";
+import { useMetricConfig } from '../config/metricConfig';
 
 const OSM_STYLE = {
     version: 8,
@@ -17,6 +18,7 @@ const OSM_STYLE = {
 };
 
 const AnimationPage = () => {
+    const metricConfig = useMetricConfig();
     const location = useLocation();
     const navigate = useNavigate();
     const tripId = location.state?.tripId || null;

@@ -1,6 +1,6 @@
 import React from 'react';
-import { metricConfig } from '../config/metricConfig';
 import '../styles/map-elements.css';
+import { useMetricConfig } from '../config/metricConfig';
 
 const AstronomyLegend = ({ config }) => {
     const blockHeight = 26;
@@ -120,6 +120,8 @@ const DefaultLegend = ({ metricId, config }) => {
 };
 
 const MapLegend = ({ metricId }) => {
+    const metricConfig = useMetricConfig();
+
     if (!metricId || !metricConfig[metricId]) return null;
 
     const config = metricConfig[metricId];
