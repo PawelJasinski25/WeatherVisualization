@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios.js';
 import Navbar from '../components/Navbar.jsx';
@@ -14,6 +14,8 @@ const TripsPage = () => {
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const navigate = useNavigate();
     const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
+    const [filterStartDate, setFilterStartDate] = useState('');
+    const [filterEndDate, setFilterEndDate] = useState('');
 
     useEffect(() => {
         fetchTrips();
@@ -27,6 +29,36 @@ const TripsPage = () => {
             console.error("Błąd podczas pobierania tras:", error);
         }
     };
+
+    const filteredAndSortedTrips = useMemo(() => {
+        if (!trips) return [];
+
+        const filtered = trips.filter(trip => {
+            if (!trip.startTime) return true;
+
+            const tripStart = new Date(trip.startTime).getTime();
+
+            if (filterStartDate) {
+                const filterStart = new Date(filterStartDate).getTime();
+                if (tripStart < filterStart) return false;
+            }
+
+            if (filterEndDate) {
+                const filterEnd = new Date(filterEndDate);
+                filterEnd.setHours(23, 59, 59, 999);
+                if (tripStart > filterEnd.getTime()) return false;
+            }
+
+            return true;
+        });
+
+        // Sortujemy malejąco
+        return filtered.sort((a, b) => {
+            const timeA = a.startTime ? new Date(a.startTime).getTime() : 0;
+            const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
+            return timeB - timeA;
+        });
+    }, [trips, filterStartDate, filterEndDate]);
 
     const handleDelete = async (id, e) => {
         e.stopPropagation();
@@ -61,6 +93,17 @@ const TripsPage = () => {
         navigate('/dashboard', { state: { tripId: id } });
     };
 
+    const formatTripDates = (start, end) => {
+        if (!start && !end) return '';
+        const sDate = start ? new Date(start).toLocaleDateString('pl-PL') : '';
+        const eDate = end ? new Date(end).toLocaleDateString('pl-PL') : '';
+
+        if (sDate && eDate && sDate !== eDate) {
+            return `${sDate} - ${eDate}`;
+        }
+        return sDate || eDate;
+    };
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#f9fafb' }}>
             <Navbar onOpenUpload={() => setIsUploadModalOpen(true)} activeTab="none" />
@@ -74,7 +117,6 @@ const TripsPage = () => {
                 }}
             />
 
-            {/* NOWE: Wywołanie komponentu modala */}
             <TripMergeModal
                 isOpen={isMergeModalOpen}
                 onClose={() => setIsMergeModalOpen(false)}
@@ -99,13 +141,54 @@ const TripsPage = () => {
                     </button>
                 </div>
 
+                {trips.length > 0 && (
+                    <div className="filter-container" style={{ marginBottom: '1.5rem', backgroundColor: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <label className="form-label filter-label" style={{ marginBottom: '0.5rem', display: 'block' }}>
+                            Filtruj trasy po dacie:
+                        </label>
+                        <div className="filter-inputs-wrapper" style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <div className="filter-input-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span className="filter-date-label">Od:</span>
+                                <input
+                                    type="date"
+                                    value={filterStartDate}
+                                    onChange={(e) => setFilterStartDate(e.target.value)}
+                                    className="merge-date-picker picker-enabled"
+                                />
+                            </div>
+                            <div className="filter-input-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span className="filter-date-label">Do:</span>
+                                <input
+                                    type="date"
+                                    value={filterEndDate}
+                                    onChange={(e) => setFilterEndDate(e.target.value)}
+                                    className="merge-date-picker picker-enabled"
+                                />
+                            </div>
+                            {(filterStartDate || filterEndDate) && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setFilterStartDate(''); setFilterEndDate(''); }}
+                                    className="filter-clear-btn"
+                                >
+                                    Wyczyść
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {trips.length === 0 ? (
                     <div className="trips-empty">
                         Nie masz jeszcze żadnych tras. Kliknij "Nowa Trasa" aby dodać plik GPX.
                     </div>
+                ) : filteredAndSortedTrips.length === 0 ? (
+                    <div className="trips-empty" style={{ color: '#64748b' }}>
+                        Brak tras w wybranym przedziale czasowym.
+                    </div>
                 ) : (
                     <div className="trips-list">
-                        {trips.map(trip => (
+                        {filteredAndSortedTrips.map(trip => (
                             <div key={trip.id} onClick={() => handleRowClick(trip.id)} className="trip-card">
                                 {editingId === trip.id ? (
                                     <div className="edit-container" onClick={e => e.stopPropagation()}>
@@ -121,8 +204,13 @@ const TripsPage = () => {
                                     </div>
                                 ) : (
                                     <>
-                                        <div className="trip-info">
-                                            <span>{trip.name}</span>
+                                        <div className="trip-info" style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span style={{ fontWeight: 'bold' }}>{trip.name}</span>
+                                            {(trip.startTime || trip.endTime) && (
+                                                <span style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>
+                                                        {formatTripDates(trip.startTime, trip.endTime)}
+                                                </span>
+                                            )}
                                         </div>
 
                                         <div className="trip-actions">
