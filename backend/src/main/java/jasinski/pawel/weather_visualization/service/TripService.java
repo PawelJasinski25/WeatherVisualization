@@ -337,6 +337,7 @@ public class TripService {
                     clonedWeather.setOceanCurrentVelocity(ow.getOceanCurrentVelocity());
                     clonedWeather.setOceanCurrentDirection(ow.getOceanCurrentDirection());
                     clonedWeather.setSeaTemperature(ow.getSeaTemperature());
+                    clonedWeather.setWeatherCode(ow.getWeatherCode());
 
                     clonedWeather = weatherRepository.save(clonedWeather);
                     clonedWeatherMap.put(originalWeatherId, clonedWeather);

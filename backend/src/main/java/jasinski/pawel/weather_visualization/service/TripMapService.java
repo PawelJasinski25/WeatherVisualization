@@ -149,7 +149,7 @@ public class TripMapService {
                 w.getCloudCoverMid(), w.getCloudCoverHigh(), w.getWindDir(), w.getSnowfall(),
                 w.getWaveHeight(), w.getWavePeriod(), w.getWaveDirection(), w.getWindWaveHeight(),
                 w.getWindWavePeriod(), w.getSwellWaveHeight(), w.getSwellWavePeriod(),
-                w.getOceanCurrentVelocity(), w.getSeaTemperature(), w.getOceanCurrentDirection(), null
+                w.getOceanCurrentVelocity(), w.getSeaTemperature(), w.getOceanCurrentDirection(), null, w.getWeatherCode()
         );
     }
 

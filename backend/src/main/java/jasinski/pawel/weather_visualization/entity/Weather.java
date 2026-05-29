@@ -85,6 +85,9 @@ public class Weather {
     @Column(name = "sea_temperature")
     private Double seaTemperature;
 
+    @Column(name = "weather_code")
+    private Integer weatherCode;
+
     public Long getId() {
         return id;
     }
@@ -307,5 +310,13 @@ public class Weather {
 
     public void setSeaTemperature(Double seaTemperature) {
         this.seaTemperature = seaTemperature;
+    }
+
+    public Integer getWeatherCode() {
+        return weatherCode;
+    }
+
+    public void setWeatherCode(Integer weatherCode) {
+        this.weatherCode = weatherCode;
     }
 }

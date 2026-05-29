@@ -8,6 +8,53 @@ const MetricMarker = ({ pt, metricId, index }) => {
 
     if (!metricId) return null;
 
+    const themeColor = index === 0 ? "#109346" : "#a11ecf";
+    const bearingRad = pt.routeBearing * (Math.PI / 180);
+
+    if (metricId === 'weather_pictograms') {
+        const code = pt.weatherCode;
+        let iconSrc = null;
+
+        if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82))
+            iconSrc = '/icons/rain.png';
+
+         else if (code >= 95 && code <= 99)
+            iconSrc = '/icons/thunderstorm.png';
+
+         else if (code === 45 || code === 48)
+            iconSrc = '/icons/fog.png';
+
+         else if ((code >= 71 && code <= 77) || code === 85 || code === 86)
+            iconSrc = '/icons/snowflake.png';
+
+         else if (code === 0)
+            iconSrc = '/icons/sun.png';
+
+         else if (code === 1 || code === 2)
+            iconSrc = '/icons/partly-cloudy.png';
+
+         else if (code === 3)
+            iconSrc = '/icons/cloud.png';
+
+        if (!iconSrc) return null;
+
+        const distancePx = 30;
+        const dx = index === 0 ? -(Math.cos(bearingRad) * distancePx) : (Math.cos(bearingRad) * distancePx);
+        const dy = index === 0 ? -(Math.sin(bearingRad) * distancePx) : (Math.sin(bearingRad) * distancePx);
+
+        return (
+            <Marker longitude={pt.lng} latitude={pt.lat} offset={[dx, dy]} anchor="center">
+                <div style={{
+                    backgroundColor: "white", border: `2px solid ${themeColor}`, borderRadius: "50%",
+                    width: "32px", height: "32px", display: "flex", justifyContent: "center", alignItems: "center",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.15)"
+                }}>
+                    <img src={iconSrc} alt="weather" style={{ width: "20px", height: "20px" }} />
+                </div>
+            </Marker>
+        );
+    }
+
     const isArrow = metricId.includes('dir');
     let rawVal = null;
 
@@ -21,10 +68,8 @@ const MetricMarker = ({ pt, metricId, index }) => {
 
     if (rawVal === null || rawVal === undefined) return null;
 
-    const themeColor = index === 0 ? "#109346" : "#a11ecf";
-    const distancePx = isArrow ? 22 : 16;
-    const bearingRad = pt.routeBearing * (Math.PI / 180);
 
+    const distancePx = isArrow ? 22 : 16;
     const perpX = Math.cos(bearingRad) * distancePx;
     const perpY = Math.sin(bearingRad) * distancePx;
     const dx = index === 0 ? -perpX : perpX;

@@ -30,7 +30,7 @@ public class OpenMeteoService {
                     "https://archive-api.open-meteo.com/v1/archive?latitude=%f&longitude=%f&start_date=%s&end_date=%s" +
                             "&hourly=temperature_2m,dew_point_2m,relative_humidity_2m,rain,snowfall,surface_pressure," +
                             "cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high," +
-                            "wind_speed_10m,wind_direction_10m,wind_gusts_10m",
+                            "wind_speed_10m,wind_direction_10m,wind_gusts_10m,weather_code",
                     lat, lon, dateStr, dateStr);
 
 
@@ -107,6 +107,7 @@ public class OpenMeteoService {
                 weather.setCloudCoverLow(response.hourly.cloud_cover_low.get(index));
                 weather.setCloudCoverMid(response.hourly.cloud_cover_mid.get(index));
                 weather.setCloudCoverHigh(response.hourly.cloud_cover_high.get(index));
+                weather.setWeatherCode(response.hourly.weather_code != null ? response.hourly.weather_code.get(index) : null);
 
                 if (response.hourly.wave_height != null && !response.hourly.wave_height.isEmpty()) {
                     weather.setWaveHeight(response.hourly.wave_height.get(index));
@@ -143,6 +144,7 @@ public class OpenMeteoService {
         public List<Double> wind_speed_10m;
         public List<Integer> wind_direction_10m;
         public List<Double> wind_gusts_10m;
+        public List<Integer> weather_code;
         public List<Double> wave_height;
         public List<Double> wave_period;
         public List<Integer> wave_direction;

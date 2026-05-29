@@ -32,12 +32,13 @@ public record TrackPointDto(
         Double oceanCurrentVel,
         Double seaTemp,
         Integer oceanCurrentDir,
-        Double speed
+        Double speed,
+        Integer weatherCode
 ){
     public TrackPointDto(double latitude, double longitude, double segmentId, double timeMs, Integer dayPhase) {
         this(latitude, longitude, segmentId, timeMs, dayPhase,
                 null, null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static TrackPointDto fromEntity(TrackPoint p) {
@@ -76,7 +77,8 @@ public record TrackPointDto(
                 w != null ? w.getOceanCurrentVelocity() : null,
                 w != null ? w.getSeaTemperature() : null,
                 w != null ? w.getOceanCurrentDirection() : null,
-                speed
+                speed,
+                w != null ? w.getWeatherCode() : null
         );
     }
 }
