@@ -1,5 +1,6 @@
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import api from "../api/axios.js";
+import { FileUp, Loader2, AlertCircle } from "lucide-react";
 import "../styles/modal.css";
 
 const FileUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
@@ -24,12 +25,12 @@ const FileUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
 
     const handleUpload = async () => {
         if (!file) {
-            alert("Proszę wybrać plik GPX");
+            setStatus("Błąd: Proszę wybrać plik GPX.");
             return;
         }
 
         setIsUploading(true);
-        setStatus("Wgrywanie...");
+        setStatus("");
 
         const formData = new FormData();
         formData.append("file", file);
@@ -44,7 +45,7 @@ const FileUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
             onClose();
         } catch (error) {
             console.error("Błąd:", error);
-            setStatus("Błąd wgrywania.");
+            setStatus("Błąd: Nie udało się wgrać pliku.");
         } finally {
             setIsUploading(false);
         }
@@ -55,25 +56,48 @@ const FileUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
             <div className="modal-content">
                 <div className="modal-header">
                     <h3>Wgraj nową trasę GPX</h3>
-                    <button onClick={onClose} className="modal-close-btn">&times;</button>
+                    <button onClick={onClose} disabled={isUploading} className="modal-close-btn">&times;</button>
                 </div>
 
                 <div className="modal-body">
-                    <input
-                        type="file"
-                        accept=".gpx"
-                        onChange={handleFileChange}
-                        className="modal-input"
-                    />
-                    {status && <p style={{ color: status.includes("Błąd") ? "red" : "#007bff", margin: 0, fontSize: "0.9rem" }}>{status}</p>}
+                    <label className={`modal-input file-drop-zone ${isUploading ? 'disabled' : ''}`}>
+                        <FileUp size={48} color="#64748b" />
+
+                        <span className="file-drop-zone-text">
+                            {file ? `Wybrano: ${file.name}` : "Kliknij, aby wybrać plik GPX"}
+                        </span>
+
+                        <input
+                            type="file"
+                            accept=".gpx"
+                            onChange={handleFileChange}
+                            className="hidden-input"
+                            disabled={isUploading}
+                        />
+                    </label>
+
+                    {status && status.includes("Błąd") && (
+                        <div className="modal-error-message">
+                            <AlertCircle size={18} />
+                            <span>{status}</span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="modal-footer">
                     <button onClick={onClose} disabled={isUploading} className="modal-btn btn-cancel">
                         Anuluj
                     </button>
-                    <button onClick={handleUpload} disabled={isUploading || !file} className="modal-btn btn-submit">
-                        {isUploading ? "Wgrywanie..." : "Wgraj"}
+                    <button
+                        onClick={handleUpload}
+                        disabled={isUploading || !file}
+                        className="modal-btn btn-submit"
+                    >
+                        {isUploading ? (
+                            <span className="btn-loading-content">
+                                <Loader2 size={16} className="anim-spin" /> Wgrywanie...
+                            </span>
+                        ) : "Wgraj"}
                     </button>
                 </div>
             </div>

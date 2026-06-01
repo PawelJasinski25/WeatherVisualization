@@ -8,7 +8,7 @@
 
 .panel-content {
     width: min(90vw, 28rem);
-    max-height: calc(100vh - 6.25rem);
+    height: calc(100vh - 6.25rem);
     overflow-y: auto;
     background-color: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(5px);
@@ -97,6 +97,50 @@
     font-size: 0.75rem;
     text-align: center;
     font-weight: 600;
+}
+
+
+.panel-attribution {
+    margin-top: auto;
+    padding-top: 1rem;
+    padding-bottom: 0.5rem;
+    border-top: 1px solid #f1f5f9;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    text-align: center;
+}
+
+.panel-attribution summary::-webkit-details-marker {
+    display: none;
+}
+
+.panel-attribution summary {
+    list-style: none;
+    cursor: pointer;
+    font-weight: 500;
+    outline: none;
+    user-select: none;
+    transition: color 0.2s;
+}
+
+.panel-attribution summary:hover {
+    color: #3b82f6;
+}
+
+.attribution-content {
+    margin-top: 0.75rem;
+    line-height: 1.6;
+    padding: 0 0.5rem;
+}
+
+.attribution-content a {
+    color: #60a5fa;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.attribution-content a:hover {
+    text-decoration: underline;
 }
 
 @media (max-width: 1300px) {

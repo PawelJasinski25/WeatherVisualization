@@ -25,6 +25,11 @@
     transition: right 0.3s ease-in-out;
 }
 
+.maplibregl-ctrl-bottom-right {
+    right: auto !important;
+    left: 10px !important;
+}
+
 /*legenda dla pór dnia*/
 .astro-legend-padding {
     padding: 15px;

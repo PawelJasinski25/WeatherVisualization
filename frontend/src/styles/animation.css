@@ -130,6 +130,19 @@
     align-items: center;
 }
 
+.anim-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .speed-box {
     display: flex;
     background-color: #f1f5f9;

@@ -6,6 +6,8 @@ import '../../styles/panel.css';
 import '../../styles/report-elements.css';
 import '../../styles/report-generator.css';
 import {useUnits} from "../../contexts/UnitContext.jsx";
+import { FileSignature } from 'lucide-react';
+import ErrorModal from "../ErrorModal.jsx";
 
 const ReportGenerator = ({ tripId }) => {
     const [includeCruiseCard, setIncludeCruiseCard] = useState(true);
@@ -14,6 +16,7 @@ const ReportGenerator = ({ tripId }) => {
     const [isGeneratingCsv, setIsGeneratingCsv] = useState(false);
     const [isFetchingData, setIsFetchingData] = useState(true);
     const { units } = useUnits();
+    const [error, setError] = useState(null);
 
     const [formData, setFormData] = useState({
         tripName: '',
@@ -67,7 +70,8 @@ const ReportGenerator = ({ tripId }) => {
                     }));
                 }
             } catch (error) {
-                console.error("Nie udało się pobrać danych trasy:", error);
+                console.error("Nie udało się pobrać danych trasy:");
+                setError("Nie udało się pobrać danych trasy z serwera.");
             } finally {
                 setIsFetchingData(false);
             }
@@ -96,6 +100,7 @@ const ReportGenerator = ({ tripId }) => {
 
     const handleGeneratePdf = async () => {
         setIsGeneratingPdf(true);
+        setError(null);
         try {
             const modulesToExport = ['summary', 'timeline', 'weather', 'maps', 'meteogram'];
             if (includeCruiseCard) modulesToExport.unshift('cruiseCard');
@@ -119,7 +124,7 @@ const ReportGenerator = ({ tripId }) => {
             link.click();
             link.remove();
         } catch (err) {
-            alert("Błąd podczas pobierania PDF: " + err.message);
+            setError("Wystąpił błąd podczas generowania pliku PDF: ");
         } finally {
             setIsGeneratingPdf(false);
         }
@@ -127,6 +132,7 @@ const ReportGenerator = ({ tripId }) => {
 
     const handleDownloadCsv = async () => {
         setIsGeneratingCsv(true);
+        setError(null);
         try {
             const response = await api.get(`/trips/${tripId}/report/csv`, {
                 responseType: 'blob',
@@ -141,7 +147,7 @@ const ReportGenerator = ({ tripId }) => {
             link.click();
             link.remove();
         } catch (err) {
-            alert("Błąd podczas pobierania CSV: " + err.message);
+            setError("Wystąpił błąd podczas generowania pliku CSV: ");
         } finally {
             setIsGeneratingCsv(false);
         }
@@ -188,7 +194,7 @@ const ReportGenerator = ({ tripId }) => {
                             disabled={isFetchingData}
                             onClick={() => setIncludeCruiseCard(!includeCruiseCard)}
                         >
-                            <span style={{ fontSize: '1.4rem' }}>📝</span>
+                            <FileSignature size={24} color={includeCruiseCard ? "var(--theme-report)" : "#64748b"} />
                             <span className="panel-label">Karta Rejsu</span>
                             <span className={`toggle-card-status ${includeCruiseCard ? 'active' : ''}`}>
                                 {includeCruiseCard ? 'WŁ' : 'WYŁ'}
@@ -225,7 +231,15 @@ const ReportGenerator = ({ tripId }) => {
                     </button>
                 </div>
             </div>
+
+            <ErrorModal
+                isOpen={!!error}
+                onClose={() => setError(null)}
+                errorMessage={error}
+            />
         </div>
+
+
     );
 };
 

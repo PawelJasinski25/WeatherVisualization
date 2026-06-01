@@ -1,4 +1,5 @@
 import React from 'react';
+import { Map, LineChart, Clock } from 'lucide-react';
 
 const PlaceholderWeatherTable = () => (
     <table className="report-table weather-table">
@@ -167,23 +168,23 @@ const ReportPreview = () => {
                     <div className="report-col w-50">
                         <div className="report-mock-section report-flex-container mb-0 p-10">
                             <div className="w-50">
-                                <DummyChart icon="📈" label="Róża Wiatrów" height="200px" />
+                                <DummyChart icon={<LineChart size={40} strokeWidth={1.5} />} label="Róża Wiatrów" height="200px" />
                             </div>
                             <div className="w-50">
-                                <DummyChart icon="📈" label="Róża Falowania" height="200px" />
+                                <DummyChart icon={<LineChart size={40} strokeWidth={1.5} />} label="Róża Falowania" height="200px" />
                             </div>
                         </div>
 
                         <div className="report-mock-section report-flex-1">
                             <h3 className="section-header">Mapa trasy</h3>
-                            <DummyChart icon="🗺️" label="Mapa" flex="1" />
+                            <DummyChart icon={<Map size={48} strokeWidth={1.5} />} label="Mapa" flex="1" />
                         </div>
                     </div>
                 </div>
 
                 <div className="report-mock-section mt-10">
                     <h3 className="section-header">Meteogram</h3>
-                    <DummyChart icon="📈" label="Wykres złożony" height="220px" />
+                    <DummyChart icon={<LineChart size={48} strokeWidth={1.5} />} label="Wykres złożony" height="220px" />
                 </div>
             </div>
 
@@ -195,7 +196,7 @@ const ReportPreview = () => {
 
                 <div className="report-mock-section mb-10">
                     <h3 className="section-header">Osie czasu (Ruch i Astro)</h3>
-                    <DummyChart icon="⏱️" label="Osie czasu dla ruchu i postojów oraz dla zjawisk astronomicznych" height="80px" />
+                    <DummyChart icon={<Clock size={32} strokeWidth={1.5} />} label="Osie czasu dla ruchu i postojów oraz dla zjawisk astronomicznych" height="80px" />
                 </div>
 
                 <div className="report-flex-container">
@@ -209,23 +210,23 @@ const ReportPreview = () => {
                     <div className="report-col w-50">
                         <div className="report-mock-section report-flex-container mb-0 p-10">
                             <div className="w-50">
-                                <DummyChart icon="📈" label="Róża Wiatrów" height="200px" />
+                                <DummyChart icon={<LineChart size={40} strokeWidth={1.5} />} label="Róża Wiatrów" height="200px" />
                             </div>
                             <div className="w-50">
-                                <DummyChart icon="📈" label="Róża Falowania" height="200px" />
+                                <DummyChart icon={<LineChart size={40} strokeWidth={1.5} />} label="Róża Falowania" height="200px" />
                             </div>
                         </div>
 
                         <div className="report-mock-section report-flex-1">
                             <h3 className="section-header">Mapa trasy</h3>
-                            <DummyChart icon="🗺️" label="Mapa" flex="1" />
+                            <DummyChart icon={<Map size={48} strokeWidth={1.5} />} label="Mapa" flex="1" />
                         </div>
                     </div>
                 </div>
 
                 <div className="report-mock-section mt-10">
                     <h3 className="section-header">Meteogram</h3>
-                    <DummyChart icon="📈" label="Wykres złożony (Dzień 1)" height="220px" />
+                    <DummyChart icon={<LineChart size={48} strokeWidth={1.5} />} label="Wykres złożony (Dzień 1)" height="220px" />
                 </div>
             </div>
         </>

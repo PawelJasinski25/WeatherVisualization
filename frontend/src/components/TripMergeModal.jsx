@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import api from '../api/axios.js';
 import '../styles/modal.css';
+import {AlertCircle, Loader2} from "lucide-react";
 
 const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => {
     const [selectedIds, setSelectedIds] = useState([]);
@@ -9,6 +10,7 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
     const [isProcessing, setIsProcessing] = useState(false);
     const [filterStartDate, setFilterStartDate] = useState('');
     const [filterEndDate, setFilterEndDate] = useState('');
+    const [error, setError] = useState('');
 
     const formatToInputDateTime = (dateStr) => {
         if (!dateStr) return '';
@@ -29,6 +31,7 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
             setIsProcessing(false);
             setFilterStartDate('');
             setFilterEndDate('');
+            setError('');
 
             const initialWindows = {};
             availableTrips.forEach(trip => {
@@ -76,10 +79,12 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
     if (!isOpen) return null;
 
     const handleCheckboxChange = (id) => {
+        setError('');
         setSelectedIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
     };
 
     const handleTimeChange = (id, field, value) => {
+        setError('');
         setTimeWindows(prev => ({
             ...prev,
             [id]: { ...prev[id], [field]: value }
@@ -105,20 +110,21 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
 
     const handleMergeSubmit = async (e) => {
         e.preventDefault();
+        setError('');
 
         if (selectedIds.length < 2) {
-            alert("Wybierz co najmniej 2 trasy do połączenia.");
+            setError("Wybierz co najmniej 2 trasy do połączenia.");
             return;
         }
         if (!newTripName.trim()) {
-            alert("Proszę podać nazwę dla nowej trasy.");
+            setError("Proszę podać nazwę dla nowej trasy.");
             return;
         }
 
         for (const id of selectedIds) {
             const tw = timeWindows[id];
             if (tw.start < tw.minOriginal || tw.end > tw.maxOriginal) {
-                alert("Daty wykraczają poza oryginalne ramy czasowe!");
+                setError("Daty wykraczają poza oryginalne ramy czasowe!");
                 return;
             }
         }
@@ -137,7 +143,7 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
             onClose();
         } catch (error) {
             console.error("Błąd podczas łączenia tras:", error);
-            alert("Wystąpił błąd podczas scalania tras.");
+            setError("Wystąpił błąd podczas scalania tras.");
         } finally {
             setIsProcessing(false);
         }
@@ -160,14 +166,17 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
                                 className="interactive-input merge-name-input"
                                 placeholder="Nazwa"
                                 value={newTripName}
-                                onChange={e => setNewTripName(e.target.value)}
+                                onChange={e => {
+                                    setNewTripName(e.target.value);
+                                    setError('');
+                                }}
                                 required
                             />
                         </div>
 
                         <div className="form-group filter-container">
                             <label className="form-label filter-label">
-                                Filtruj dostępne trasy po dacie (opcjonalne):
+                                Filtruj dostępne trasy po dacie:
                             </label>
                             <div className="filter-inputs-wrapper">
                                 <div className="filter-input-group">
@@ -264,12 +273,23 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
                         </div>
                     </div>
 
+                    {error && (
+                        <div className="modal-error-message" style={{ margin: '0.5rem 1.25rem 0' }}>
+                            <AlertCircle size={18} />
+                            <span>{error}</span>
+                        </div>
+                    )}
+
                     <div className="modal-footer">
                         <button type="button" onClick={onClose} disabled={isProcessing} className="modal-btn btn-cancel">
                             Anuluj
                         </button>
                         <button type="submit" disabled={isProcessing || selectedIds.length < 2 || !newTripName} className="modal-btn btn-submit">
-                            {isProcessing ? "Przetwarzanie..." : "Połącz wybrane trasy"}
+                            {isProcessing ? (
+                                <span className="btn-loading-content">
+                                    <Loader2 size={16} className="anim-spin" /> Przetwarzanie...
+                                </span>
+                            ) : "Połącz wybrane trasy"}
                         </button>
                     </div>
                 </form>

@@ -4,6 +4,8 @@ import api from '../api/axios.js';
 import Navbar from '../components/Navbar.jsx';
 import FileUploadModal from '../components/FileUploadModal.jsx';
 import TripMergeModal from '../components/TripMergeModal.jsx';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal.jsx';
+import { Pencil, Trash2, Check, Link,  X } from 'lucide-react';
 
 import "../styles/trips.css";
 
@@ -12,6 +14,7 @@ const TripsPage = () => {
     const [editingId, setEditingId] = useState(null);
     const [editName, setEditName] = useState("");
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [tripToDelete, setTripToDelete] = useState(null);
     const navigate = useNavigate();
     const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
     const [filterStartDate, setFilterStartDate] = useState('');
@@ -60,15 +63,20 @@ const TripsPage = () => {
         });
     }, [trips, filterStartDate, filterEndDate]);
 
-    const handleDelete = async (id, e) => {
+    const openDeleteModal = (trip, e) => {
         e.stopPropagation();
-        if (window.confirm("Czy na pewno chcesz usunąć tę trasę? Tej operacji nie można cofnąć.")) {
-            try {
-                await api.delete(`/trips/${id}`);
-                setTrips(trips.filter(t => t.id !== id));
-            } catch (error) {
-                console.error("Błąd usuwania trasy:", error);
-            }
+        setTripToDelete(trip);
+    };
+
+    // Właściwa funkcja usuwania (wywoływana przez modal)
+    const confirmDelete = async () => {
+        if (!tripToDelete) return;
+        try {
+            await api.delete(`/trips/${tripToDelete.id}`);
+            setTrips(trips.filter(t => t.id !== tripToDelete.id));
+        } catch (error) {
+            console.error("Błąd usuwania trasy:", error);
+            alert("Wystąpił błąd podczas usuwania. Spróbuj ponownie.");
         }
     };
 
@@ -127,17 +135,24 @@ const TripsPage = () => {
                 }}
             />
 
+            <ConfirmDeleteModal
+                isOpen={!!tripToDelete}
+                onClose={() => setTripToDelete(null)}
+                onConfirm={confirmDelete}
+                tripName={tripToDelete?.name}
+            />
+
             <div className="trips-container">
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '2px solid #ddd', paddingBottom: '0.625rem' }}>
                     <h2 className="trips-title" style={{ border: 'none', margin: 0, padding: 0 }}>Moje Trasy</h2>
                     <button
                         onClick={() => setIsMergeModalOpen(true)}
-                        className="upload-btn"
-                        style={{ backgroundColor: '#eff6ff', color: '#1e40af', borderColor: '#bfdbfe' }}
+                        className="merge-btn"
                         disabled={trips.length < 2}
                     >
-                        🔗 Połącz trasy
+                        <Link size={18} />
+                        Połącz trasy
                     </button>
                 </div>
 
@@ -191,31 +206,51 @@ const TripsPage = () => {
                         {filteredAndSortedTrips.map(trip => (
                             <div key={trip.id} onClick={() => handleRowClick(trip.id)} className="trip-card">
                                 {editingId === trip.id ? (
-                                    <div className="edit-container" onClick={e => e.stopPropagation()}>
-                                        <input
-                                            type="text"
-                                            value={editName}
-                                            onChange={e => setEditName(e.target.value)}
-                                            autoFocus
-                                            className="edit-input"
-                                        />
-                                        <button onClick={(e) => handleSaveEdit(trip.id, e)} className="icon-btn">💾</button>
-                                        <button onClick={() => setEditingId(null)} className="icon-btn">❌</button>
-                                    </div>
+                                    <>
+                                        <div className="trip-info" onClick={e => e.stopPropagation()} style={{ paddingRight: '1rem' }}>
+                                            <input
+                                                type="text"
+                                                value={editName}
+                                                onChange={e => setEditName(e.target.value)}
+                                                autoFocus
+                                                className="edit-input"
+                                            />
+                                        </div>
+                                        <div className="trip-actions" onClick={e => e.stopPropagation()}>
+                                            <button onClick={(e) => handleSaveEdit(trip.id, e)} className="icon-btn save-btn">
+                                                <Check className="trip-icon" />
+                                            </button>
+                                            <button onClick={() => setEditingId(null)} className="icon-btn cancel-btn">
+                                                <X className="trip-icon" />
+                                            </button>
+                                        </div>
+                                    </>
                                 ) : (
                                     <>
                                         <div className="trip-info" style={{ display: 'flex', flexDirection: 'column' }}>
                                             <span style={{ fontWeight: 'bold' }}>{trip.name}</span>
                                             {(trip.startTime || trip.endTime) && (
                                                 <span style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>
-                                                        {formatTripDates(trip.startTime, trip.endTime)}
-                                                </span>
+                                    {formatTripDates(trip.startTime, trip.endTime)}
+                            </span>
                                             )}
                                         </div>
 
-                                        <div className="trip-actions">
-                                            <button onClick={(e) => startEditing(trip, e)} className="icon-btn" title="Zmień nazwę">✏️</button>
-                                            <button onClick={(e) => handleDelete(trip.id, e)} className="icon-btn" title="Usuń trasę">🗑️</button>
+                                        <div className="trip-actions" onClick={e => e.stopPropagation()}>
+                                            <button
+                                                onClick={(e) => startEditing(trip, e)}
+                                                className="icon-btn edit-btn"
+                                                title="Zmień nazwę"
+                                            >
+                                                <Pencil className="trip-icon" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => openDeleteModal(trip, e)}
+                                                className="icon-btn delete-btn"
+                                                title="Usuń trasę"
+                                            >
+                                                <Trash2 className="trip-icon" />
+                                            </button>
                                         </div>
                                     </>
                                 )}

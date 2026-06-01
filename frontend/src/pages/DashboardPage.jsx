@@ -5,6 +5,7 @@ import FileUploadModal from "../components/FileUploadModal.jsx";
 import { useLocation } from "react-router-dom";
 import SidePanel from "../components/SidePanel.jsx";
 import "../styles/dashboard.css";
+import { Map } from "lucide-react";
 
 function DashboardPage() {
     const location = useLocation();
@@ -50,11 +51,11 @@ function DashboardPage() {
                     />
                 ) : (
                     <div className="dashboard-empty">
-                        <div className="dashboard-empty-icon">🗺️</div>
+                        <div className="dashboard-empty-icon"><Map size={100} color="var(--theme-map)" /></div>
                         <h2 className="dashboard-empty-title">Witaj w Weather Visualization</h2>
                         <p className="dashboard-empty-text">
-                            Kliknij przycisk <b>"Nowa Trasa"</b> w prawym górnym rogu,<br/>
-                            aby wgrać plik GPX i zobaczyć wizualizację.
+                            Przejdź do zakładki <b>"Moje Trasy"</b> lub wgraj nowy plik GPX,<br/>
+                            aby zobaczyć pogodową wizualizację trasy na mapie.
                         </p>
                     </div>
                 )}

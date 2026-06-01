@@ -6,10 +6,10 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import Navbar from '../components/Navbar';
 import AnimationPanel from '../components/AnimationPanel';
 import api from '../api/axios';
-import { metricConfig } from '../config/metricConfig';
 import FileUploadModal from '../components/FileUploadModal.jsx';
 import "../styles/animation.css";
 import { useMetricConfig } from '../config/metricConfig';
+import { Loader2, PlayCircle, Play, Pause } from 'lucide-react';
 
 const OSM_STYLE = {
     version: 8,
@@ -137,38 +137,45 @@ const AnimationPage = () => {
     const currentPoint = tripData[currentIndex];
 
     return (
-        <div className="anim-wrapper">
+        <div className="anim-wrapper dashboard-wrapper">
             <Navbar
                 activeTab="animation"
                 currentTripId={tripId}
                 onOpenUpload={() => setIsUploadModalOpen(true)}
             />
 
-            <div className="anim-content">
-                <FileUploadModal
-                    isOpen={isUploadModalOpen}
-                    onClose={() => setIsUploadModalOpen(false)}
-                    onUploadSuccess={(id) => {
-                        setIsUploadModalOpen(false);
-                        navigate('/animation', { state: { tripId: id } });
-                        setCurrentIndex(0);
-                        setIsPlaying(false);
-                    }}
-                />
-                <div
-                    className="anim-main"
-                    style={{
-                        paddingRight: isPanelOpen
-                            ? "calc(min(90vw, var(--panel-width)) + 60px)"
-                            : "20px"
-                    }}
-                >
+            <FileUploadModal
+                isOpen={isUploadModalOpen}
+                onClose={() => setIsUploadModalOpen(false)}
+                onUploadSuccess={(id) => {
+                    setIsUploadModalOpen(false);
+                    navigate('/animation', { state: { tripId: id } });
+                    setCurrentIndex(0);
+                    setIsPlaying(false);
+                }}
+            />
 
-                    {/* MAPA */}
-                    <div className="anim-map-box">
-                        {isLoading ? (
-                            <div className="anim-loading">⏳ Wczytywanie trasy...</div>
-                        ) : tripData.length > 0 ? (
+            {isLoading ? (
+                <div className="dashboard-content">
+                    <div className="dashboard-empty" style={{ boxShadow: 'none', background: 'none' }}>
+                        <Loader2 size={40} color="var(--theme-anim)" className="anim-spin" />
+                        <div style={{ fontSize: '1.2rem', fontWeight: '500', color: '#64748b' }}>
+                            Wczytywanie trasy...
+                        </div>
+
+                    </div>
+                </div>
+            ) : tripData.length > 0 ? (
+                <div className="anim-content">
+                    <div
+                        className="anim-main"
+                        style={{
+                            paddingRight: isPanelOpen
+                                ? "calc(min(90vw, var(--panel-width)) + 60px)"
+                                : "20px"
+                        }}
+                    >
+                        <div className="anim-map-box">
                             <Map ref={mapRef} initialViewState={{ longitude: 20, latitude: 55, zoom: 5 }} mapStyle={OSM_STYLE} style={{ width: "100%", height: "100%" }}>
                                 {routeGeoJSON && (
                                     <Source id="route" type="geojson" data={routeGeoJSON}>
@@ -185,84 +192,93 @@ const AnimationPage = () => {
                                     </Marker>
                                 )}
                             </Map>
-                        ) : (
-                            <div className="anim-empty">Brak danych lub nie wybrano trasy.</div>
-                        )}
-                    </div>
-
-                    {/* DOLNY PASEK KONTROLNY */}
-                    <div className="anim-controls">
-
-                        <div className="anim-slider-row">
-                            <span className="anim-time">
-                                {currentPoint ? formatTime(currentPoint.timeMs) : "--/--"}
-                            </span>
-                            <input
-                                type="range" min="0" max={tripData.length > 0 ? tripData.length - 1 : 100}
-                                value={currentIndex}
-                                onChange={(e) => { setCurrentIndex(Number(e.target.value)); setIsPlaying(false); }}
-                                className="anim-slider" disabled={tripData.length === 0}
-                            />
                         </div>
 
-                        <div className="anim-bottom-row">
-                            <div className="anim-params">
-                                {selectedParams.map(metricId => {
-                                    const config = metricConfig[metricId];
-                                    if (!config || !currentPoint) return null;
-                                    const rawVal = config.getValue(currentPoint);
-                                    const displayVal = (rawVal === null || rawVal === undefined) ? '--' : (config.formatValue ? config.formatValue(rawVal) : Math.round(rawVal));
+                        <div className="anim-controls">
+                            <div className="anim-slider-row">
+                                <span className="anim-time">
+                                    {currentPoint ? formatTime(currentPoint.timeMs) : "--/--"}
+                                </span>
+                                <input
+                                    type="range" min="0" max={tripData.length > 0 ? tripData.length - 1 : 100}
+                                    value={currentIndex}
+                                    onChange={(e) => { setCurrentIndex(Number(e.target.value)); setIsPlaying(false); }}
+                                    className="anim-slider" disabled={tripData.length === 0}
+                                />
+                            </div>
 
-                                    return (
-                                        <div key={metricId} className="anim-param-box">
-                                            <div className="anim-param-content">
-                                                <span className="anim-param-label">{config.label}</span>
-                                                <div className="anim-param-val">
-                                                    <span className="anim-val-num">{displayVal}</span>
-                                                    <span className="anim-val-unit">{config.unit}</span>
+                            <div className="anim-bottom-row">
+                                <div className="anim-params">
+                                    {selectedParams.map(metricId => {
+                                        const config = metricConfig[metricId];
+                                        if (!config || !currentPoint) return null;
+                                        const rawVal = config.getValue(currentPoint);
+                                        const displayVal = (rawVal === null || rawVal === undefined) ? '--' : (config.formatValue ? config.formatValue(rawVal) : Math.round(rawVal));
+
+                                        return (
+                                            <div key={metricId} className="anim-param-box">
+                                                <div className="anim-param-content">
+                                                    <span className="anim-param-label">{config.label}</span>
+                                                    <div className="anim-param-val">
+                                                        <span className="anim-val-num">{displayVal}</span>
+                                                        <span className="anim-val-unit">{config.unit}</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            <div className="anim-actions">
-                                <div className="speed-box">
-                                    {[0.5, 1, 2, 5, 10].map(speed => (
-                                        <button
-                                            key={speed}
-                                            onClick={() => setPlaybackSpeed(speed)}
-                                            className={`speed-btn ${playbackSpeed === speed ? 'active' : 'inactive'}`}
-                                        >
-                                            {speed}x
-                                        </button>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
 
-                                <button
-                                    onClick={() => {
-                                        if (currentIndex >= tripData.length - 1) setCurrentIndex(0);
-                                        setIsPlaying(!isPlaying);
-                                    }}
-                                    disabled={tripData.length === 0}
-                                    className={`play-btn ${isPlaying ? 'playing' : 'paused'}`}
-                                >
-                                    {isPlaying ? '⏸' : '▶'}
-                                </button>
+                                <div className="anim-actions">
+                                    <div className="speed-box">
+                                        {[0.5, 1, 2, 5, 10].map(speed => (
+                                            <button
+                                                key={speed}
+                                                onClick={() => setPlaybackSpeed(speed)}
+                                                className={`speed-btn ${playbackSpeed === speed ? 'active' : 'inactive'}`}
+                                            >
+                                                {speed}x
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <button
+                                        onClick={() => {
+                                            if (currentIndex >= tripData.length - 1) setCurrentIndex(0);
+                                            setIsPlaying(!isPlaying);
+                                        }}
+                                        disabled={tripData.length === 0}
+                                        className={`play-btn ${isPlaying ? 'playing' : 'paused'}`}
+                                    >
+                                        {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
+                                    </button>
+                                </div>
                             </div>
                         </div>
+                    </div>
 
+                    <AnimationPanel
+                        selectedParams={selectedParams}
+                        setSelectedParams={setSelectedParams}
+                        isOpen={isPanelOpen}
+                        setIsOpen={setIsPanelOpen}
+                    />
+                </div>
+            ) : (
+
+                <div className="dashboard-content" style={{ overflow: 'hidden' }}>
+                    <div className="dashboard-empty">
+                        <div className="dashboard-empty-icon">
+                            <PlayCircle size={100} color="var(--theme-anim)" />
+                        </div>
+                        <h2 className="dashboard-empty-title">Brak wybranej trasy</h2>
+                        <p className="dashboard-empty-text">
+                            Przejdź do zakładki <b>"Moje Trasy"</b> lub wgraj nowy plik GPX,<br/>
+                            aby odtworzyć animację warunków pogodowych.
+                        </p>
                     </div>
                 </div>
-
-                <AnimationPanel
-                    selectedParams={selectedParams}
-                    setSelectedParams={setSelectedParams}
-                    isOpen={isPanelOpen}
-                    setIsOpen={setIsPanelOpen}
-                />
-            </div>
+            )}
         </div>
     );
 };
