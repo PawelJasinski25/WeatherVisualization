@@ -5,6 +5,7 @@ import jasinski.pawel.weather_visualization.entity.Trip;
 import jasinski.pawel.weather_visualization.repository.TrackPointRepository;
 import jasinski.pawel.weather_visualization.utils.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -326,7 +327,10 @@ public class ReportService {
     }
 
 
+    @Value("${python.pdf.service.url}")
+    private String pythonUrl;
     public byte[] generatePdfReport(Long tripId, String email, Map<String, Object> formData) {
+
         TripReportDataDto data = getTripReportData(tripId, email);
 
         ObjectMapper mapper = new ObjectMapper();
@@ -336,7 +340,6 @@ public class ReportService {
             payload.putAll(formData);
         }
 
-        String pythonUrl = "http://localhost:8000/generate-pdf";
         try {
             return restTemplate.postForObject(pythonUrl, payload, byte[].class);
         } catch (Exception e) {
