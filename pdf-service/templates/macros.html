@@ -77,6 +77,12 @@
         <td><b>{{ overall.maxWaveHeight | format_metric('wave', prefs) }} | {{ overall.maxWavePeriod | format_val('s') }}</b></td>
     </tr>
     <tr>
+        <td>Fale martwe (wys. | okr.)</td>
+        <td><b>{{ overall.avgSwellWaveHeight | format_metric('wave', prefs) }} | {{ overall.avgSwellWavePeriod | format_val('s') }}</b></td>
+        {% if moving %}<td><b>{{ moving.avgSwellWaveHeight | format_metric('wave', prefs) }} | {{ moving.avgSwellWavePeriod | format_val('s') }}</b></td>{% endif %}
+        <td><b>{{ overall.maxSwellWaveHeight | format_metric('wave', prefs) }} | {{ overall.maxSwellWavePeriod | format_val('s') }}</b></td>
+    </tr>
+    <tr>
         <td>Prądy</td>
         <td><b>{{ overall.avgOceanCurrentVelocity | format_metric('currents', prefs) }}</b></td>
         {% if moving %}<td><b>{{ moving.avgOceanCurrentVelocity | format_metric('currents', prefs) }}</b></td>{% endif %}

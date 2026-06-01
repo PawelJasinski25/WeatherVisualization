@@ -11,6 +11,8 @@ from charts.polar_rose import create_polar_rose
 from charts.route_map import create_route_map
 from charts.timelines import create_timeline_chart, create_astro_timeline_chart
 
+MAX_WORKERS = int(os.environ.get("MAX_WORKERS", 4))
+
 env = Environment(loader=FileSystemLoader('templates'))
 env.filters['format_metric'] = format_metric
 env.filters['format_seconds'] = format_seconds
@@ -74,7 +76,7 @@ def generate_report_pdf(report_data: dict) -> bytes:
     display_summaries = []
     current_gap = []
 
-    with ProcessPoolExecutor(max_workers=4) as executor:
+    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
         for idx, day in enumerate(daily_summaries):
             day_index = idx + 1
             events = day.get('timelineEvents', [])
