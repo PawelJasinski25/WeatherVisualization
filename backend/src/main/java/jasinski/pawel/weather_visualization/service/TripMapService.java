@@ -16,10 +16,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 @Service
 public class TripMapService {
@@ -153,27 +150,69 @@ public class TripMapService {
         );
     }
 
+
     private List<TrackPoint> filterPointsForMap(List<TrackPoint> originalPoints, double minDistanceMeters, long minTimeSeconds) {
         if (originalPoints == null || originalPoints.isEmpty()) {
             return originalPoints;
         }
 
-        List<TrackPoint> filtered = new ArrayList<>();
+        Map<Integer, List<TrackPoint>> segments = new LinkedHashMap<>();
+        for (TrackPoint pt : originalPoints) {
+            int segId = pt.getSegmentId() != null ? pt.getSegmentId() : 0;
+            segments.computeIfAbsent(segId, k -> new ArrayList<>()).add(pt);
+        }
 
-        TrackPoint lastKeptPoint = originalPoints.get(0);
-        filtered.add(lastKeptPoint);
+        List<TrackPoint> phase1Filtered = new ArrayList<>();
 
-        for (int i = 1; i < originalPoints.size(); i++) {
-            TrackPoint currentPoint = originalPoints.get(i);
+        for (List<TrackPoint> segPoints : segments.values()) {
+            if (segPoints.isEmpty()) continue;
 
-            double distance = GeoUtils.calculateDistance(lastKeptPoint.getLocation(), currentPoint.getLocation());
-            long timeGap = java.time.Duration.between(lastKeptPoint.getTime(), currentPoint.getTime()).abs().getSeconds();
+            TrackPoint lastKeptPoint = segPoints.get(0);
+            phase1Filtered.add(lastKeptPoint);
 
-            if (distance >= minDistanceMeters || timeGap >= minTimeSeconds || i == originalPoints.size() - 1) {
-                filtered.add(currentPoint);
-                lastKeptPoint = currentPoint;
+            for (int i = 1; i < segPoints.size(); i++) {
+                TrackPoint currentPoint = segPoints.get(i);
+                double distance = GeoUtils.calculateDistance(lastKeptPoint.getLocation(), currentPoint.getLocation());
+                long timeGap = java.time.Duration.between(lastKeptPoint.getTime(), currentPoint.getTime()).abs().getSeconds();
+
+                if (distance >= minDistanceMeters || timeGap >= minTimeSeconds || i == segPoints.size() - 1) {
+                    phase1Filtered.add(currentPoint);
+                    lastKeptPoint = currentPoint;
+                }
             }
         }
-        return filtered;
+
+        int MAX_POINTS_FOR_MAP = 2500;
+        if (phase1Filtered.size() <= MAX_POINTS_FOR_MAP) {
+            return phase1Filtered;
+        }
+
+        List<TrackPoint> heavilyFiltered = new ArrayList<>(MAX_POINTS_FOR_MAP);
+        Map<Integer, List<TrackPoint>> filteredSegments = new LinkedHashMap<>();
+        for (TrackPoint pt : phase1Filtered) {
+            int segId = pt.getSegmentId() != null ? pt.getSegmentId() : 0;
+            filteredSegments.computeIfAbsent(segId, k -> new ArrayList<>()).add(pt);
+        }
+
+        for (List<TrackPoint> segPoints : filteredSegments.values()) {
+            if (segPoints.size() < 2) {
+                continue;
+            }
+
+            int targetSize = (int) Math.round((double) segPoints.size() / phase1Filtered.size() * MAX_POINTS_FOR_MAP);
+            targetSize = Math.max(2, targetSize);
+
+            if (segPoints.size() <= targetSize) {
+                heavilyFiltered.addAll(segPoints);
+            } else {
+                double step = (double) (segPoints.size() - 1) / (targetSize - 1);
+                for (int i = 0; i < targetSize; i++) {
+                    int index = (int) Math.round(i * step);
+                    index = Math.min(index, segPoints.size() - 1);
+                    heavilyFiltered.add(segPoints.get(index));
+                }
+            }
+        }
+        return heavilyFiltered;
     }
 }

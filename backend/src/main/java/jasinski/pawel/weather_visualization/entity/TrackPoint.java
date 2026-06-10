@@ -6,7 +6,10 @@ import org.locationtech.jts.geom.Point;
 import java.time.Instant;
 
 @Entity
-@Table(name = "track_points")
+@Table(name = "track_points", indexes = {
+        @Index(name = "idx_tp_trip_id", columnList = "trip_id"),
+        @Index(name = "idx_tp_weather_id", columnList = "weather_id")
+})
 public class TrackPoint {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "tp_seq_gen")

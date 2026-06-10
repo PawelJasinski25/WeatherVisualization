@@ -6,7 +6,9 @@ import jakarta.persistence.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "weather")
+@Table(name = "weather", indexes = {
+        @Index(name = "idx_weather_trip_id", columnList = "trip_id")
+})
 public class Weather {
 
     @Id

@@ -40,7 +40,7 @@ public class TripController {
 
 
     @PostMapping("/upload")
-    public ResponseEntity<Long> uploadGpxFile(@RequestParam("file") MultipartFile file, Authentication authentication) throws IOException, NoSuchAlgorithmException {
+    public ResponseEntity<Long> uploadGpxFile(@RequestParam("file") MultipartFile file, Authentication authentication) throws Exception {
         String email = authentication.getName();
         Long newTripId = tripService.processGpxFile(file, email);
         return ResponseEntity.ok(newTripId);
