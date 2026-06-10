@@ -149,10 +149,10 @@ const TripsPage = () => {
                     <button
                         onClick={() => setIsMergeModalOpen(true)}
                         className="merge-btn"
-                        disabled={trips.length < 2}
+                        disabled={trips.length < 1}
                     >
                         <Link size={18} />
-                        Połącz trasy
+                        Przytnij / Połącz trasy
                     </button>
                 </div>
 

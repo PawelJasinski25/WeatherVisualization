@@ -112,8 +112,8 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
         e.preventDefault();
         setError('');
 
-        if (selectedIds.length < 2) {
-            setError("Wybierz co najmniej 2 trasy do połączenia.");
+        if (selectedIds.length < 1) {
+            setError("Wybierz co najmniej 1 trasę.");
             return;
         }
         if (!newTripName.trim()) {
@@ -153,7 +153,7 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
         <div className="modal-overlay">
             <div className="modal-content modal-merge-width">
                 <div className="modal-header">
-                    <h3>Połącz trasy GPX</h3>
+                    <h3>Przytnij lub połącz trasy GPX</h3>
                     <button type="button" onClick={onClose} className="modal-close-btn">&times;</button>
                 </div>
 
@@ -284,12 +284,14 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
                         <button type="button" onClick={onClose} disabled={isProcessing} className="modal-btn btn-cancel">
                             Anuluj
                         </button>
-                        <button type="submit" disabled={isProcessing || selectedIds.length < 2 || !newTripName} className="modal-btn btn-submit">
+                        <button type="submit" disabled={isProcessing || selectedIds.length === 0 || !newTripName} className="modal-btn btn-submit">
                             {isProcessing ? (
                                 <span className="btn-loading-content">
                                     <Loader2 size={16} className="anim-spin" /> Przetwarzanie...
                                 </span>
-                            ) : "Połącz wybrane trasy"}
+                            ) : (
+                                selectedIds.length === 1 ? "Zapisz przyciętą trasę" : "Połącz wybrane trasy"
+                            )}
                         </button>
                     </div>
                 </form>
