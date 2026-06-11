@@ -19,8 +19,14 @@ class AuthService{
         });
     }
 
-    logout(){
-        localStorage.removeItem("token")
+    async logout() {
+        try {
+            await api.post("/auth/logout");
+        } catch (error) {
+            console.error("Błąd podczas wylogowywania z serwera", error);
+        } finally {
+            localStorage.removeItem("token");
+        }
     }
 
     getCurrentUser(){

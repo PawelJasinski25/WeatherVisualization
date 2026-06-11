@@ -4,8 +4,23 @@ const api = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
     headers: {
         'Content-Type': 'application/json',
-    }
+    },
+    withCredentials: true
 });
+
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
 
 api.interceptors.request.use(
     (config) => {
@@ -20,5 +35,51 @@ api.interceptors.request.use(
     }
 );
 
-export default api
+api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        const originalRequest = error.config;
+
+        const status = error.response?.status;
+        if ((status === 401 || status === 403) && !originalRequest._retry && originalRequest.url !== '/auth/refresh') {
+
+            if (isRefreshing) {
+                return new Promise(function(resolve, reject) {
+                    failedQueue.push({ resolve, reject });
+                }).then(token => {
+                    originalRequest.headers['Authorization'] = 'Bearer ' + token;
+                    return api(originalRequest);
+                }).catch(err => Promise.reject(err));
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            try {
+                const res = await api.post('/auth/refresh');
+
+                const newAccessToken = res.data.token;
+                localStorage.setItem('token', newAccessToken);
+
+                originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+                processQueue(null, newAccessToken);
+                return api(originalRequest);
+
+            } catch (refreshError) {
+                localStorage.removeItem('token');
+                sessionStorage.setItem("session_expired", "true");
+
+                window.location.href = "/login";
+                return Promise.reject(refreshError);
+            }
+            finally {
+                isRefreshing = false;
+            }
+        }
+
+        return Promise.reject(error);
+    }
+);
+
+export default api;
 

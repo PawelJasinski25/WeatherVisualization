@@ -18,7 +18,8 @@ import java.util.function.Function;
 public class JwtService {
 
     private final Key signingKey;
-    private final long jwtExpirationMs = 1000 * 60 * 60 * 24;
+    private final long jwtExpirationMs = 1000 * 60 * 10;
+    private final long refreshExpirationMs = 1000 * 60 * 60 * 24 * 7;
 
     public JwtService(@Value("${security.jwt.secret}") String secretKey) {
         this.signingKey = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
@@ -38,11 +39,20 @@ public class JwtService {
     }
 
     public String generateToken(Map<String, Object> extraClaims, String email) {
+        return buildToken(extraClaims, email, jwtExpirationMs);
+    }
+
+    public String generateRefreshToken(String email) {
+        return buildToken(new HashMap<>(), email, refreshExpirationMs);
+    }
+
+
+    private String buildToken(Map<String, Object> extraClaims, String email, long expirationTimeMs) {
         return Jwts.builder()
                 .setClaims(extraClaims)
                 .setSubject(email)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTimeMs))
                 .signWith(signingKey, SignatureAlgorithm.HS256)
                 .compact();
     }
