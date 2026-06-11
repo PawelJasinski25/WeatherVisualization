@@ -2,6 +2,8 @@
 import { metricConfig } from '../config/metricConfig';
 import { getProjectedDistance, getDistanceFromLatLonInKm, getProjectedCoords, unprojectMercator, getBearing, interpolateColor } from './geoUtils';
 
+const GAP_THRESHOLD_KM = 150.0;
+
 export const generateSegmentsData = (tripData, activeMetrics) => {
     if (!tripData || !tripData.length) return [];
 
@@ -31,10 +33,14 @@ export const generateSegmentsData = (tripData, activeMetrics) => {
         //liczymy dystanse między punktami w segmencie
         let totalDist = 0;
         const dists = [0];
+
+        const isGap = [false];
         for (let i = 1; i < seg.length; i++) {
             const d = getProjectedDistance(seg[i-1].latitude, seg[i-1].longitude, seg[i].latitude, seg[i].longitude);
+            const dKm = getDistanceFromLatLonInKm(seg[i-1].latitude, seg[i-1].longitude, seg[i].latitude, seg[i].longitude);
             totalDist += d;
-            dists.push(totalDist);
+            dists.push(totalDist)
+            isGap.push(dKm > GAP_THRESHOLD_KM);
         }
 
         activeMetrics.forEach((metricKey, index) => {
@@ -51,6 +57,7 @@ export const generateSegmentsData = (tripData, activeMetrics) => {
 
                 const val = metricConfig[metricKey].getValue(pt);
                 const isNull = val === null || val === undefined;
+                const gapHere = isGap[i];
 
                 const color = isNull ? "#000000" : interpolateColor(val, metricConfig[metricKey].palette);
                 const cColor = isNull ? "#000000" : contourColor;
@@ -62,12 +69,23 @@ export const generateSegmentsData = (tripData, activeMetrics) => {
                     const gap = progress - lastProgress;
                     const epsilon = gap * 0.001;
 
-                    if (!prevIsNull && isNull) {
-                        stops.push(lastProgress + epsilon, "#000000");
-                        contourStops.push(lastProgress + epsilon, "#000000");
-                    } else if (prevIsNull && !isNull) {
-                        stops.push(progress - epsilon, "#000000");
-                        contourStops.push(progress - epsilon, "#000000");
+                    if (gapHere) {
+                        if (!prevIsNull) {
+                            stops.push(lastProgress + epsilon, "#000000");
+                            contourStops.push(lastProgress + epsilon, "#000000");
+                        }
+                        if (!isNull) {
+                            stops.push(progress - epsilon, "#000000");
+                            contourStops.push(progress - epsilon, "#000000");
+                        }
+                    } else {
+                        if (!prevIsNull && isNull) {
+                            stops.push(lastProgress + epsilon, "#000000");
+                            contourStops.push(lastProgress + epsilon, "#000000");
+                        } else if (prevIsNull && !isNull) {
+                            stops.push(progress - epsilon, "#000000");
+                            contourStops.push(progress - epsilon, "#000000");
+                        }
                     }
 
                     stops.push(progress, color);
@@ -94,6 +112,7 @@ export const generateSegmentsData = (tripData, activeMetrics) => {
                 const val0 = metricConfig[activeMetrics[0]].getValue(pt);
                 const val1 = metricConfig[activeMetrics[1]].getValue(pt);
                 const isNull = (val0 === null || val0 === undefined) && (val1 === null || val1 === undefined);
+                const gapHere = isGap[i];
                 const sepColor = isNull ? "#000000" : "rgba(0,0,0,1)";
 
                 if (i === 0) {
@@ -102,8 +121,14 @@ export const generateSegmentsData = (tripData, activeMetrics) => {
                     const gap = progress - lastProgress;
                     const epsilon = gap * 0.001;
 
-                    if (!prevIsNull && isNull) separatorStops.push(lastProgress + epsilon, "#000000");
-                    else if (prevIsNull && !isNull) separatorStops.push(progress - epsilon, "#000000");
+                    if (gapHere) {
+                        if (!prevIsNull) separatorStops.push(lastProgress + epsilon, "#000000");
+                        if (!isNull) separatorStops.push(progress - epsilon, "#000000");
+
+                    } else {
+                        if (!prevIsNull && isNull) separatorStops.push(lastProgress + epsilon, "#000000");
+                        else if (prevIsNull && !isNull) separatorStops.push(progress - epsilon, "#000000");
+                    }
 
                     separatorStops.push(progress, sepColor);
                 }
@@ -137,7 +162,25 @@ export const generateSampledPoints = (tripData, selectedSecondary, currentZoom) 
 
     if (currentSegment.length >= 2) allSegments.push(currentSegment);
 
+    let totalTripDistance = 0;
+    allSegments.forEach(segment => {
+        for (let i = 1; i < segment.length; i++) {
+            totalTripDistance += getDistanceFromLatLonInKm(
+                segment[i-1].latitude, segment[i-1].longitude,
+                segment[i].latitude, segment[i].longitude
+            );
+        }
+    });
+
     let INTERVAL_KM = 10;
+    if (totalTripDistance < 20) {
+        INTERVAL_KM = 2;
+    } else if (totalTripDistance < 100) {
+        INTERVAL_KM = 5;
+    } else{
+        INTERVAL_KM = 10;
+    }
+
     const points = [];
 
     //obliczamy kierunek, w któym biegnie trasa
@@ -159,29 +202,11 @@ export const generateSampledPoints = (tripData, selectedSecondary, currentZoom) 
             const lng = segment[i].longitude;
             const segmentDist = getDistanceFromLatLonInKm(lastLat, lastLng, lat, lng);
 
-            if (segmentDist > INTERVAL_KM) {
-                let distanceCoveredInSegment = INTERVAL_KM - accumulatedDist;
+            if (segmentDist > GAP_THRESHOLD_KM) {
+                accumulatedDist = 0;
+                const currentBearing = getBearing(lastLat, lastLng, lat, lng);
+                points.push({ ...segment[i], lat: lat, lng: lng, routeBearing: currentBearing });
 
-                while (distanceCoveredInSegment <= segmentDist) {
-                    const fraction = distanceCoveredInSegment / segmentDist;
-                    const p1 = getProjectedCoords(lastLat, lastLng);
-                    const p2 = getProjectedCoords(lat, lng);
-                    const interX = p1.x + (p2.x - p1.x) * fraction;
-                    const interY = p1.y + (p2.y - p1.y) * fraction;
-
-                    const interpolatedCoords = unprojectMercator(interX, interY);
-                    const lineBearing = getBearing(lastLat, lastLng, lat, lng);
-
-                    points.push({
-                        ...segment[i],
-                        lat: interpolatedCoords.lat,
-                        lng: interpolatedCoords.lon,
-                        routeBearing: lineBearing
-                    });
-
-                    distanceCoveredInSegment += INTERVAL_KM;
-                }
-                accumulatedDist = segmentDist - (distanceCoveredInSegment - INTERVAL_KM);
             } else {
                 accumulatedDist += segmentDist;
                 if (accumulatedDist >= INTERVAL_KM) {
