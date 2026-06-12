@@ -2,6 +2,7 @@ package jasinski.pawel.weather_visualization.controller;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import jasinski.pawel.weather_visualization.dto.AuthRequest;
 import jasinski.pawel.weather_visualization.dto.AuthResponse;
 import jasinski.pawel.weather_visualization.security.JwtService;
@@ -22,13 +23,13 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody AuthRequest request) {
+    public ResponseEntity<String> register(@Valid @RequestBody AuthRequest request) {
         authenticationService.register(request);
         return ResponseEntity.ok("Zarejestrowano pomyślnie");
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request, HttpServletResponse response) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request, HttpServletResponse response) {
         AuthResponse authResponse = authenticationService.login(request);
 
         String refreshToken = jwtService.generateRefreshToken(request.getEmail());
