@@ -304,6 +304,10 @@ public class TripService {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono trasy"));
 
+        if (!trip.getUser().getEmail().equals(email)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień do edycji tej trasy");
+        }
+
         trip.setName(newName);
         return tripRepository.save(trip);
     }

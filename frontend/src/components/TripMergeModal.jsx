@@ -210,7 +210,7 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
                         </div>
 
                         <div className="form-group">
-                            <label className="form-label">Wybierz pliki do połączenia dostosuj ich zakresy czasowe:</label>
+                            <label className="form-label">Wybierz pliki do połączenia i dostosuj ich zakresy czasowe:</label>
                             <div className="merge-trips-list">
                                 {filteredAndSortedTrips.length === 0 ? (
                                     <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b', fontSize: '0.9rem' }}>

@@ -9,20 +9,24 @@ import java.util.Locale;
 @Service
 public class GeoNamesService {
 
-    private static final String USERNAME = "paweljasinski";
+    static final String USERNAME = "paweljasinski";
 
     //promień 5km
-    private static final String PLACE_API_URL = "http://api.geonames.org/findNearbyPlaceNameJSON?lat={lat}&lng={lng}&radius=5&username={username}";
+    static final String PLACE_API_URL = "http://api.geonames.org/findNearbyPlaceNameJSON?lat={lat}&lng={lng}&radius=5&username={username}";
 
-    private static final String OCEAN_API_URL = "http://api.geonames.org/oceanJSON?lat={lat}&lng={lng}&username={username}";
+    static final String OCEAN_API_URL = "http://api.geonames.org/oceanJSON?lat={lat}&lng={lng}&username={username}";
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
-    private record GeoName(String name, String countryName) {}
-    private record GeoNamesResponse(List<GeoName> geonames) {}
+    public GeoNamesService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
 
-    private record Ocean(String name) {}
-    private record OceanResponse(Ocean ocean) {}
+    record GeoName(String name, String countryName) {}
+    record GeoNamesResponse(List<GeoName> geonames) {}
+
+    record Ocean(String name) {}
+    record OceanResponse(Ocean ocean) {}
 
     public String getPlaceName(double lat, double lng) {
         try {
