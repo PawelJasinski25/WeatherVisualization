@@ -13,56 +13,36 @@ class GeoUtilsTest {
     private final GeometryFactory factory = new GeometryFactory();
 
 
-    @Test
-    void calculateDistance_shouldReturnZero_whenAnyPointIsNull() {
-        Point p = createPoint(52.0, 21.0);
-
-        assertThat(GeoUtils.calculateDistance(null, null)).isEqualTo(0.0);
-        assertThat(GeoUtils.calculateDistance(p, null)).isEqualTo(0.0);
-        assertThat(GeoUtils.calculateDistance(null, p)).isEqualTo(0.0);
-    }
-
 
     @Test
     void calculateDistance_shouldReturnZero_forSameCoordinates() {
-        Point p1 = createPoint(52.2297, 21.0122);
-        Point p2 = createPoint(52.2297, 21.0122);
-
-        assertThat(GeoUtils.calculateDistance(p1, p2)).isEqualTo(0.0);
+        assertThat(GeoUtils.calculateDistance(52.2297, 21.0122, 52.2297, 21.0122)).isEqualTo(0.0);
     }
 
     @Test
     void calculateDistance_shouldCalculateCorrectly_alongEquator() {
 
-        Point p1 = createPoint(0.0, 0.0);
-        Point p2 = createPoint(0.0, 1.0);
-
-        double distance = GeoUtils.calculateDistance(p1, p2);
-
+        double distance = GeoUtils.calculateDistance(0.0, 0.0, 0.0, 1.0);
         assertThat(distance).isCloseTo(111194.9, within(1.0));
     }
 
     @Test
     void calculateDistance_shouldCalculateCorrectly_alongMeridian() {
-        Point p1 = createPoint(10.0, 20.0);
-        Point p2 = createPoint(11.0, 20.0);
 
-        double distance = GeoUtils.calculateDistance(p1, p2);
-
+        double distance = GeoUtils.calculateDistance(10.0, 20.0, 11.0, 20.0);
         assertThat(distance).isCloseTo(111194.9, within(1.0));
     }
 
     @Test
     void calculateDistance_shouldCalculateCorrectly_betweenRealCities() {
-        Point warsaw = createPoint(52.2297, 21.0122);
-        Point krakow = createPoint(50.0647, 19.9450);
+        double warsaw_lat = 52.2297;
+        double warsaw_lon = 21.0122;
 
-        double distance = GeoUtils.calculateDistance(warsaw, krakow);
+        double krakow_lat = 50.0647;
+        double krakow_lon = 19.9450;
+
+        double distance = GeoUtils.calculateDistance(warsaw_lat, warsaw_lon, krakow_lat, krakow_lon);
 
         assertThat(distance).isCloseTo(252000.0, within(2000.0));
-    }
-
-    private Point createPoint(double lat, double lng) {
-        return factory.createPoint(new Coordinate(lng, lat));
     }
 }

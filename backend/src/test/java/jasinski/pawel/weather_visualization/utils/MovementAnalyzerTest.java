@@ -140,10 +140,10 @@ class MovementAnalyzerTest {
         assertThat(day2.events.get(0).start()).isEqualTo(Instant.parse("2023-05-11T00:00:00Z"));
     }
 
-    private TrackPoint createPoint(double lat, double lng, String instantStr) {
+    private TrackPoint createPoint(double lat, double lon, String instantStr) {
         TrackPoint tp = new TrackPoint();
-        Point location = factory.createPoint(new Coordinate(lng, lat));
-        tp.setLocation(location);
+        tp.setLatitude(lat);
+        tp.setLongitude(lon);
         tp.setTime(Instant.parse(instantStr));
         return tp;
     }

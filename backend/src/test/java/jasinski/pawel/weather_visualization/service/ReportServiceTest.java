@@ -166,7 +166,8 @@ class ReportServiceTest {
 
     private TrackPoint createPoint(double lat, double lon, String timeStr, int segmentId, double temp) {
         TrackPoint pt = new TrackPoint();
-        pt.setLocation(factory.createPoint(new Coordinate(lon, lat)));
+        pt.setLongitude(lon);
+        pt.setLatitude(lat);
         pt.setTime(Instant.parse(timeStr));
         pt.setSegmentId(segmentId);
 

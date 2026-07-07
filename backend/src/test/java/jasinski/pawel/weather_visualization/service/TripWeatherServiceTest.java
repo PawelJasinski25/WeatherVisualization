@@ -180,8 +180,8 @@ class TripWeatherServiceTest {
 
     private TrackPoint createPoint(double lat, double lon, String timeStr) {
         TrackPoint pt = new TrackPoint();
-        Point location = factory.createPoint(new Coordinate(lon, lat));
-        pt.setLocation(location);
+        pt.setLongitude(lon);
+        pt.setLatitude(lat);
         pt.setTime(Instant.parse(timeStr));
         return pt;
     }

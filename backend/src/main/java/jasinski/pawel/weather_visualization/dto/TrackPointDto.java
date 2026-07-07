@@ -49,8 +49,8 @@ public record TrackPointDto(
     public static TrackPointDto fromEntityWithSpeed(TrackPoint p, Double speed) {
         Weather w = p.getWeather();
         return new TrackPointDto(
-                p.getLocation() != null ? p.getLocation().getY() : 0.0,
-                p.getLocation() != null ? p.getLocation().getX() : 0.0,
+                p.getLatitude() != null ? p.getLatitude() : 0.0,
+                p.getLongitude() != null ? p.getLongitude() : 0.0,
                 p.getSegmentId() != null ? p.getSegmentId() : 0.0,
                 p.getTime() != null ? (double) p.getTime().toEpochMilli() : 0.0,
                 4,

@@ -109,10 +109,10 @@ class AstronomyAnalyzerTest {
         assertThat(stats.sunrisePt()).isSameAs(point);
     }
 
-    private TrackPoint createPoint(double lat, double lng, String instantStr) {
+    private TrackPoint createPoint(double lat, double lon, String instantStr) {
         TrackPoint tp = new TrackPoint();
-        Point location = factory.createPoint(new Coordinate(lng, lat));
-        tp.setLocation(location);
+        tp.setLongitude(lon);
+        tp.setLatitude(lat);
         tp.setTime(Instant.parse(instantStr));
         return tp;
     }

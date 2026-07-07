@@ -130,8 +130,8 @@ class TripMapServiceTest {
 
     private TrackPoint createPoint(double lat, double lon, String timeStr, int segmentId, Weather weather) {
         TrackPoint pt = new TrackPoint();
-        Point location = factory.createPoint(new Coordinate(lon, lat));
-        pt.setLocation(location);
+        pt.setLongitude(lon);
+        pt.setLatitude(lat);
         pt.setTime(Instant.parse(timeStr));
         pt.setSegmentId(segmentId);
         pt.setWeather(weather);

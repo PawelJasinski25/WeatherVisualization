@@ -208,7 +208,7 @@ public class TripService {
                     long timeGap = java.time.Duration.between(lastProcessedPoint.getTime(), originalPt.getTime()).abs().getSeconds();
 
                     double distanceGap = GeoUtils.calculateDistance(
-                            lastProcessedPoint.getLocation(), originalPt.getLocation());
+                            lastProcessedPoint.getLatitude(), lastProcessedPoint.getLongitude(), originalPt.getLatitude(), originalPt.getLongitude());
 
                     if (timeGap > MAX_TIME_GAP_SECONDS || distanceGap > MAX_DISTANCE_METERS) {
                         currentNewSegmentId++;
@@ -224,9 +224,9 @@ public class TripService {
             clonedPt.setTrip(savedTrip);
             clonedPt.setSegmentId(currentNewSegmentId);
             clonedPt.setTime(originalPt.getTime());
-            clonedPt.setElevation(originalPt.getElevation());
             clonedPt.setSpeed(originalPt.getSpeed());
-            clonedPt.setLocation(originalPt.getLocation());
+            clonedPt.setLongitude(originalPt.getLongitude());
+            clonedPt.setLatitude(originalPt.getLatitude());
 
             if (originalPt.getWeather() != null) {
                 Long originalWeatherId = originalPt.getWeather().getId();

@@ -25,8 +25,8 @@ public class AstronomyAnalyzer {
         }
 
         TrackPoint middlePoint = pointsOfDay.get(pointsOfDay.size() / 2);
-        double lat = middlePoint.getLocation().getY();
-        double lng = middlePoint.getLocation().getX();
+        double lat = middlePoint.getLatitude();
+        double lng = middlePoint.getLongitude();
         Instant baseTime = middlePoint.getTime();
 
         //Liczenie czasu zjawisk

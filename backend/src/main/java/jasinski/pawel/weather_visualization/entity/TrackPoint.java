@@ -21,11 +21,10 @@ public class TrackPoint {
     private Long id;
 
     private Instant time;
-    private double elevation;
     private Double speed;
 
-    @Column(columnDefinition = "geography(Point, 4326)")
-    private Point location;
+    private double latitude;
+    private double longitude;
 
     @ManyToOne
     @JoinColumn(name = "trip_id", nullable = false)
@@ -54,20 +53,20 @@ public class TrackPoint {
         this.time = time;
     }
 
-    public double getElevation() {
-        return elevation;
+    public Double getLatitude() {
+        return latitude;
     }
 
-    public void setElevation(double elevation) {
-        this.elevation = elevation;
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
     }
 
-    public Point getLocation() {
-        return location;
+    public Double getLongitude() {
+        return longitude;
     }
 
-    public void setLocation(Point location) {
-        this.location = location;
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
     }
 
     public Trip getTrip() {

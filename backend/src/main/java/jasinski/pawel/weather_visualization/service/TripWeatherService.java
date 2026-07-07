@@ -26,8 +26,8 @@ public class TripWeatherService {
         Map<String, GridReq> uniqueGridRequests = new HashMap<>();
 
         for (TrackPoint pt : optimizedPoints) {
-            double latitude = pt.getLocation().getY();
-            double longitude = pt.getLocation().getX();
+            double latitude = pt.getLatitude();
+            double longitude = pt.getLongitude();
 
             // Tworzymy siatkę ~11km (zaokrąglanie do 1 miejsca po przecinku)
             String dateStr = pt.getTime().toString().substring(0, 10);
@@ -70,10 +70,10 @@ public class TripWeatherService {
             String dateStr = pt.getTime().toString().substring(0, 10);
             String targetHourStr = pt.getTime().toString().substring(0, 13) + ":00";
 
-            double gridLat = Math.round(pt.getLocation().getY() * 10.0) / 10.0;
-            double gridLon = Math.round(pt.getLocation().getX() * 10.0) / 10.0;
+            double gridLat = Math.round(pt.getLatitude() * 10.0) / 10.0;
+            double gridLon = Math.round(pt.getLongitude() * 10.0) / 10.0;
 
-            boolean isWater = waterDetectionService.isWater(pt.getLocation().getY(), pt.getLocation().getX());
+            boolean isWater = waterDetectionService.isWater(pt.getLatitude(), pt.getLongitude());
 
             String dayCacheKey = dateStr + "_" + gridLat + "_" + gridLon;
             String hourCacheKey = targetHourStr + "_" + gridLat + "_" + gridLon + (isWater ? "_WATER" : "_LAND");
@@ -83,7 +83,7 @@ public class TripWeatherService {
             if (w == null) {
                 OpenMeteoService.OpenMeteoResponse res = dailyWeatherCache.get(dayCacheKey);
                 if (res != null) {
-                    w = openMeteoService.buildWeatherEntity(savedTrip, pt.getLocation().getY(), pt.getLocation().getX(), pt.getTime(), res);
+                    w = openMeteoService.buildWeatherEntity(savedTrip, pt.getLatitude(), pt.getLongitude(), pt.getTime(), res);
                     if (w != null) {
                         if (!isWater) {
                             stripMarineDataFromWeather(w);
@@ -137,7 +137,7 @@ public class TripWeatherService {
                         long timeDiff = Math.abs(java.time.Duration.between(pt.getTime(), neighborPt.getTime()).getSeconds());
 
                         if (timeDiff <= MAX_TIME_GAP_SECONDS && timeDiff < minTimeDiff) {
-                            double dist = GeoUtils.calculateDistance(pt.getLocation(), neighborPt.getLocation());
+                            double dist = GeoUtils.calculateDistance(pt.getLatitude(),pt.getLongitude(), neighborPt.getLatitude(), neighborPt.getLongitude());
 
                             if (dist <= MAX_DISTANCE_METERS) {
                                 closestMarine = neighborWeather;

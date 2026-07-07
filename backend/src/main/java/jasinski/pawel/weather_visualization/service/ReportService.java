@@ -146,7 +146,7 @@ public class ReportService {
             TrackPoint p2 = points.get(i + 1);
 
             if (p1.getSegmentId() != null && p1.getSegmentId().equals(p2.getSegmentId())) {
-                double dist = GeoUtils.calculateDistance(p1.getLocation(), p2.getLocation());
+                double dist = GeoUtils.calculateDistance(p1.getLatitude(), p1.getLongitude(), p2.getLatitude(), p2.getLongitude());
                 double dur = Math.abs(Duration.between(p1.getTime(), p2.getTime()).toMillis()) / 1000.0;
 
                 if (dur > 0) {

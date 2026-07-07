@@ -21,8 +21,8 @@ public class Weather {
     private Trip trip;
 
     private Instant time;
-    private double latitude;
-    private double longitude;
+    private Double latitude;
+    private Double longitude;
     private Double temp;
 
     @Column(name = "wind_speed")

@@ -87,7 +87,7 @@ public class TripMapService {
     private void addMarkerIfPresent(List<AstronomyMarkerDto> markers, String label, TrackPoint pt, LocalTime time, LocalDate date) {
         if (pt != null && time != null) {
             String formattedTime = LocalDateTime.of(date, time).format(MARKER_FMT);
-            markers.add(new AstronomyMarkerDto(label, pt.getLocation().getY(), pt.getLocation().getX(), formattedTime));
+            markers.add(new AstronomyMarkerDto(label, pt.getLatitude(), pt.getLongitude(), formattedTime));
         }
     }
 
@@ -130,8 +130,8 @@ public class TripMapService {
 
     private TrackPointDto mapToDto(TrackPoint point, int dayPhase) {
         Weather w = point.getWeather();
-        double lat = point.getLocation().getY();
-        double lon = point.getLocation().getX();
+        double lat = point.getLatitude();
+        double lon = point.getLongitude();
         double segmentId = point.getSegmentId() != null ? point.getSegmentId() : 0.0;
         double timeMs = point.getTime() != null ? (double) point.getTime().toEpochMilli() : 0.0;
 
@@ -172,7 +172,7 @@ public class TripMapService {
 
             for (int i = 1; i < segPoints.size(); i++) {
                 TrackPoint currentPoint = segPoints.get(i);
-                double distance = GeoUtils.calculateDistance(lastKeptPoint.getLocation(), currentPoint.getLocation());
+                double distance = GeoUtils.calculateDistance(lastKeptPoint.getLatitude(), lastKeptPoint.getLongitude(), currentPoint.getLatitude(), currentPoint.getLongitude());
                 long timeGap = java.time.Duration.between(lastKeptPoint.getTime(), currentPoint.getTime()).abs().getSeconds();
 
                 if (distance >= minDistanceMeters || timeGap >= minTimeSeconds || i == segPoints.size() - 1) {

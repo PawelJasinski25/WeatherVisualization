@@ -8,6 +8,8 @@ import org.locationtech.jts.geom.Point;
 import java.time.*;
 import java.util.*;
 
+import static jasinski.pawel.weather_visualization.utils.GeoUtils.calculateDistance;
+
 public class MovementAnalyzer {
 
     private static final double MOVING_SPEED_THRESHOLD_KMH = 0.7;
@@ -34,10 +36,10 @@ public class MovementAnalyzer {
             TrackPoint nextPoint = allPoints.get(i + 1);
 
             long gapSec = Math.abs(Duration.between(startPoint.getTime(), nextPoint.getTime()).getSeconds());
-            double gapDist = calculateDistance(startPoint.getLocation(), nextPoint.getLocation());
+            double gapDist = calculateDistance(startPoint.getLatitude(),startPoint.getLongitude(), nextPoint.getLatitude(), nextPoint.getLongitude());
 
             if (gapSec >= MIN_GAP_DURATION_SECONDS && gapDist >= MIN_GAP_DISTANCE_METERS) {
-                rawEvents.add(new TimelineEvent("BRAK DANYCH", startPoint.getTime(), nextPoint.getTime(), startPoint.getLocation().getY(), startPoint.getLocation().getX(), null));
+                rawEvents.add(new TimelineEvent("BRAK DANYCH", startPoint.getTime(), nextPoint.getTime(), startPoint.getLatitude(), startPoint.getLongitude(), null));
                 i++;
                 continue;
             }
@@ -52,7 +54,7 @@ public class MovementAnalyzer {
                 TrackPoint currentJ = allPoints.get(j);
                 TrackPoint nextJ = allPoints.get(j + 1);
                 long nextGapSec = Math.abs(Duration.between(currentJ.getTime(), nextJ.getTime()).getSeconds());
-                double nextGapDist = calculateDistance(currentJ.getLocation(), nextJ.getLocation());
+                double nextGapDist = calculateDistance(currentJ.getLatitude(),currentJ.getLongitude(), nextJ.getLatitude(), nextJ.getLongitude());
 
                 if (nextStepIsMoving != isMovingBlock || (nextGapSec >= MIN_GAP_DURATION_SECONDS && nextGapDist >= MIN_GAP_DISTANCE_METERS)) {
                     break;
@@ -63,8 +65,8 @@ public class MovementAnalyzer {
 
             TrackPoint endPoint = allPoints.get(j);
             String type = isMovingBlock ? "RUCH" : "POSTÓJ";
-            double lat = anchor != null ? anchor.getLocation().getY() : 0.0;
-            double lon = anchor != null ? anchor.getLocation().getX() : 0.0;
+            double lat = anchor != null ? anchor.getLatitude() : 0.0;
+            double lon = anchor != null ? anchor.getLongitude() : 0.0;
 
             rawEvents.add(new TimelineEvent(type, startPoint.getTime(), endPoint.getTime(), lat, lon, null));
 
@@ -84,7 +86,7 @@ public class MovementAnalyzer {
         double[] dists = new double[n];
         long[] durs = new long[n];
         for (int i = 0; i < n; i++) {
-            dists[i] = calculateDistance(points.get(i).getLocation(), points.get(i+1).getLocation());
+            dists[i] = calculateDistance(points.get(i).getLatitude(),points.get(i).getLongitude(), points.get(i+1).getLatitude(), points.get(i+1).getLongitude());
             durs[i] = Math.abs(Duration.between(points.get(i).getTime(), points.get(i+1).getTime()).getSeconds());
         }
 
@@ -213,14 +215,4 @@ public class MovementAnalyzer {
         return dailyData;
     }
 
-    private static double calculateDistance(Point p1, Point p2) {
-        double earthRadius = 6371000;
-        double dLat = Math.toRadians(p2.getY() - p1.getY());
-        double dLon = Math.toRadians(p2.getX() - p1.getX());
-        double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(Math.toRadians(p1.getY())) * Math.cos(Math.toRadians(p2.getY())) *
-                        Math.sin(dLon/2) * Math.sin(dLon/2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return earthRadius * c;
-    }
 }

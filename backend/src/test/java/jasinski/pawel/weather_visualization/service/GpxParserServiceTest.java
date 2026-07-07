@@ -69,7 +69,6 @@ class GpxParserServiceTest {
         List<TrackPoint> points = gpxParserService.parseAndFilterGpx(is, mockTrip);
 
 
-        assertThat(points.get(0).getElevation()).isEqualTo(110.5);
         assertThat(points.get(0).getSpeed()).isEqualTo(18.0);
     }
 

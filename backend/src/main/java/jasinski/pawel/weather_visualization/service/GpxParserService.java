@@ -154,7 +154,8 @@ public class GpxParserService {
 
                         double lat = Double.parseDouble(reader.getAttributeValue(null, "lat"));
                         double lon = Double.parseDouble(reader.getAttributeValue(null, "lon"));
-                        currentPoint.setLocation(geometryFactory.createPoint(new Coordinate(lon, lat)));
+                        currentPoint.setLatitude(lat);
+                        currentPoint.setLongitude(lon);
                     }
                     break;
 
@@ -164,8 +165,6 @@ public class GpxParserService {
 
                     if ("time".equals(currentTag)) {
                         currentPoint.setTime(Instant.parse(text));
-                    } else if ("ele".equals(currentTag)) {
-                        currentPoint.setElevation(Double.parseDouble(text));
                     } else if ("speed".equals(currentTag) || "navionics_speed".equals(currentTag)) {
                         currentPoint.setSpeed(Double.parseDouble(text) * 3.6);
                     }
@@ -179,7 +178,7 @@ public class GpxParserService {
                             optimizedPoints.add(currentPoint);
                             lastSavedPoint = currentPoint;
                         } else {
-                            double distance = GeoUtils.calculateDistance(lastSavedPoint.getLocation(), currentPoint.getLocation());
+                            double distance = GeoUtils.calculateDistance(lastSavedPoint.getLatitude(),lastSavedPoint.getLongitude(), currentPoint.getLatitude(), currentPoint.getLongitude());
                             long timeGap = Duration.between(lastSavedPoint.getTime(), currentPoint.getTime()).abs().getSeconds();
 
                             if (distance >= 10.0 || timeGap >= 30) {
