@@ -3,6 +3,8 @@ from weasyprint import HTML
 import os
 import time
 from concurrent.futures import ProcessPoolExecutor
+import matplotlib
+import matplotlib.font_manager as font_manager
 
 from utils import format_seconds, format_val, format_time, get_duration_seconds, format_place, format_metric, convert_raw
 
@@ -10,6 +12,20 @@ from charts.meteogram import create_meteogram_chart
 from charts.polar_rose import create_polar_rose
 from charts.route_map import create_route_map
 from charts.timelines import create_timeline_chart, create_astro_timeline_chart
+
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+font_dir = os.path.join(current_dir, 'fonts')
+
+if os.path.exists(font_dir):
+    for font_file in os.listdir(font_dir):
+        if font_file.endswith('.ttf'):
+            font_path = os.path.join(font_dir, font_file)
+            font_manager.fontManager.addfont(font_path)
+
+matplotlib.rcParams['font.family'] = 'sans-serif'
+matplotlib.rcParams['font.sans-serif'] = ['Segoe UI', 'sans-serif']
+matplotlib.rcParams['axes.unicode_minus'] = False
 
 MAX_WORKERS = int(os.environ.get("MAX_WORKERS", 4))
 
@@ -167,6 +183,6 @@ def generate_report_pdf(report_data: dict) -> bytes:
 
     total_time = time.time() - start_total
 
-    print(f"✅ RAPORT WYGENEROWANY W: {total_time:.2f} s\n")
+    print(f" RAPORT WYGENEROWANY W: {total_time:.2f} s\n")
 
     return pdf_bytes

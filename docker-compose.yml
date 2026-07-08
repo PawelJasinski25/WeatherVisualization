@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: weather_visualization         
+      POSTGRES_USER: postgres          
+      POSTGRES_PASSWORD: postgres   
+    ports:
+      - "5432:5432" 
+    volumes:
+      - postgres_data:/var/lib/postgresql/data 
+    networks:
+      - app_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_URL=jdbc:postgresql://db:5432/weather_visualization?reWriteBatchedInserts=true
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - PYTHON_PDF_URL=http://pdf_service:8000/generate-pdf
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+      - JWT_SECRET=VCIDwzcfMGmUkWxfc8KPWbNWLJs7EuiIHMcZd7FohcH
+    networks:
+      - app_network
+    depends_on:
+      - db 
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    networks:
+      - app_network
+    depends_on:
+      - backend
+
+  pdf_service:
+    build:
+      context: ./pdf-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  postgres_data:

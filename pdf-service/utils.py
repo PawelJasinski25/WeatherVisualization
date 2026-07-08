@@ -1,6 +1,7 @@
 import re
 from datetime import datetime, timezone
 from PIL import ImageFont
+import os
 
 try:
     from zoneinfo import ZoneInfo
@@ -77,10 +78,18 @@ def format_place(place_name):
     return p_str
 
 def get_font(size, bold=False, italic=False):
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    font_dir = os.path.join(current_dir, 'fonts')
     try:
-        if bold: return ImageFont.truetype("arialbd.ttf", size)
-        elif italic: return ImageFont.truetype("ariali.ttf", size)
-        else: return ImageFont.truetype("arial.ttf", size)
+        if bold:
+            font_path = os.path.join(font_dir, 'segoeuib.ttf')
+            return ImageFont.truetype(font_path, size)
+        elif italic:
+            font_path = os.path.join(font_dir, 'segoeuii.ttf')
+            return ImageFont.truetype(font_path, size)
+        else:
+            font_path = os.path.join(font_dir, 'segoeui.ttf')
+            return ImageFont.truetype(font_path, size)
     except IOError:
         return ImageFont.load_default()
 

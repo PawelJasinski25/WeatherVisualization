@@ -9,7 +9,7 @@
     </tr>
     </thead>
     <tbody>
-    <tr><th colspan="{{ 4 if moving else 3 }}" style="background-color: #e2e8f0; color: #000;">Temp. i Powietrze</th></tr>
+    <tr><th colspan="{{ 4 if moving else 3 }}" style="background-color: #e2e8f0; color: #000;">Temperatura/powietrze</th></tr>
     <tr>
         <td>Temperatura</td>
         <td><b>{{ overall.avgTemp | format_metric('temp', prefs) }}</b></td>
@@ -43,7 +43,7 @@
         <td><b>{{ overall.maxWindGusts | format_metric('wind', prefs) }}</b></td>
     </tr>
 
-    <tr><th colspan="{{ 4 if moving else 3 }}" style="background-color: #e2e8f0; color: #000;">Opady / Chmury</th></tr>
+    <tr><th colspan="{{ 4 if moving else 3 }}" style="background-color: #e2e8f0; color: #000;">Opady/chmury</th></tr>
     <tr>
         <td>Deszcz (suma)</td>
         <td><b>{{ overall.sumRain | format_metric('rain', prefs) }}</b></td>
