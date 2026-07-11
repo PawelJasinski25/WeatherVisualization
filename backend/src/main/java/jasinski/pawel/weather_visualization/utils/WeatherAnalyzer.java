@@ -51,7 +51,7 @@ public class WeatherAnalyzer {
             windWaveP.add(w.getWindWavePeriod(), weightSeconds);
             swellH.add(w.getSwellWaveHeight(), weightSeconds);
             swellP.add(w.getSwellWavePeriod(), weightSeconds);
-            oceanCurVel.add(w.getOceanCurrentVelocity(), weightSeconds);
+            oceanCurVel.add(w.getOceanCurrentVelocity() != null ? w.getOceanCurrentVelocity() / 3.6 : null, weightSeconds);
             seaTemp.add(w.getSeaTemperature(), weightSeconds);
 
             rain.add(w.getRain(), weightSeconds);

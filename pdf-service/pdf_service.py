@@ -69,6 +69,8 @@ def enrich_with_max(stats_dict, points):
                 if val is not None and str(val).lower() != 'nan':
                     try:
                         v_float = float(val)
+                        if target_key == 'maxOceanCurrentVelocity':
+                            v_float = v_float / 3.6
                         if v_float > current_maxes[target_key]:
                             current_maxes[target_key] = v_float
                             has_valid[target_key] = True
