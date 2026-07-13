@@ -88,6 +88,7 @@ def generate_report_pdf(report_data: dict) -> bytes:
     start_total = time.time()
 
     prefs = report_data.get('preferences', {})
+    modules = report_data.get("modules", [])
     daily_summaries = report_data.get('dailySummaries', [])
     all_trip_points = report_data.get('points', [])
 
@@ -178,7 +179,7 @@ def generate_report_pdf(report_data: dict) -> bytes:
         report_data['overall_route_map'] = overall_map_future.result()
 
     template = env.get_template('report_template.html')
-    html_content = template.render(data=report_data, prefs=prefs)
+    html_content = template.render(data=report_data, prefs=prefs, modules=modules)
 
     base_dir = os.path.abspath('templates')
     pdf_bytes = HTML(string=html_content, base_url=base_dir).write_pdf()

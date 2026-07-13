@@ -55,7 +55,16 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
     }, [tripId]);
 
     const segmentsData = useMemo(() => generateSegmentsData(tripData, activeMetrics), [tripData, activeMetrics]);
-    const sampledPoints = useMemo(() => generateSampledPoints(tripData, selectedSecondary, currentZoom), [tripData, selectedSecondary, currentZoom]);
+
+
+    const allSampledPoints = useMemo(() => generateSampledPoints(tripData), [tripData]);
+    const discreteZoom = Math.round(currentZoom);
+
+    const sampledPoints = useMemo(() => {
+        if (currentZoom < 5.5) return [];
+        if (selectedSecondary.filter(Boolean).length === 0) return [];
+        return allSampledPoints.filter(pt => pt.minZoom <= discreteZoom);
+    }, [allSampledPoints, selectedSecondary, discreteZoom]);
 
     const markersWithOffset = useMemo(() => calculateMarkersOffset(astroMarkers), [astroMarkers]);
 

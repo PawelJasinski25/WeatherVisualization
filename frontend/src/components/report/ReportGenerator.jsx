@@ -109,7 +109,8 @@ const ReportGenerator = ({ tripId }) => {
                 modules: modulesToExport,
                 reportData: {
                     ...formData,
-                    preferences: units
+                    preferences: units,
+                    modules: modulesToExport
                 }
             }, {
                 responseType: 'blob',

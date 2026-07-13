@@ -5,6 +5,7 @@
 
 <!-- STRONA 1: KARTA REJSU-->
 
+{% if 'cruiseCard' in modules %}
 <div class="form-title">
     {{ data.tripName if data.tripName else 'Rejs po Zatoce Botnickiej' }}
     <br>
@@ -229,6 +230,7 @@
 </table>
 
 <div class="page-break"></div>
+{% endif %}
 
 
 <!-- STRONA 2: PODSUMOWANIE TRASY               -->

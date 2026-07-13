@@ -142,8 +142,8 @@ export const generateSegmentsData = (tripData, activeMetrics) => {
     });
 };
 
-export const generateSampledPoints = (tripData, selectedSecondary, currentZoom) => {
-    if (!tripData || !tripData.length || selectedSecondary.filter(Boolean).length === 0 || currentZoom < 9.0) return [];
+export const generateSampledPoints = (tripData) => { // ZMIANA: Usunęliśmy selectedSecondary i currentZoom
+    if (!tripData || !tripData.length) return [];
 
     const allSegments = [];
     let currentSegment = [];
@@ -172,16 +172,12 @@ export const generateSampledPoints = (tripData, selectedSecondary, currentZoom) 
         }
     });
 
-    let INTERVAL_KM = 10;
-    if (totalTripDistance < 20) {
-        INTERVAL_KM = 2;
-    } else if (totalTripDistance < 100) {
-        INTERVAL_KM = 5;
-    } else{
-        INTERVAL_KM = 10;
-    }
+    let baseInterval = 10;
+    if (totalTripDistance < 20) baseInterval = 2;
+    else if (totalTripDistance < 100) baseInterval = 5;
 
-    const points = [];
+    const INTERVAL_KM = baseInterval;
+    const candidatePoints = [];
 
     //obliczamy kierunek, w któym biegnie trasa
     allSegments.forEach(segment => {
@@ -194,7 +190,7 @@ export const generateSampledPoints = (tripData, selectedSecondary, currentZoom) 
             initialBearing = getBearing(segment[0].latitude, segment[0].longitude, segment[1].latitude, segment[1].longitude);
         }
 
-        points.push({ ...segment[0], lat: segment[0].latitude, lng: segment[0].longitude, routeBearing: initialBearing });
+        candidatePoints.push({ ...segment[0], lat: segment[0].latitude, lng: segment[0].longitude, routeBearing: initialBearing });
 
         //rozmieszczenie punktow mniej wiecej co interval
         for (let i = 1; i < segment.length; i++) {
@@ -205,23 +201,53 @@ export const generateSampledPoints = (tripData, selectedSecondary, currentZoom) 
             if (segmentDist > GAP_THRESHOLD_KM) {
                 accumulatedDist = 0;
                 const currentBearing = getBearing(lastLat, lastLng, lat, lng);
-                points.push({ ...segment[i], lat: lat, lng: lng, routeBearing: currentBearing });
+                candidatePoints.push({ ...segment[i], lat: lat, lng: lng, routeBearing: currentBearing });
 
             } else {
                 accumulatedDist += segmentDist;
                 if (accumulatedDist >= INTERVAL_KM) {
                     const currentBearing = getBearing(lastLat, lastLng, lat, lng);
-                    points.push({ ...segment[i], lat: lat, lng: lng, routeBearing: currentBearing });
+                    candidatePoints.push({ ...segment[i], lat: lat, lng: lng, routeBearing: currentBearing });
                     accumulatedDist = 0;
                 }
             }
-
             lastLat = lat;
             lastLng = lng;
         }
     });
 
-    return points;
+    candidatePoints.forEach(p => p.minZoom = 99);
+
+    //sprawdzanie kolizji
+    let clearanceFactor = 6000;
+    if (totalTripDistance < 30) clearanceFactor = 1000;
+    else if (totalTripDistance < 100) clearanceFactor = 3000;
+
+    const zoomLevels = [5, 6, 7, 8, 9, 10];
+
+    for (const z of zoomLevels) {
+        const MIN_CLEARANCE_KM = clearanceFactor / Math.pow(2, z);
+        const selectedAtThisZoom = candidatePoints.filter(p => p.minZoom <= z);
+
+        for (const candidate of candidatePoints) {
+            if (candidate.minZoom <= z) continue;
+
+            let hasCollision = false;
+            for (const selected of selectedAtThisZoom) {
+                if (getDistanceFromLatLonInKm(candidate.lat, candidate.lng, selected.lat, selected.lng) < MIN_CLEARANCE_KM) {
+                    hasCollision = true;
+                    break;
+                }
+            }
+
+            if (!hasCollision) {
+                candidate.minZoom = z;
+                selectedAtThisZoom.push(candidate);
+            }
+        }
+    }
+
+    return candidatePoints;
 };
 
 
