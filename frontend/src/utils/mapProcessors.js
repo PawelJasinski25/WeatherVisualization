@@ -142,7 +142,7 @@ export const generateSegmentsData = (tripData, activeMetrics) => {
     });
 };
 
-export const generateSampledPoints = (tripData) => { // ZMIANA: Usunęliśmy selectedSecondary i currentZoom
+export const generateSampledPoints = (tripData) => {
     if (!tripData || !tripData.length) return [];
 
     const allSegments = [];

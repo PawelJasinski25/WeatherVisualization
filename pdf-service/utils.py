@@ -60,8 +60,9 @@ def format_val(val, unit='', decimals=1):
     if val is None or str(val).lower() == 'nan':
         return '--'
     try:
+        value_str = f"{float(val):.{decimals}f}".replace('.', ',')
         space = "" if unit in ['°C', '%', '°'] else " "
-        return f"{float(val):.{decimals}f}{space}{unit}".strip()
+        return f"{value_str}{space}{unit}".strip()
     except ValueError:
         return '--'
 
@@ -164,5 +165,6 @@ def format_metric(val, category, prefs, decimals=1):
     if unit_str == 'bft':
         return f"{int(v)} bft"
 
+    formatted_num = f"{v:.{decimals}f}".replace('.', ',')
     space = "" if unit_str in ['°C', '°F', '%', '°'] else " "
-    return f"{v:.{decimals}f}{space}{unit_str}".strip()
+    return f"{formatted_num}{space}{unit_str}".strip()

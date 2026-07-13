@@ -6,12 +6,13 @@ from concurrent.futures import ProcessPoolExecutor
 import matplotlib
 import matplotlib.font_manager as font_manager
 
-from utils import format_seconds, format_val, format_time, get_duration_seconds, format_place, format_metric, convert_raw
+from utils import format_seconds, format_val, format_time, get_duration_seconds, format_place, format_metric, convert_raw, parse_dt
 
 from charts.meteogram import create_meteogram_chart
 from charts.polar_rose import create_polar_rose
 from charts.route_map import create_route_map
 from charts.timelines import create_timeline_chart, create_astro_timeline_chart
+
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -82,6 +83,44 @@ def enrich_with_max(stats_dict, points):
         if has_valid[k]:
             stats_dict[k] = current_maxes[k]
 
+def get_day_time_bounds(events, astro_events):
+    min_sec = 86400
+    max_sec = 0
+    has_data = False
+
+    for ev in events:
+        dt_start = parse_dt(ev.get('start'))
+        dt_end = parse_dt(ev.get('end'))
+        s = min_sec
+        if dt_start:
+            s = dt_start.hour * 3600 + dt_start.minute * 60 + dt_start.second
+            min_sec = min(min_sec, s)
+            has_data = True
+        if dt_end:
+            e = dt_end.hour * 3600 + dt_end.minute * 60 + dt_end.second
+            if e <= s: e = 86400
+            max_sec = max(max_sec, e)
+            has_data = True
+
+    if astro_events and isinstance(astro_events, dict):
+        for name, time_str in astro_events.items():
+            if time_str:
+                parts = str(time_str).strip().split(':')
+                if len(parts) >= 2:
+                    try:
+                        s = int(parts[0]) * 3600 + int(parts[1]) * 60 + (int(parts[2]) if len(parts) > 2 else 0)
+                        min_sec = min(min_sec, s)
+                        max_sec = max(max_sec, s)
+                        has_data = True
+                    except ValueError:
+                        pass
+
+    if not has_data:
+        return 0, 86400
+
+    min_sec = max(0, min_sec - 1800)
+    max_sec = min(86400, max_sec + 1800)
+    return min_sec, max_sec
 
 def generate_report_pdf(report_data: dict) -> bytes:
     print("\n--- ROZPOCZĘCIE GENEROWANIA RAPORTU ---")
@@ -132,9 +171,11 @@ def generate_report_pdf(report_data: dict) -> bytes:
                 meteo_points = points[::max(1, len(points) // 24)] if points else []
                 rose_points = points[::max(1, len(points) // 24)] if points else []
 
+                day_min_sec, day_max_sec = get_day_time_bounds(events, day.get('observedAstroEvents'))
+
                 map_future = executor.submit(create_route_map, map_points, 600, 300)
-                timeline_future = executor.submit(create_timeline_chart, day.get('date'), events) if events else None
-                astro_future = executor.submit(create_astro_timeline_chart, day.get('observedAstroEvents'))
+                timeline_future = executor.submit(create_timeline_chart, day.get('date'), events, day_min_sec, day_max_sec) if events else None
+                astro_future = executor.submit(create_astro_timeline_chart, day.get('observedAstroEvents'), day_min_sec, day_max_sec)
 
                 day['meteogram_chart'] = create_meteogram_chart(meteo_points, prefs)
 

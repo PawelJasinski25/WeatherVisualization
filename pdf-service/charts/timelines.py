@@ -6,11 +6,12 @@ from utils import parse_dt, format_place, get_font
 
 import io
 import base64
+import re
 from PIL import Image, ImageDraw
 
 from utils import parse_dt, format_place, get_font
 
-def create_astro_timeline_chart(astro_events):
+def create_astro_timeline_chart(astro_events, min_sec=0, max_sec=86400):
     if not astro_events or not isinstance(astro_events, dict):
         return None
 
@@ -20,6 +21,9 @@ def create_astro_timeline_chart(astro_events):
     PLOT_WIDTH = WIDTH - (2 * MARGIN_SIDE)
     AXIS_Y = 60
 
+    range_sec = max_sec - min_sec
+    if range_sec <= 0: range_sec = 3600
+
     image = Image.new('RGB', (WIDTH, HEIGHT), 'white')
     draw = ImageDraw.Draw(image)
 
@@ -27,8 +31,6 @@ def create_astro_timeline_chart(astro_events):
     font_legend = get_font(13, bold=False)
 
     parsed_events = []
-    min_sec = 86400
-    max_sec = 0
 
     for name, time_str in astro_events.items():
         if not time_str: continue
@@ -40,17 +42,11 @@ def create_astro_timeline_chart(astro_events):
                 s = int(parts[2]) if len(parts) > 2 else 0
                 sec = h * 3600 + m * 60 + s
                 parsed_events.append({"name": str(name), "sec": sec, "time_str": f"{h:02d}:{m:02d}"})
-                min_sec = min(min_sec, sec)
-                max_sec = max(max_sec, sec)
             except ValueError:
                 pass
 
     if not parsed_events: return None
     parsed_events.sort(key=lambda x: x['sec'])
-    min_sec = max(0, min_sec - 1800)
-    max_sec = min(86400, max_sec + 1800)
-    range_sec = max_sec - min_sec
-    if range_sec <= 0: range_sec = 3600
 
     color_map = {
         "Świt astronomiczny": (26, 54, 150), "Świt nautyczny": (66, 170, 245), "Świt cywilny": (245, 80, 180),
@@ -114,6 +110,7 @@ def create_astro_timeline_chart(astro_events):
             })
         except Exception:
             pass
+
 
     def resolve_collisions(items, margin_left, margin_right, gap=12):
         if not items: return items
@@ -190,7 +187,7 @@ def create_astro_timeline_chart(astro_events):
     return base64.b64encode(buf.getvalue()).decode('utf-8')
 
 
-def create_timeline_chart(date_str, events):
+def create_timeline_chart(date_str, events, min_sec=0, max_sec=86400):
     if not events: return None
 
     WIDTH = 1400
@@ -199,6 +196,9 @@ def create_timeline_chart(date_str, events):
     PLOT_WIDTH = WIDTH - (2 * MARGIN_SIDE)
     AXIS_Y = 70
 
+    range_sec = max_sec - min_sec
+    if range_sec <= 0: range_sec = 3600
+
     image = Image.new('RGB', (WIDTH, HEIGHT), 'white')
     draw = ImageDraw.Draw(image)
 
@@ -206,8 +206,6 @@ def create_timeline_chart(date_str, events):
     font_place = get_font(16, italic=True)
     font_time = get_font(18, bold=True)
 
-    min_sec = 86400
-    max_sec = 0
     valid_events = []
 
     for ev in events:
@@ -221,16 +219,10 @@ def create_timeline_chart(date_str, events):
         if end_sec <= start_sec:
             end_sec = 86400
 
-        min_sec = min(min_sec, start_sec)
-        max_sec = max(max_sec, end_sec)
         valid_events.append((ev, start_sec, end_sec, dt_start, dt_end))
 
     if not valid_events: return None
 
-    min_sec = max(0, min_sec - 900)
-    max_sec = min(86400, max_sec + 900)
-    range_sec = max_sec - min_sec
-    if range_sec <= 0: range_sec = 3600
 
     draw.line([(MARGIN_SIDE, AXIS_Y), (WIDTH - MARGIN_SIDE, AXIS_Y)], fill="lightgray", width=4)
 
@@ -275,6 +267,19 @@ def create_timeline_chart(date_str, events):
             bot_labels.append({
                 'x': x2 - etw / 2, 'w': etw, 'anchor_x': x2, 'time_str': end_time_str
             })
+
+    total_required_width = sum(lbl['w'] for lbl in top_labels) + 15 * (len(top_labels) - 1)
+
+    # Jeśli podpisy postojów się nie zmieszczą, usuwane są dopiski w nawiasach
+    if total_required_width > PLOT_WIDTH:
+        for lbl in top_labels:
+            if lbl['place_str']:
+                lbl['place_str'] = re.sub(r'\s*\(.*?\)', '', lbl['place_str']).strip()
+
+                w1 = draw.textlength(lbl['type_str'], font=font_type)
+                w2 = draw.textlength(lbl['place_str'], font=font_place)
+                lbl['w'] = max(w1, w2)
+                lbl['x'] = lbl['center_x'] - lbl['w'] / 2
 
     def resolve_collisions(items, margin_left, margin_right, gap=15):
         if not items: return items
