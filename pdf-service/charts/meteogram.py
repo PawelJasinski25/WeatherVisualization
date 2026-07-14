@@ -8,7 +8,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 from utils import parse_dt, convert_raw
 
-def create_meteogram_chart(points, prefs):
+def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=None):
     if not points: return None
 
     if len(points) > 120:
@@ -17,7 +17,59 @@ def create_meteogram_chart(points, prefs):
     else:
         points_to_plot = points
 
-    x = np.arange(len(points_to_plot))
+    is_daily_sync = (min_sec is not None and max_sec is not None)
+
+    gap_intervals = []
+    if is_daily_sync and events:
+        for ev in events:
+            ev_type = str(ev.get('type', '')).upper()
+            if "BRAK" in ev_type or "GAP" in ev_type:
+                dt_s = parse_dt(ev.get('start'))
+                dt_e = parse_dt(ev.get('end'))
+                if dt_s and dt_e:
+                    s_sec = dt_s.hour * 3600 + dt_s.minute * 60 + dt_s.second
+                    e_sec = dt_e.hour * 3600 + dt_e.minute * 60 + dt_e.second
+                    if e_sec <= s_sec: e_sec = 86400
+                    gap_intervals.append((s_sec, e_sec))
+
+    raw_data = []
+
+    #jeżeli punkty są w sekcji brak danych to nie są uwzględniane
+    for i, p in enumerate(points_to_plot):
+        dt = parse_dt(p.get('time') or p.get('timeMs'))
+        s = None
+        if is_daily_sync and dt:
+            s = dt.hour * 3600 + dt.minute * 60 + dt.second
+            for (gs, ge) in gap_intervals:
+                if gs <= s <= ge:
+                    p = {}
+                    break
+
+        if is_daily_sync and s is not None:
+            raw_data.append((s, dt, p))
+        else:
+            raw_data.append((i, dt, p))
+
+    if is_daily_sync:
+        for (gs, ge) in gap_intervals:
+            raw_data.append((gs + 1, None, {}))
+            raw_data.append((ge - 1, None, {}))
+
+    raw_data.sort(key=lambda item: item[0])
+
+    x_vals = []
+    parsed_dates = []
+    valid_points = []
+
+    for item in raw_data:
+        x_vals.append(item[0])
+        parsed_dates.append(item[1])
+        valid_points.append(item[2])
+
+    points_to_plot = valid_points
+    x = np.array(x_vals)
+
+    if len(x) == 0: return None
 
     def get_data(key, category=None, default=np.nan):
         arr = []
@@ -84,8 +136,10 @@ def create_meteogram_chart(points, prefs):
         ax.tick_params(axis='x', direction='in', length=3)
         ax.tick_params(axis='y', labelsize=8)
 
-    if len(x) > 1:
-        ax.set_xlim(0, len(x) - 1)
+        if is_daily_sync:
+            ax.set_xlim(min_sec, max_sec)
+        elif len(x) > 1:
+            ax.set_xlim(0, len(x) - 1)
 
     legend_kwargs = dict(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left", mode="expand", borderaxespad=0, ncol=4, frameon=False, fontsize=8)
 
@@ -164,14 +218,26 @@ def create_meteogram_chart(points, prefs):
 
         valid_dir = ~np.isnan(dir_arr)
         if np.any(valid_dir):
+            x_valid = x[valid_dir]
+            dir_valid = dir_arr[valid_dir]
+
             target_arrows = 22
-            stride = max(1, len(x[valid_dir]) // target_arrows)
-            rad_dir = np.radians(270 - dir_arr)
+            min_dist = (max_sec - min_sec) / target_arrows if is_daily_sync else len(x) / target_arrows
+
+            x_val, final_dir = [], []
+            last_x = -float('inf')
+
+            for xv, dv in zip(x_valid, dir_valid):
+                if xv - last_x >= min_dist:
+                    x_val.append(xv)
+                    final_dir.append(dv)
+                    last_x = xv
+
+            rad_dir = np.radians(270 - np.array(final_dir))
             u, v = np.cos(rad_dir), np.sin(rad_dir)
-            x_val = x[valid_dir][::stride]
             y_val = np.full_like(x_val, -0.22, dtype=float)
 
-            ax_main.quiver(x_val, y_val, u[valid_dir][::stride], v[valid_dir][::stride],
+            ax_main.quiver(x_val, y_val, u, v,
                            color=color_hex, scale=45, width=0.003, headwidth=4, pivot='middle',
                            transform=ax_main.get_xaxis_transform(), clip_on=False)
 
@@ -224,17 +290,22 @@ def create_meteogram_chart(points, prefs):
         plot_rain = plot_rain * 25.4
 
 
-    width = 0.4
-    ax5.bar(x - width/2, plot_rain, width=width, color='#3b82f6', alpha=0.8, label=f'Deszcz (mm/h)')
-    ax5.bar(x + width/2, plot_snow, width=width, color='#2dd4bf', alpha=0.8, label=f'Śnieg (mm/h)')
+    bar_width = 1800 if is_daily_sync else 0.4
+
+    valid_rain = ~np.isnan(plot_rain)
+    ax5.bar(x[valid_rain] - bar_width/2, plot_rain[valid_rain], width=bar_width, color='#3b82f6', alpha=0.8, label=f'Deszcz (mm/h)')
+
+    valid_snow = ~np.isnan(plot_snow)
+    ax5.bar(x[valid_snow] + bar_width/2, plot_snow[valid_snow], width=bar_width, color='#2dd4bf', alpha=0.8, label=f'Śnieg (mm/h)')
 
     ax5.set_ylabel('Opady (mm/h)', fontweight='bold', color='#2563eb', fontsize=9)
 
     max_precip = safe_max(np.concatenate([plot_rain, plot_snow]), 10.0)
     ax5.set_ylim(0, max(1.0, max_precip * 1.5))
 
-    ax5_twin.fill_between(x, 0, clouds, color='#cbd5e1', alpha=0.5)
-    ax5_twin.plot(x, clouds, color='#64748b', lw=1.5, label='Zachmurzenie (%)')
+    if not np.all(np.isnan(clouds)):
+        ax5_twin.fill_between(x, 0, clouds, color='#cbd5e1', alpha=0.5)
+        ax5_twin.plot(x, clouds, color='#64748b', lw=1.5, label='Zachmurzenie (%)')
 
     ax5_twin.set_ylabel('Chmury (%)', fontweight='bold', color='#475569', fontsize=9)
     ax5_twin.set_ylim(0, 105)
@@ -245,46 +316,68 @@ def create_meteogram_chart(points, prefs):
     h8, l8 = ax5_twin.get_legend_handles_labels()
     ax5_twin.legend(h7 + h8, l7 + l8, bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left", mode="expand", borderaxespad=0, ncol=3, frameon=False, fontsize=8)
 
+
     try:
-        parsed_dates = []
-        has_time = False
+        if is_daily_sync:
 
-        for p in points_to_plot:
-            dt = parse_dt(p.get('time') or p.get('timeMs'))
-            if dt:
-                parsed_dates.append(dt)
-                has_time = True
-            else:
-                parsed_dates.append(None)
+            total_seconds = max_sec - min_sec
+            steps = [1800, 3600, 7200, 14400, 28800, 43200]
 
-        if has_time:
-            valid_dates = [d for d in parsed_dates if d is not None]
-            time_span = valid_dates[-1] - valid_dates[0]
+            best_step = 3600
+            for s in steps:
+                if total_seconds / s <= 8:
+                    best_step = s
+                    break
 
-            total_hours = time_span.total_seconds() / 3600.0
+            ticks = [int(min_sec)]
 
-            num_ticks = min(8, len(x))
-            if num_ticks > 1:
-                ticks = np.linspace(0, len(x) - 1, num_ticks, dtype=int).tolist()
-            else:
-                ticks = [0]
+            target_next = min_sec + best_step
+            current = round(target_next / best_step) * best_step
 
-            ax5.set_xticks(ticks)
+            while current < max_sec:
+                if current > min_sec:
+                    ticks.append(int(current))
+                current += best_step
+
+            if ticks[-1] != int(max_sec):
+                ticks.append(int(max_sec))
+
+            ticks = sorted(list(set(ticks)))
 
             labels = []
-            for i in ticks:
-                dt = parsed_dates[i]
-                if dt:
-                    if total_hours > 36:
-                        labels.append(dt.strftime("%d.%m"))
-                    else:
-                        labels.append(dt.strftime("%H:%M"))
+            for t in ticks:
+                if t >= 86400:
+                    labels.append("24:00")
                 else:
-                    labels.append("")
+                    labels.append(f"{t // 3600 % 24:02d}:{t // 60 % 60:02d}")
 
+            ax5.set_xticks(ticks)
             ax5.set_xticklabels(labels, rotation=0, fontweight='bold', fontsize=8)
         else:
-            ax5.set_xticks([])
+            has_time = any(d is not None for d in parsed_dates)
+            if has_time:
+                valid_dates = [d for d in parsed_dates if d is not None]
+                time_span = valid_dates[-1] - valid_dates[0]
+                total_hours = time_span.total_seconds() / 3600.0
+
+                num_ticks = min(8, len(x))
+                if num_ticks > 1:
+                    ticks = np.linspace(0, len(x) - 1, num_ticks, dtype=int).tolist()
+                else:
+                    ticks = [0]
+
+                ax5.set_xticks(ticks)
+                labels = []
+                for i in ticks:
+                    dt = parsed_dates[i] if i < len(parsed_dates) else None
+                    if dt:
+                        if total_hours > 36: labels.append(dt.strftime("%d.%m"))
+                        else: labels.append(dt.strftime("%H:%M"))
+                    else:
+                        labels.append("")
+                ax5.set_xticklabels(labels, rotation=0, fontweight='bold', fontsize=8)
+            else:
+                ax5.set_xticks([])
     except Exception as e:
         print(f"Błąd formatowania osi X: {e}")
         pass

@@ -118,9 +118,7 @@ def get_day_time_bounds(events, astro_events):
     if not has_data:
         return 0, 86400
 
-    min_sec = max(0, min_sec - 1800)
-    max_sec = min(86400, max_sec + 1800)
-    return min_sec, max_sec
+    return max(0, min_sec), min(86400, max_sec)
 
 def generate_report_pdf(report_data: dict) -> bytes:
     print("\n--- ROZPOCZĘCIE GENEROWANIA RAPORTU ---")
@@ -177,7 +175,7 @@ def generate_report_pdf(report_data: dict) -> bytes:
                 timeline_future = executor.submit(create_timeline_chart, day.get('date'), events, day_min_sec, day_max_sec) if events else None
                 astro_future = executor.submit(create_astro_timeline_chart, day.get('observedAstroEvents'), day_min_sec, day_max_sec)
 
-                day['meteogram_chart'] = create_meteogram_chart(meteo_points, prefs)
+                day['meteogram_chart'] = create_meteogram_chart(meteo_points, prefs, day_min_sec, day_max_sec, events)
 
                 day['wind_rose'] = create_polar_rose(rose_points, 'windDir', 'windSpeed', 'Róża wiatrów', prefs)
                 day['wave_rose'] = create_polar_rose(rose_points, 'waveDir', 'waveHeight', 'Róża falowania', prefs)
