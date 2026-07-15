@@ -76,6 +76,25 @@
     border-radius: 2px;
     transition: 0.2s;
     box-sizing: border-box;
+
+}
+
+.interactive-textarea {
+    width: 100%;
+    min-height: 40px;
+    border: 1px solid transparent;
+    background: transparent;
+    font-size: 0.85rem;
+    font-family: inherit;
+    font-weight: bold;
+    color: #0f172a;
+    padding: 4px;
+    border-radius: 2px;
+    transition: 0.2s;
+    box-sizing: border-box;
+    resize: none;
+    overflow: hidden;
+    display: block;
 }
 
 .interactive-input:hover, .interactive-input:focus {
@@ -263,7 +282,9 @@
     align-items: center;
     gap: 10px;
     transition: background-color 0.2s, box-shadow 0.2s, opacity 0.2s;
+    box-sizing: border-box;
 }
+
 
 .download-action-btn:disabled {
     background-color: #94a3b8 !important;
@@ -290,8 +311,8 @@
 }
 
 .spinner-icon {
-    width: 20px;
-    height: 20px;
+    width: 10px;
+    height: 10px;
     border: 3px solid rgba(255,255,255,0.3);
     border-top-color: #fff;
     border-radius: 50%;

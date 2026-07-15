@@ -6,6 +6,7 @@ import jasinski.pawel.weather_visualization.repository.TrackPointRepository;
 import jasinski.pawel.weather_visualization.utils.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -101,6 +102,7 @@ public class ReportService {
         return summaries;
     }
 
+    @Cacheable(value = "reportData", key = "#tripId")
     public TripReportDataDto getTripReportData(Long tripId, String email) {
 
         jasinski.pawel.weather_visualization.dto.TripResponseDto trip = tripService.getUserTrips(email).stream()
@@ -110,6 +112,21 @@ public class ReportService {
 
         TripAnalysisContext context = analyzeTrip(tripId);
         List<DailySummary> dailySummaries = generateDailySummaries(context);
+
+        String startPort = "";
+        String endPort = "";
+        List<TrackPoint> points = context.points();
+
+        if (!points.isEmpty()) {
+            TrackPoint firstPoint = points.get(0);
+            TrackPoint lastPoint = points.get(points.size() - 1);
+
+            String startPlaceName = geoNamesService.getPlaceName(firstPoint.getLatitude(), firstPoint.getLongitude());
+            String endPlaceName = geoNamesService.getPlaceName(lastPoint.getLatitude(), lastPoint.getLongitude());
+
+            if (startPlaceName != null) startPort = startPlaceName;
+            if (endPlaceName != null) endPort = endPlaceName;
+        }
 
         long totalMoving = 0, totalStopped = 0, totalGap = 0;
         for (DailySummary ds : dailySummaries) {
@@ -131,7 +148,7 @@ public class ReportService {
                 .map(ReportDailySummaryDto::from)
                 .toList();
 
-        return new TripReportDataDto(trip.name(), overallMovement, overallSpeed, overallWeather, overallMovingWeather, reportDailySummaries);
+        return new TripReportDataDto(trip.name(), overallMovement, overallSpeed, overallWeather, overallMovingWeather, reportDailySummaries, startPort, endPort);
     }
 
     private List<EnrichedSegment> createEnrichedSegments(

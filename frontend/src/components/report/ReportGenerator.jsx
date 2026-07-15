@@ -8,6 +8,7 @@ import '../../styles/report-generator.css';
 import {useUnits} from "../../contexts/UnitContext.jsx";
 import { FileSignature } from 'lucide-react';
 import ErrorModal from "../ErrorModal.jsx";
+import { Loader2} from 'lucide-react';
 
 const ReportGenerator = ({ tripId }) => {
     const [includeCruiseCard, setIncludeCruiseCard] = useState(true);
@@ -57,6 +58,66 @@ const ReportGenerator = ({ tripId }) => {
                     const eDate = formatDate(currentTrip.endTime || currentTrip.endDate);
                     const tName = currentTrip.name || '';
 
+                    let reportData = null;
+                    try {
+                        const reportResponse = await api.get(`/trips/${tripId}/report-data`);
+                        reportData = reportResponse.data;
+                    } catch (err) {
+                        console.error("Nie udało się pobrać szczegółowych danych raportu", err);
+                    }
+
+                    let visitedPorts = '';
+                    let daysCount = '';
+                    let totalDistanceNM = '';
+                    let stoppedHours = '';
+                    let movingHours = '';
+                    let totalHoursRaw = '';
+
+                    if (reportData) {
+                        daysCount = reportData.dailySummaries ? reportData.dailySummaries.length.toString() : '';
+
+                        if (reportData.overallSpeed && reportData.overallSpeed.distanceKm) {
+                            const distKm = reportData.overallSpeed.distanceKm;
+                            const distNm = distKm * 0.539957;
+                            totalDistanceNM = distNm.toFixed(1);
+                        }
+
+                        const formatTime = (seconds) => {
+                            if (!seconds) return '00:00';
+                            const h = Math.floor(seconds / 3600);
+                            const m = Math.floor((seconds % 3600) / 60);
+                            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                        };
+
+                        if (reportData.overallMovement) {
+                            stoppedHours = formatTime(reportData.overallMovement.stoppedSeconds);
+                        }
+
+                        const portsSet = new Set();
+
+                        if (reportData.startPort) {
+                            portsSet.add(reportData.startPort);
+                        }
+
+                        if (reportData.dailySummaries) {
+                            reportData.dailySummaries.forEach(day => {
+                                if (day.timelineEvents) {
+                                    day.timelineEvents.forEach(event => {
+                                        if (event.placeName && event.type === 'POSTÓJ') {
+                                            portsSet.add(event.placeName);
+                                        }
+                                    });
+                                }
+                            });
+                        }
+
+                        if (reportData.endPort) {
+                            portsSet.add(reportData.endPort);
+                        }
+
+                        visitedPorts = Array.from(portsSet).join(', ');
+                    }
+
                     setFormData(prev => ({
                         ...prev,
                         tripName: tName,
@@ -65,7 +126,19 @@ const ReportGenerator = ({ tripId }) => {
                             startDate: sDate,
                             endDate: eDate,
                             embarkDate: sDate,
-                            disembarkDate: eDate
+                            disembarkDate: eDate,
+                            visitedPorts: visitedPorts,
+                            daysCount: daysCount,
+                            embarkPort: reportData.startPort || '',
+                            disembarkPort: reportData.endPort || ''
+                        },
+                        distance: {
+                            ...prev.distance,
+                            nauticalMiles: totalDistanceNM
+                        },
+                        hours: {
+                            ...prev.hours,
+                            stopped: stoppedHours
                         }
                     }));
                 }
@@ -160,10 +233,14 @@ const ReportGenerator = ({ tripId }) => {
                 <div className="report-scroll-area">
 
                     {isFetchingData ? (
-                        <div className="report-loading-container">
-                            <span className="spinner spinner-icon"></span>
-                            <h3>Wczytywanie makiety...</h3>
-                            <p className="report-loading-text">Pobieranie dat i struktury trasy z serwera</p>
+                        <div className="dashboard-content">
+                            <div className="dashboard-empty" style={{ boxShadow: 'none', background: 'none' }}>
+                                <Loader2 size={40} color="var(--theme-report)" className="anim-spin" />
+                                <div style={{ fontSize: '1.2rem', fontWeight: '500', color: '#64748b' }}>
+                                    Wczytywanie raportu...
+                                </div>
+
+                            </div>
                         </div>
                     ) : (
                         <div className={`report-form-wrapper ${isGeneratingPdf ? 'generating' : ''}`}>

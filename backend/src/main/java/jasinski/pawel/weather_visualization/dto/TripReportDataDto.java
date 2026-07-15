@@ -8,5 +8,7 @@ public record TripReportDataDto(
         SpeedStats overallSpeed,
         WeatherStats overallWeather,
         WeatherStats overallMovingWeather,
-        List<ReportDailySummaryDto> dailySummaries
+        List<ReportDailySummaryDto> dailySummaries,
+        String startPort,
+        String endPort
 ) {}

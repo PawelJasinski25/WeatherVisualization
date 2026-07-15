@@ -1,6 +1,15 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 
 const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handleCrewChange }) => {
+    const textareaRef = useRef(null);
+
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+        }
+    }, [formData.cruise.visitedPorts]);
+
     return (
         <div className="a4-paper mb-20">
 
@@ -204,10 +213,14 @@ const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handl
                 <tr>
                     <td colSpan="4">
                         <span className="label">Odwiedzone porty:</span>
-                        <input
-                            className="interactive-input"
+                        <textarea
+                            ref={textareaRef}
+                            className="interactive-textarea"
+                            spellCheck="false"
                             value={formData.cruise.visitedPorts}
-                            onChange={(e) => handleNestedChange('cruise', 'visitedPorts', e.target.value)}
+                            onChange={(e) =>
+                                handleNestedChange('cruise', 'visitedPorts', e.target.value)
+                            }
                         />
                     </td>
                 </tr>
