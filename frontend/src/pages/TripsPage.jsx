@@ -145,7 +145,7 @@ const TripsPage = () => {
             <div className="trips-container">
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '2px solid #ddd', paddingBottom: '0.625rem' }}>
-                    <h2 className="trips-title" style={{ border: 'none', margin: 0, padding: 0 }}>Moje Trasy</h2>
+                    <h2 className="trips-title" style={{ border: 'none', margin: 0, padding: 0 }}>Moje trasy</h2>
                     <button
                         onClick={() => setIsMergeModalOpen(true)}
                         className="merge-btn"

@@ -1,7 +1,11 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import HoursCalculatorModal from "./HoursCalculatorModal.jsx";
+import { Calculator } from 'lucide-react';
 
 const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handleCrewChange }) => {
     const textareaRef = useRef(null);
+    const [isCalcOpen, setIsCalcOpen] = useState(false);
+
 
     useEffect(() => {
         if (textareaRef.current) {
@@ -10,8 +14,24 @@ const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handl
         }
     }, [formData.cruise.visitedPorts]);
 
+    const handleSaveCalculatedHours = (calculatedData) => {
+        handleNestedChange('hours', 'total', calculatedData.total);
+        handleNestedChange('hours', 'sails', calculatedData.sails);
+        handleNestedChange('hours', 'engine', calculatedData.engine);
+        handleNestedChange('hours', 'tidal', calculatedData.tidal);
+        handleNestedChange('hours', 'dailyLogs', calculatedData.dailyLogs);
+    };
+
     return (
         <div className="a4-paper mb-20">
+
+            <HoursCalculatorModal
+                isOpen={isCalcOpen}
+                onClose={() => setIsCalcOpen(false)}
+                initialLogs={formData.hours.dailyLogs || []}
+                onSave={handleSaveCalculatedHours}
+                cruiseDates={{ start: formData.cruise.startDate, end: formData.cruise.endDate }}
+            />
 
             {/* NAGŁÓWEK */}
             <div className="report-header mb-10">
@@ -249,7 +269,17 @@ const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handl
             <table className="form-table text-center">
                 <thead>
                 <tr>
-                    <th colSpan="4">GODZINY ŻEGLUGI</th>
+                    <th colSpan="4" style={{ position: 'relative' }}>
+                        GODZINY ŻEGLUGI
+                        <button
+                            type="button"
+                            className="open-calc-btn no-print"
+                            onClick={() => setIsCalcOpen(true)}
+                        >
+                            <Calculator size={14} /> Kalkulator
+                        </button>
+                    </th>
+
                     <th className="w-20">GODZINY POSTOJU</th>
                     <th className="w-20">PRZEBYTO MIL</th>
                 </tr>

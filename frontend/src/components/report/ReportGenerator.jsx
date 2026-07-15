@@ -19,26 +19,42 @@ const ReportGenerator = ({ tripId }) => {
     const { units } = useUnits();
     const [error, setError] = useState(null);
 
-    const [formData, setFormData] = useState({
-        tripName: '',
-        captain: { name: '', patent: '', phone: '', email: '' },
-        yacht: { regNumber: '', name: '', length: '', homePort: '', enginePower: '' },
-        cruise: {
-            logbookNumber: '',
-            startDate: '', endDate: '',
-            embarkPort: '', embarkDate: '', embarkTidal: '',
-            disembarkPort: '', disembarkDate: '', disembarkTidal: '',
-            visitedPorts: '',
-            tidalPortsCount: '', daysCount: ''
-        },
-        hours: { total: '', sails: '', engine: '', tidal: '', stopped: '' },
-        distance: { nauticalMiles: '' },
-        crew: Array(16).fill({ name: '', patent: '', function: '' })
+    const [formData, setFormData] = useState(() => {
+        const savedDraft = localStorage.getItem(`cruise_draft_${tripId}`);
+        if (savedDraft) {
+            return JSON.parse(savedDraft);
+        }
+        return {
+            tripName: '',
+            captain: { name: '', patent: '', phone: '', email: '' },
+            yacht: { regNumber: '', name: '', length: '', homePort: '', enginePower: '' },
+            cruise: {
+                logbookNumber: '', startDate: '', endDate: '',
+                embarkPort: '', embarkDate: '', embarkTidal: '',
+                disembarkPort: '', disembarkDate: '', disembarkTidal: '',
+                visitedPorts: '', tidalPortsCount: '', daysCount: ''
+            },
+            hours: { total: '', sails: '', engine: '', tidal: '', stopped: '', dailyLogs: [] },
+            distance: { nauticalMiles: '' },
+            crew: Array(16).fill({ name: '', patent: '', function: '' })
+        };
     });
+
+    useEffect(() => {
+        localStorage.setItem(`cruise_draft_${tripId}`, JSON.stringify(formData));
+    }, [formData, tripId]);
 
     useEffect(() => {
         const fetchTripData = async () => {
             setIsFetchingData(true);
+
+            const savedDraft = localStorage.getItem(`cruise_draft_${tripId}`);
+            if (savedDraft) {
+                setFormData(JSON.parse(savedDraft));
+                setIsFetchingData(false);
+                return;
+            }
+
             try {
                 const response = await api.get('/trips');
                 const currentTrip = response.data.find(t => t.id === parseInt(tripId) || t.id === tripId);
@@ -79,7 +95,7 @@ const ReportGenerator = ({ tripId }) => {
                         if (reportData.overallSpeed && reportData.overallSpeed.distanceKm) {
                             const distKm = reportData.overallSpeed.distanceKm;
                             const distNm = distKm * 0.539957;
-                            totalDistanceNM = distNm.toFixed(1);
+                            totalDistanceNM = distNm.toFixed(1).replace('.', ',');
                         }
 
                         const formatTime = (seconds) => {
@@ -158,7 +174,14 @@ const ReportGenerator = ({ tripId }) => {
     }, [tripId]);
 
     const handleNestedChange = (section, field, value) => {
-        setFormData(prev => ({ ...prev, [section]: { ...prev[section], [field]: value } }));
+        let processedValue = value;
+
+        const numericFields = ['total', 'sails', 'engine', 'tidal', 'nauticalMiles', 'length'];
+        if (numericFields.includes(field) && typeof value === 'string') {
+            processedValue = processedValue.replace(/\./g, ',');
+        }
+
+        setFormData(prev => ({ ...prev, [section]: { ...prev[section], [field]: processedValue } }));
     };
 
     const handleFieldChange = (field, value) => {
@@ -261,9 +284,9 @@ const ReportGenerator = ({ tripId }) => {
             {/* SIDEBAR */}
             <div className="report-sidebar">
                 <div className="report-sidebar-content">
-                    <h3 className="panel-title" style={{ fontSize: '1.25rem' }}>Generowanie Raportu</h3>
+                    <h3 className="panel-title" style={{ fontSize: '1.25rem' }}>Generowanie raportu</h3>
                     <p className="panel-subtitle">
-                        <b>Opcjonalnie dodaj i wypełnij Kartę Rejsu.</b>
+                        <b>Opcjonalnie dodaj i wypełnij kartę rejsu.</b>
                     </p>
 
                     <div className="sidebar-actions-group">
@@ -273,7 +296,7 @@ const ReportGenerator = ({ tripId }) => {
                             onClick={() => setIncludeCruiseCard(!includeCruiseCard)}
                         >
                             <FileSignature size={24} color={includeCruiseCard ? "var(--theme-report)" : "#64748b"} />
-                            <span className="panel-label">Karta Rejsu</span>
+                            <span className="panel-label">Karta rejsu</span>
                             <span className={`toggle-card-status ${includeCruiseCard ? 'active' : ''}`}>
                                 {includeCruiseCard ? 'WŁ' : 'WYŁ'}
                             </span>
