@@ -19,42 +19,26 @@ const ReportGenerator = ({ tripId }) => {
     const { units } = useUnits();
     const [error, setError] = useState(null);
 
-    const [formData, setFormData] = useState(() => {
-        const savedDraft = localStorage.getItem(`cruise_draft_${tripId}`);
-        if (savedDraft) {
-            return JSON.parse(savedDraft);
-        }
-        return {
-            tripName: '',
-            captain: { name: '', patent: '', phone: '', email: '' },
-            yacht: { regNumber: '', name: '', length: '', homePort: '', enginePower: '' },
-            cruise: {
-                logbookNumber: '', startDate: '', endDate: '',
-                embarkPort: '', embarkDate: '', embarkTidal: '',
-                disembarkPort: '', disembarkDate: '', disembarkTidal: '',
-                visitedPorts: '', tidalPortsCount: '', daysCount: ''
-            },
-            hours: { total: '', sails: '', engine: '', tidal: '', stopped: '', dailyLogs: [] },
-            distance: { nauticalMiles: '' },
-            crew: Array(16).fill({ name: '', patent: '', function: '' })
-        };
+    const [formData, setFormData] = useState({
+        tripName: '',
+        captain: { name: '', patent: '', phone: '', email: '' },
+        yacht: { regNumber: '', name: '', length: '', homePort: '', enginePower: '' },
+        cruise: {
+            logbookNumber: '',
+            startDate: '', endDate: '',
+            embarkPort: '', embarkDate: '', embarkTidal: '',
+            disembarkPort: '', disembarkDate: '', disembarkTidal: '',
+            visitedPorts: '',
+            tidalPortsCount: '', daysCount: ''
+        },
+        hours: { total: '', sails: '', engine: '', tidal: '', stopped: '' },
+        distance: { nauticalMiles: '' },
+        crew: Array(16).fill({ name: '', patent: '', function: '' })
     });
-
-    useEffect(() => {
-        localStorage.setItem(`cruise_draft_${tripId}`, JSON.stringify(formData));
-    }, [formData, tripId]);
 
     useEffect(() => {
         const fetchTripData = async () => {
             setIsFetchingData(true);
-
-            const savedDraft = localStorage.getItem(`cruise_draft_${tripId}`);
-            if (savedDraft) {
-                setFormData(JSON.parse(savedDraft));
-                setIsFetchingData(false);
-                return;
-            }
-
             try {
                 const response = await api.get('/trips');
                 const currentTrip = response.data.find(t => t.id === parseInt(tripId) || t.id === tripId);
