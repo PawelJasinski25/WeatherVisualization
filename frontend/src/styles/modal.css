@@ -36,6 +36,12 @@
     padding-bottom: 0.625rem;
 }
 
+.modal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
 .modal-header h3 {
     margin: 0;
     color: #333;
@@ -449,6 +455,7 @@
 
 .calc-table-wrapper {
     overflow-y: auto;
+    max-height: 50vh;
     margin-bottom: 15px;
     margin-top: 15px;
 }
@@ -460,6 +467,8 @@
 }
 
 .calc-table th {
+    position: sticky;
+    top: 0;
     background: #f8fafc;
     padding: 8px;
     border-bottom: 1px solid #cbd5e1;
@@ -547,6 +556,20 @@
 .calc-add-stage-btn:hover {
     background: #bae6fd;
     color: #0369a1;
+}
+
+.empty-days-label {
+    font-size: 0.85rem;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.empty-days-checkbox {
+    cursor: pointer;
 }
 
 .time-input {

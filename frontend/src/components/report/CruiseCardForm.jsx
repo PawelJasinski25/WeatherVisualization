@@ -31,6 +31,7 @@ const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handl
                 initialLogs={formData.hours.dailyLogs || []}
                 onSave={handleSaveCalculatedHours}
                 cruiseDates={{ start: formData.cruise.startDate, end: formData.cruise.endDate }}
+                dailySummaries={formData.cruise.dailySummaries}
             />
 
             {/* NAGŁÓWEK */}

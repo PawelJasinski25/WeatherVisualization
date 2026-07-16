@@ -29,7 +29,7 @@ const ReportGenerator = ({ tripId }) => {
             embarkPort: '', embarkDate: '', embarkTidal: '',
             disembarkPort: '', disembarkDate: '', disembarkTidal: '',
             visitedPorts: '',
-            tidalPortsCount: '', daysCount: ''
+            tidalPortsCount: '', daysCount: '', dailySummaries: []
         },
         hours: { total: '', sails: '', engine: '', tidal: '', stopped: '' },
         distance: { nauticalMiles: '' },
@@ -84,9 +84,8 @@ const ReportGenerator = ({ tripId }) => {
 
                         const formatTime = (seconds) => {
                             if (!seconds) return '00:00';
-                            const h = Math.floor(seconds / 3600);
-                            const m = Math.floor((seconds % 3600) / 60);
-                            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                            const hours = seconds / 3600;
+                            return (Math.round(hours * 10) / 10).toFixed(1).replace('.', ',');
                         };
 
                         if (reportData.overallMovement) {
@@ -130,7 +129,8 @@ const ReportGenerator = ({ tripId }) => {
                             visitedPorts: visitedPorts,
                             daysCount: daysCount,
                             embarkPort: reportData.startPort || '',
-                            disembarkPort: reportData.endPort || ''
+                            disembarkPort: reportData.endPort || '',
+                            dailySummaries: reportData?.dailySummaries || []
                         },
                         distance: {
                             ...prev.distance,
