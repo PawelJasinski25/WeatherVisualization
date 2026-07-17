@@ -52,6 +52,7 @@
 
 .weather-table td {
     padding: 4px 8px;
+    white-space: nowrap;
 }
 
 .weather-header-row th {
@@ -285,6 +286,12 @@
     transition: background-color 0.2s, box-shadow 0.2s, opacity 0.2s;
     box-sizing: border-box;
 }
+@media (max-width: 1280px) {
+    .download-action-btn {
+        padding: 0.8rem;
+        font-size: 0.8rem;
+    }
+}
 
 
 .download-action-btn:disabled {
@@ -319,3 +326,4 @@
     border-radius: 50%;
     display: inline-block;
 }
+

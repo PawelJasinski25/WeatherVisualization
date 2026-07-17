@@ -287,7 +287,7 @@ const ReportGenerator = ({ tripId }) => {
                 <div className="report-sidebar-content">
                     <h3 className="panel-title" style={{ fontSize: '1.25rem' }}>Generowanie raportu</h3>
                     <p className="panel-subtitle">
-                        <b>Opcjonalnie dodaj i wypełnij kartę rejsu.</b>
+                        <b>Opcjonalnie dodaj i wypełnij kartę i opinię z rejsu.</b>
                     </p>
 
                     <div className="sidebar-actions-group">
