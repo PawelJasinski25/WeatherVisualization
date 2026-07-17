@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import CruiseCardForm from './CruiseCardForm';
+import CruiseOpinionForm from './CruiseOpinionForm';
 import ReportPreview from './ReportPreview';
 import '../../styles/panel.css';
 import '../../styles/report-elements.css';
 import '../../styles/report-generator.css';
 import {useUnits} from "../../contexts/UnitContext.jsx";
-import { FileSignature } from 'lucide-react';
+import { FileSignature, ClipboardList } from 'lucide-react';
 import ErrorModal from "../ErrorModal.jsx";
 import { Loader2} from 'lucide-react';
 
 const ReportGenerator = ({ tripId }) => {
     const [includeCruiseCard, setIncludeCruiseCard] = useState(true);
+    const [includeOpinion, setIncludeOpinion] = useState(false);
 
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
     const [isGeneratingCsv, setIsGeneratingCsv] = useState(false);
@@ -33,7 +35,13 @@ const ReportGenerator = ({ tripId }) => {
         },
         hours: { total: '', sails: '', engine: '', tidal: '', stopped: '' },
         distance: { nauticalMiles: '' },
-        crew: Array(16).fill({ name: '', patent: '', function: '' })
+        crew: Array(16).fill({ name: '', patent: '', function: '' }),
+
+        opinion: {
+            participantName: '', participantPatent: '',
+            participantPhone: '', participantEmail: '', participantFunction: '',
+            general: '', duties: '', seasickness: '', endurance: '', remarks: ''
+        }
     });
 
     useEffect(() => {
@@ -184,6 +192,7 @@ const ReportGenerator = ({ tripId }) => {
         try {
             const modulesToExport = ['summary', 'timeline', 'weather', 'maps', 'meteogram'];
             if (includeCruiseCard) modulesToExport.unshift('cruiseCard');
+            if (includeOpinion) modulesToExport.unshift('opinion');
 
             const response = await api.post(`/trips/${tripId}/download-pdf`, {
                 modules: modulesToExport,
@@ -259,6 +268,14 @@ const ReportGenerator = ({ tripId }) => {
                                     handleCrewChange={handleCrewChange}
                                 />
                             )}
+
+                            {includeOpinion && (
+                                <CruiseOpinionForm
+                                    formData={formData}
+                                    handleNestedChange={handleNestedChange}
+                                />
+                            )}
+
                             <ReportPreview />
                         </div>
                     )}
@@ -285,6 +302,19 @@ const ReportGenerator = ({ tripId }) => {
                                 {includeCruiseCard ? 'WŁ' : 'WYŁ'}
                             </span>
                         </button>
+
+                        <button
+                            className={`panel-btn toggle-card-btn ${includeOpinion ? 'active' : ''}`}
+                            disabled={isFetchingData}
+                            onClick={() => setIncludeOpinion(!includeOpinion)}
+                        >
+                            <ClipboardList size={24} color={includeOpinion ? "var(--theme-report)" : "#64748b"} />
+                            <span className="panel-label">Opinia z rejsu</span>
+                            <span className={`toggle-card-status ${includeOpinion ? 'active' : ''}`}>
+                                {includeOpinion ? 'WŁ' : 'WYŁ'}
+                            </span>
+                        </button>
+
                     </div>
                 </div>
 

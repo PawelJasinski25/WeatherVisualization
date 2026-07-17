@@ -196,3 +196,25 @@ body {
     vertical-align: top;
     background: transparent;
 }
+
+.pdf-cb {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 1px solid #000;
+    position: relative;
+    box-sizing: border-box;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+.pdf-cb.checked::before, .pdf-cb.checked::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 1px;
+    background: #000;
+    top: 4.5px;
+    left: -2px;
+}
+.pdf-cb.checked::before { transform: rotate(45deg); }
+.pdf-cb.checked::after { transform: rotate(-45deg); }

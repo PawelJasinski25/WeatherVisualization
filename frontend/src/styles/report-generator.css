@@ -9,7 +9,7 @@
 }
 
 
-/*STYLE TABEL (Formularze i Podgląd)*/
+/*STYLE TABEL (formularze i podgląd)*/
 
 .form-table {
     width: 100%;
@@ -62,7 +62,7 @@
 }
 
 
-/*STYLE INPUTÓW (Interaktywna Karta Rejsu)*/
+/*STYLE INPUTÓW*/
 
 .interactive-input {
     width: 100%;
@@ -218,6 +218,7 @@
 .report-form-wrapper {
     padding: 0 1rem;
     transition: opacity 0.3s;
+    width: 100%;
 }
 
 .report-form-wrapper.generating {

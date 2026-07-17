@@ -49,7 +49,7 @@ const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handl
                         onChange={(e) => handleNestedChange('cruise', 'startDate', e.target.value)}
                         placeholder="Od"
                     />
-                    <span> — </span>
+                    <span> - </span>
                     <input
                         className="interactive-input inline-input"
                         value={formData.cruise.endDate}
@@ -171,7 +171,7 @@ const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handl
                 <tbody>
                 <tr>
                     <td colSpan="4">
-                        <span className="label">Wpisu dokonano na podstawie dziennika jachtowego*, nr pływania:</span>
+                        <span className="label">Wpisu dokonano na podstawie dziennika jachtowego, nr pływania:</span>
                         <input
                             className="interactive-input"
                             value={formData.cruise.logbookNumber}

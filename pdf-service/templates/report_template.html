@@ -11,7 +11,7 @@
     <br>
     <span style="font-size: 13px; font-weight: normal; margin-top: 4px; display: inline-block;">
         {{ data.cruise.startDate if data.cruise else '01.08.2025' }} 
-        — 
+        -
         {{ data.cruise.endDate if data.cruise else '16.09.2025' }}
     </span>
 </div>
@@ -81,7 +81,7 @@
     </tr>
     <tr>
         <td colspan="4">
-            <span class="label">Wpisu dokonano na podstawie dziennika jachtowego*, nr pływania:</span>
+            <span class="label">Wpisu dokonano na podstawie dziennika jachtowego, nr pływania:</span>
             <div class="val">{{ data.cruise.logbookNumber if data.cruise else '15/2025' }}</div>
         </td>
     </tr>
@@ -232,8 +232,273 @@
 <div class="page-break"></div>
 {% endif %}
 
+<!-- STRONA 2: OPINIA Z REJSU-->
+{% if 'opinion' in modules %}
+<div class="form-title">
+    {{ data.opinion.title if data.opinion and data.opinion.title else 'OPINIA Z REJSU' }}
+    <br>
+    <span style="font-size: 13px; font-weight: normal; margin-top: 4px; display: inline-block;">
+        {{ data.cruise.startDate if data.cruise else '01.08.2025' }}
+        -
+        {{ data.cruise.endDate if data.cruise else '16.09.2025' }}
+    </span>
+</div>
 
-<!-- STRONA 2: PODSUMOWANIE TRASY               -->
+<!-- INFORMACJE O UCZESTNIKU -->
+<table class="form-table">
+    <tr>
+        <th colspan="4">INFORMACJE O UCZESTNIKU REJSU</th>
+    </tr>
+    <tr>
+        <td colspan="2" style="width: 50%;">
+            <span class="label">Imię i nazwisko:</span>
+            <div class="val" style="min-height: 14px;">{{ data.opinion.participantName if data.opinion else '' }}</div>
+        </td>
+        <td colspan="2" style="width: 50%;">
+            <span class="label">stop. żegl. /mot. i nr pat.:</span>
+            <div class="val" style="min-height: 14px;">{{ data.opinion.participantPatent if data.opinion else '' }}</div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <span class="label">tel.:</span>
+            <div class="val" style="min-height: 14px;">{{ data.opinion.participantPhone if data.opinion else '' }}</div>
+        </td>
+        <td style="width: 25%;">
+            <span class="label">adres e-mail:</span>
+            <div class="val" style="min-height: 14px;">{{ data.opinion.participantEmail if data.opinion else '' }}</div>
+        </td>
+        <td style="width: 25%;">
+            <span class="label">funkcja na jachcie:</span>
+            <div class="val" style="min-height: 14px;">{{ data.opinion.participantFunction if data.opinion else '' }}</div>
+        </td>
+    </tr>
+</table>
+
+<!-- INFORMACJE O JACHCIE -->
+<table class="form-table">
+    <tr>
+        <th colspan="4">INFORMACJE O JACHCIE</th>
+    </tr>
+    <tr>
+        <td style="width: 25%;">
+            <span class="label">Nr rej.:</span>
+            <div class="val">{{ data.yacht.regNumber if data.yacht else '' }}</div>
+        </td>
+        <td style="width: 50%;" colspan="2">
+            <span class="label">nazwa jachtu:</span>
+            <div class="val">{{ data.yacht.name if data.yacht else '' }}</div>
+        </td>
+        <td style="width: 25%;">
+            <span class="label">Lc [m]:</span>
+            <div class="val">{{ data.yacht.length if data.yacht else '' }}</div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="3">
+            <span class="label">port macierzysty:</span>
+            <div class="val">{{ data.yacht.homePort if data.yacht else '' }}</div>
+        </td>
+        <td>
+            <span class="label">moc silnika [kW]:</span>
+            <div class="val">{{ data.yacht.enginePower if data.yacht else '' }}</div>
+        </td>
+    </tr>
+</table>
+
+<!-- INFORMACJE O REJSIE -->
+<table class="form-table">
+    <tr>
+        <th colspan="4">INFORMACJE O REJSIE</th>
+    </tr>
+    <tr>
+        <td colspan="4">
+            <span class="label">Wpisu dokonano na podstawie dziennika jachtowego, nr pływania:</span>
+            <div class="val">{{ data.cruise.logbookNumber if data.cruise else '' }}</div>
+        </td>
+    </tr>
+    <tr>
+        <td style="width: 35%;">
+            <span class="label">Port zaokrętowania:</span>
+            <div class="val">{{ data.cruise.embarkPort if data.cruise else '' }}</div>
+        </td>
+        <td style="width: 25%;">
+            <span class="label">Data:</span>
+            <div class="val">{{ data.cruise.embarkDate if data.cruise else '' }}</div>
+        </td>
+        <td style="width: 40%;" colspan="2">
+            <span class="label">Pływowy:</span>
+            <div class="val" style="text-decoration: underline;">{{ data.cruise.embarkTidal if data.cruise else '' }}</div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <span class="label">Port wyokrętowania:</span>
+            <div class="val">{{ data.cruise.disembarkPort if data.cruise else '' }}</div>
+        </td>
+        <td>
+            <span class="label">Data:</span>
+            <div class="val">{{ data.cruise.disembarkDate if data.cruise else '' }}</div>
+        </td>
+        <td colspan="2">
+            <span class="label">Pływowy:</span>
+            <div class="val" style="text-decoration: underline;">{{ data.cruise.disembarkTidal if data.cruise else '' }}</div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="4">
+            <span class="label">Odwiedzone porty:</span>
+            <div class="val" style="min-height: 24px;">
+                {{ data.cruise.visitedPorts if data.cruise else '' }}
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <span class="label">W tym liczba portów pływowych:</span>
+            <div class="val">{{ data.cruise.tidalPortsCount if data.cruise else '' }}</div>
+        </td>
+        <td colspan="2">
+            <span class="label">Liczba dni rejsu:</span>
+            <div class="val">{{ data.cruise.daysCount if data.cruise else '' }}</div>
+        </td>
+    </tr>
+</table>
+
+<!-- GODZINY / PRZEBIEG -->
+<table class="form-table">
+    <tr>
+        <th colspan="4">GODZINY ŻEGLUGI</th>
+        <th style="width: 20%;">GODZINY POSTOJU</th>
+        <th style="width: 20%;">PRZEBYTO MIL MORSKICH</th>
+    </tr>
+    <tr>
+        <td style="width: 15%;">
+            <span class="label">razem (żagle+silnik)</span>
+            <div class="val">{{ data.hours.total if data.hours else '' }}</div>
+        </td>
+        <td style="width: 15%;">
+            <span class="label">pod żaglami</span>
+            <div class="val">{{ data.hours.sails if data.hours else '' }}</div>
+        </td>
+        <td style="width: 15%;">
+            <span class="label">na silniku</span>
+            <div class="val">{{ data.hours.engine if data.hours else '' }}</div>
+        </td>
+        <td style="width: 15%;">
+            <span class="label">wody pływowe</span>
+            <div class="val">{{ data.hours.tidal if data.hours else '' }}</div>
+        </td>
+        <td>
+            <span class="label">w portach / kotwica</span>
+            <div class="val">{{ data.hours.stopped if data.hours else '' }}</div>
+        </td>
+        <td>
+            <span class="label">łącznie</span>
+            <div class="val">{{ data.distance.nauticalMiles if data.distance else '' }}</div>
+        </td>
+    </tr>
+</table>
+
+<!-- OPINIA KAPITANA -->
+<table class="form-table">
+    <tr>
+        <th style="padding: 4px 8px;">
+            <table style="width: 100%; border: none; margin: 0; background: transparent; table-layout: fixed;">
+                <tr>
+                    <td style="border: none; text-align: left; padding: 0; font-weight: bold; width: 25%;">OPINIA KAPITANA</td>
+                    <td style="border: none; text-align: left; padding: 0; font-weight: normal; width: 25%;">
+                        <span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.general == 'pozytywna' else '' }}"></span> pozytywna
+                    </td>
+                    <td style="border: none; text-align: left; padding: 0; font-weight: normal; width: 50%;" colspan="2">
+                        <span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.general == 'negatywna' else '' }}"></span> negatywna
+                    </td>
+                </tr>
+            </table>
+        </th>
+    </tr>
+    <tr>
+        <td style="padding: 4px 8px;">
+            <span class="label" style="font-weight: bold; color: #000; font-size: 11px;">Z obowiązków wywiązywał/a się:</span>
+            <table style="width: 100%; border: none; font-size: 11px; margin: 2px 0 6px 0; table-layout: fixed;">
+                <tr>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.duties == 'bardzo dobrze' else '' }}"></span> bardzo dobrze</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.duties == 'dobrze' else '' }}"></span> dobrze</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.duties == 'dostatecznie' else '' }}"></span> dostatecznie</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.duties == 'niedostatecznie' else '' }}"></span> niedostatecznie</td>
+                </tr>
+            </table>
+
+            <span class="label" style="font-weight: bold; color: #000; font-size: 11px;">Chorobie morskiej:</span>
+            <table style="width: 100%; border: none; font-size: 11px; margin: 2px 0 6px 0; table-layout: fixed;">
+                <tr>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.seasickness == 'nie podlegał/a' else '' }}"></span> nie podlegał/a</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.seasickness == 'chorował/a ciężko' else '' }}"></span> chorował/a ciężko</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 50%;" colspan="2"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.seasickness == 'chorował/a lecz mógł/mogła pracować' else '' }}"></span> chorował/a lecz mógł/mogła pracować</td>
+                </tr>
+            </table>
+
+            <span class="label" style="font-weight: bold; color: #000; font-size: 11px;">Odporność w trudnych warunkach:</span>
+            <table style="width: 100%; border: none; font-size: 11px; margin: 2px 0 2px 0; table-layout: fixed;">
+                <tr>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.endurance == 'dobra' else '' }}"></span> dobra</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.endurance == 'dostateczna' else '' }}"></span> dostateczna</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.endurance == 'niedostateczna' else '' }}"></span> niedostateczna</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.endurance == 'nie sprawdzano' else '' }}"></span> nie sprawdzano</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- UWAGI KAPITANA -->
+<table class="form-table">
+    <tr><th style="text-align: left; padding-left: 8px;">UWAGI KAPITANA</th></tr>
+    <tr>
+        <td style="min-height: 40px; padding: 4px 8px; white-space: pre-wrap; font-weight: bold;">{{ data.opinion.remarks if data.opinion else '' }}</td>
+    </tr>
+</table>
+
+<!-- INFORMACJE O KAPITANIE -->
+<table class="form-table">
+    <tr>
+        <th colspan="4">INFORMACJE O KAPITANIE</th>
+    </tr>
+    <tr>
+        <td colspan="2" style="width: 50%;">
+            <span class="label">Imię i nazwisko:</span>
+            <div class="val">{{ data.captain.name if data.captain else '' }}</div>
+        </td>
+        <td colspan="2" style="width: 50%;">
+            <span class="label">stop. żegl./mot. i nr pat.:</span>
+            <div class="val">{{ data.captain.patent if data.captain else '' }}</div>
+        </td>
+    </tr>
+    <tr>
+        <td style="width: 25%;">
+            <span class="label">tel.:</span>
+            <div class="val">{{ data.captain.phone if data.captain else '' }}</div>
+        </td>
+        <td style="width: 25%;">
+            <span class="label">adres e-mail:</span>
+            <div class="val">{{ data.captain.email if data.captain else '' }}</div>
+        </td>
+        <td style="width: 25%;">
+            <span class="label">miejscowość, data:</span>
+            <div class="val">{{ data.opinion.locationDate if data.opinion else '' }}</div>
+        </td>
+        <td style="width: 25%;">
+            <span class="label">podpis kapitana:</span>
+            <div style="border-bottom: 1px dotted #000; width: 95%; margin: 20px auto 4px auto;"></div>
+        </td>
+    </tr>
+</table>
+
+<div class="page-break"></div>
+{% endif %}
+
+
+<!-- STRONA 3: PODSUMOWANIE TRASY               -->
 <div>
     <div class="report-header">
         <h1>PODSUMOWANIE TRASY</h1>
@@ -322,7 +587,7 @@
 </div>
 
 
-<!-- STRONY 3+: PODSUMOWANIA DNI                -->
+<!-- STRONY 4+: PODSUMOWANIA DNI                -->
 {% for day in data.display_summaries %}
 
 {% if day.is_gap %}
