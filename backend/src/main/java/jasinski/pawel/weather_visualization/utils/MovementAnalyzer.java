@@ -3,7 +3,6 @@ package jasinski.pawel.weather_visualization.utils;
 import jasinski.pawel.weather_visualization.dto.DayData;
 import jasinski.pawel.weather_visualization.dto.TimelineEvent;
 import jasinski.pawel.weather_visualization.entity.TrackPoint;
-import org.locationtech.jts.geom.Point;
 
 import java.time.*;
 import java.util.*;
@@ -12,7 +11,10 @@ import static jasinski.pawel.weather_visualization.utils.GeoUtils.calculateDista
 
 public class MovementAnalyzer {
 
-    private static final double MOVING_SPEED_THRESHOLD_KMH = 0.7;
+    private static final double SPEED_THRESHOLD_START_MOVING_KMH = 0.8;
+    private static final double SPEED_THRESHOLD_STOP_MOVING_KMH = 0.4;
+    private static final long DISPLACEMENT_WINDOW_SECONDS = 120;
+    private static final double MIN_NET_DISPLACEMENT_METERS = 80;
     private static final long SMOOTHING_WINDOW_SECONDS = 60;
     private static final long MIN_PHASE_DURATION_SECONDS = 60;
 
@@ -26,6 +28,8 @@ public class MovementAnalyzer {
 
         List<TimelineEvent> rawEvents = new ArrayList<>();
         double[] smoothedSpeeds = calculateTimeWindowSpeeds(allPoints);
+        double[] netDisplacements = calculateNetDisplacements(allPoints, DISPLACEMENT_WINDOW_SECONDS);
+        boolean[] movingStates = calculateMovementStates(smoothedSpeeds, netDisplacements);
 
         int n = allPoints.size() - 1;
         int i = 0;
@@ -44,12 +48,12 @@ public class MovementAnalyzer {
                 continue;
             }
 
-            boolean isMovingBlock = smoothedSpeeds[i] >= MOVING_SPEED_THRESHOLD_KMH;
+            boolean isMovingBlock = movingStates[i];
             TrackPoint anchor = isMovingBlock ? null : startPoint;
 
             int j = i;
             while (j < n) {
-                boolean nextStepIsMoving = smoothedSpeeds[j] >= MOVING_SPEED_THRESHOLD_KMH;
+                boolean nextStepIsMoving = movingStates[j];
 
                 TrackPoint currentJ = allPoints.get(j);
                 TrackPoint nextJ = allPoints.get(j + 1);
@@ -91,6 +95,13 @@ public class MovementAnalyzer {
         }
 
         for (int i = 0; i < n; i++) {
+
+            Double gpxSpeed = points.get(i + 1).getSpeed();
+            if (gpxSpeed != null) {
+                speeds[i] = gpxSpeed;
+                continue;
+            }
+
             double sumDist = dists[i];
             long sumDur = durs[i];
 
@@ -122,6 +133,61 @@ public class MovementAnalyzer {
             }
         }
         return speeds;
+    }
+
+    //liczy realne przemieszczenie między początkiem okna a końcem pomijając np. dryfowanie
+    private static double[] calculateNetDisplacements(List<TrackPoint> points, long windowSeconds) {
+        int n = points.size() - 1;
+        double[] net = new double[n];
+
+        for (int i = 0; i < n; i++) {
+            int left = i;
+            long accLeft = 0;
+            while (left > 0) {
+                long segDur = Math.abs(Duration.between(points.get(left - 1).getTime(), points.get(left).getTime()).getSeconds());
+                if (segDur > 120 || accLeft + segDur > windowSeconds / 2) break;
+                accLeft += segDur;
+                left--;
+            }
+
+            int right = i + 1;
+            long accRight = 0;
+            while (right < n) {
+                long segDur = Math.abs(Duration.between(points.get(right).getTime(), points.get(right + 1).getTime()).getSeconds());
+                if (segDur > 120 || accRight + segDur > windowSeconds / 2) break;
+                accRight += segDur;
+                right++;
+            }
+
+            TrackPoint a = points.get(left);
+            TrackPoint b = points.get(right);
+            net[i] = calculateDistance(a.getLatitude(), a.getLongitude(), b.getLatitude(), b.getLongitude());
+        }
+
+        return net;
+    }
+
+    //klasyfikuje każdy punkt jako ruch(true) lub postój(false)
+    private static boolean[] calculateMovementStates(double[] speeds, double[] netDisplacements) {
+        boolean[] states = new boolean[speeds.length];
+        boolean currentlyMoving = false;
+
+        for (int i = 0; i < speeds.length; i++) {
+            if (currentlyMoving) {
+                if (speeds[i] < SPEED_THRESHOLD_STOP_MOVING_KMH) {
+                    currentlyMoving = false;
+                }
+            } else {
+                boolean fastEnough = speeds[i] >= SPEED_THRESHOLD_START_MOVING_KMH;
+                boolean actuallyProgressing = netDisplacements[i] >= MIN_NET_DISPLACEMENT_METERS;
+                if (fastEnough && actuallyProgressing) {
+                    currentlyMoving = true;
+                }
+            }
+            states[i] = currentlyMoving;
+        }
+
+        return states;
     }
 
     private static List<TimelineEvent> debounceTimeline(List<TimelineEvent> timeline) {

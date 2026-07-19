@@ -5,8 +5,10 @@ import matplotlib
 matplotlib.use('Agg')
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.ticker import FuncFormatter
 
 from utils import parse_dt, convert_raw
+
 
 def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=None):
     if not points: return None
@@ -19,6 +21,23 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
 
     is_daily_sync = (min_sec is not None and max_sec is not None)
 
+    # filtrowanie po dacie
+    if is_daily_sync:
+        first_dt = None
+        for p in points_to_plot:
+            dt = parse_dt(p.get('time') or p.get('timeMs'))
+            if dt:
+                first_dt = dt.date()
+                break
+
+        if first_dt:
+            filtered = []
+            for p in points_to_plot:
+                dt = parse_dt(p.get('time') or p.get('timeMs'))
+                if dt and dt.date() == first_dt:
+                    filtered.append(p)
+            points_to_plot = filtered
+
     gap_intervals = []
     if is_daily_sync and events:
         for ev in events:
@@ -29,12 +48,12 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
                 if dt_s and dt_e:
                     s_sec = dt_s.hour * 3600 + dt_s.minute * 60 + dt_s.second
                     e_sec = dt_e.hour * 3600 + dt_e.minute * 60 + dt_e.second
-                    if e_sec <= s_sec: e_sec = 86400
+                    if e_sec <= s_sec:
+                        e_sec = 86400
                     gap_intervals.append((s_sec, e_sec))
 
     raw_data = []
 
-    #jeżeli punkty są w sekcji brak danych to nie są uwzględniane
     for i, p in enumerate(points_to_plot):
         dt = parse_dt(p.get('time') or p.get('timeMs'))
         s = None
@@ -69,7 +88,8 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
     points_to_plot = valid_points
     x = np.array(x_vals)
 
-    if len(x) == 0: return None
+    if len(x) == 0:
+        return None
 
     def get_data(key, category=None, default=np.nan):
         arr = []
@@ -118,6 +138,10 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
     has_waves = not np.all(np.isnan(wave_hgt))
     has_swell = not np.all(np.isnan(swell_hgt))
 
+    def comma_fmt(x, pos):
+        return f"{x:g}".replace('.', ',')
+    comma_formatter = FuncFormatter(comma_fmt)
+
     num_rows = 3
     if has_waves: num_rows += 1
     if has_swell: num_rows += 1
@@ -135,6 +159,7 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
         ax.spines['right'].set_visible(False)
         ax.tick_params(axis='x', direction='in', length=3)
         ax.tick_params(axis='y', labelsize=8)
+        ax.yaxis.set_major_formatter(comma_formatter)
 
         if is_daily_sync:
             ax.set_xlim(min_sec, max_sec)
@@ -172,6 +197,7 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
     ax1_twin.set_ylabel(f'Temperatura ({u_t})', fontweight='bold', color='#ef4444', fontsize=9)
     ax1_twin.spines['top'].set_visible(False)
     ax1_twin.tick_params(axis='y', labelsize=8)
+    ax1_twin.yaxis.set_major_formatter(comma_formatter)
 
     h1, l1 = ax1.get_legend_handles_labels()
     h2, l2 = ax1_twin.get_legend_handles_labels()
@@ -179,15 +205,18 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
 
     def setup_arrow_panel(ax_main, data_arr, color_arr, label_arr, dir_arr, ylabel, color_hex, is_twin=False,
                           secondary_data=None, secondary_label=None, secondary_color=None,
-                          tertiary_data=None, tertiary_label=None, tertiary_color=None):
+                          tertiary_data=None, tertiary_label=None, tertiary_color=None, tertiary_is_twin=False, tertiary_axis_label=None):
 
         max_val = safe_max(data_arr, 1.0)
 
         if secondary_data is not None and not is_twin:
             max_val = max(max_val, safe_max(secondary_data, 1.0))
 
-        if tertiary_data is not None and not is_twin:
+        if tertiary_data is not None and not tertiary_is_twin:
             max_val = max(max_val, safe_max(tertiary_data, 1.0))
+
+        if max_val == 0:
+            max_val = 1.0
 
         if not np.all(np.isnan(data_arr)):
             ax_main.fill_between(x, 0, data_arr, color=color_arr[0], alpha=0.6)
@@ -196,25 +225,42 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
         if secondary_data is not None and not is_twin and not np.all(np.isnan(secondary_data)):
             ax_main.plot(x, secondary_data, color=secondary_color, lw=1.5, ls=':', marker='.', markersize=4, label=secondary_label)
 
-        if tertiary_data is not None and not np.all(np.isnan(tertiary_data)):
+        if tertiary_data is not None and not tertiary_is_twin and not np.all(np.isnan(tertiary_data)):
             ax_main.plot(x, tertiary_data, color=tertiary_color, lw=2.5, label=tertiary_label)
 
         ax_main.set_ylabel(ylabel, fontweight='bold', color=color_arr[1], fontsize=9)
         ax_main.set_ylim(0, max_val * 1.15)
         ax_main.axhline(0, color='#64748b', linewidth=1.0)
+        ax_main.yaxis.set_major_formatter(comma_formatter)
 
         ax_twin = None
-        if is_twin and secondary_data is not None and not np.all(np.isnan(secondary_data)):
+        has_sec_twin = is_twin and secondary_data is not None and not np.all(np.isnan(secondary_data))
+        has_ter_twin = tertiary_is_twin and tertiary_data is not None and not np.all(np.isnan(tertiary_data))
+
+        if has_sec_twin or has_ter_twin:
             ax_twin = ax_main.twinx()
-            ax_twin.plot(x, secondary_data, color=secondary_color, lw=1.5, ls='-.', label=secondary_label)
-            ax_twin.set_ylabel(secondary_label, fontweight='bold', color=secondary_color, fontsize=9)
             ax_twin.spines['top'].set_visible(False)
             ax_twin.tick_params(axis='y', labelsize=8)
+            ax_twin.yaxis.set_major_formatter(comma_formatter)
 
+        if has_sec_twin:
+            ax_twin.plot(x, secondary_data, color=secondary_color, lw=1.5, ls='-.', label=secondary_label)
+            ax_twin.set_ylabel(secondary_label, fontweight='bold', color=secondary_color, fontsize=9)
             sec_min = safe_min(secondary_data, 0)
             sec_max = safe_max(secondary_data, 1)
             margin = (sec_max - sec_min) * 0.15 if sec_max != sec_min else 1.0
             ax_twin.set_ylim(max(0, sec_min - margin), sec_max + margin)
+
+        if has_ter_twin:
+            ax_twin.plot(x, tertiary_data, color=tertiary_color, lw=2.5, ls='-', label=tertiary_label)
+            if not has_sec_twin:
+                axis_lbl = tertiary_axis_label if tertiary_axis_label is not None else tertiary_label
+                ax_twin.set_ylabel(axis_lbl, fontweight='bold', color=tertiary_color, fontsize=9)
+                ter_min = safe_min(tertiary_data, 0)
+                ter_max = safe_max(tertiary_data, 1)
+                margin = (ter_max - ter_min) * 0.15 if ter_max != ter_min else 1.0
+                upper_limit = max(2.0, ter_max + margin)
+                ax_twin.set_ylim(max(0, ter_min - margin), upper_limit)
 
         valid_dir = ~np.isnan(dir_arr)
         if np.any(valid_dir):
@@ -255,7 +301,8 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
         ax_wind, wind_spd, ['#bae6fd', '#0284c7'], [f'Wiatr ({u_w})'], wind_dir, f'Prędkość ({u_w})', '#1e3a8a',
         is_twin=False,
         secondary_data=wind_gst, secondary_label='Porywy', secondary_color='#1e3a8a',
-        tertiary_data=speed, tertiary_label=f'Prędkość jednostki ({u_s})', tertiary_color='#dc2626'
+        tertiary_data=speed, tertiary_label=f'Prędkość jednostki ({u_s})', tertiary_color='#dc2626',
+        tertiary_is_twin=True, tertiary_axis_label=f'Prędkość ({u_s})'
     )
 
     #PANEL 3: Fale Główne
@@ -311,6 +358,7 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
     ax5_twin.set_ylim(0, 105)
     ax5_twin.spines['top'].set_visible(False)
     ax5_twin.tick_params(axis='y', labelsize=8)
+    ax5_twin.yaxis.set_major_formatter(comma_formatter)
 
     h7, l7 = ax5.get_legend_handles_labels()
     h8, l8 = ax5_twin.get_legend_handles_labels()

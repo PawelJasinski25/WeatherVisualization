@@ -1,7 +1,5 @@
 package jasinski.pawel.weather_visualization.dto;
 
-import jasinski.pawel.weather_visualization.utils.SpeedAnalyzer;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -31,14 +29,14 @@ public record ReportDailySummaryDto(
 
         if (summary.segments() != null && !summary.segments().isEmpty()) {
 
-            for (EnrichedSegment seg : summary.segments()) {
-                double speed = (seg.p1().getSpeed() != null) ? seg.p1().getSpeed() : seg.rawSpeedKmh();
-                mappedPoints.add(TrackPointDto.fromEntityWithSpeed(seg.p1(), speed));
-            }
+            EnrichedSegment firstSeg = summary.segments().get(0);
+            double startSpeed = (firstSeg.p1().getSpeed() != null) ? firstSeg.p1().getSpeed() : firstSeg.rawSpeedKmh();
+            mappedPoints.add(TrackPointDto.fromEntityWithSpeed(firstSeg.p1(), startSpeed));
 
-            EnrichedSegment lastSeg = summary.segments().get(summary.segments().size() - 1);
-            double lastSpeed = (lastSeg.p2().getSpeed() != null) ? lastSeg.p2().getSpeed() : lastSeg.rawSpeedKmh();
-            mappedPoints.add(TrackPointDto.fromEntityWithSpeed(lastSeg.p2(), lastSpeed));
+            for (EnrichedSegment seg : summary.segments()) {
+                double speed = (seg.p2().getSpeed() != null) ? seg.p2().getSpeed() : seg.rawSpeedKmh();
+                mappedPoints.add(TrackPointDto.fromEntityWithSpeed(seg.p2(), speed));
+            }
         }
 
         return new ReportDailySummaryDto(

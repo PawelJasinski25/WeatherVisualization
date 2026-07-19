@@ -166,7 +166,7 @@ def generate_report_pdf(report_data: dict) -> bytes:
                     ev['placeName'] = format_place(ev.get('placeName'))
 
                 map_points = points[::max(1, len(points) // 100)] if points else []
-                meteo_points = points[::max(1, len(points) // 24)] if points else []
+                meteo_points = points if points else []
                 rose_points = points[::max(1, len(points) // 24)] if points else []
 
                 day_min_sec, day_max_sec = get_day_time_bounds(events, day.get('observedAstroEvents'))

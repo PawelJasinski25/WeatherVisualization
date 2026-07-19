@@ -167,8 +167,6 @@ public class ReportService {
                 double dur = Math.abs(Duration.between(p1.getTime(), p2.getTime()).toMillis()) / 1000.0;
 
                 if (dur > 0) {
-                    double speed = (dist / dur) * 3.6;
-
                     boolean isMoving = false;
                     LocalDate date = LocalDate.ofInstant(p1.getTime(), zoneId);
                     DayData movData = dailyMovements.get(date);
@@ -181,6 +179,8 @@ public class ReportService {
                             }
                         }
                     }
+
+                    double speed = isMoving ? ((dist / dur) * 3.6) : 0.0;
 
                     segments.add(new EnrichedSegment(p1, p2, dist, dur, speed, isMoving));
                 }
