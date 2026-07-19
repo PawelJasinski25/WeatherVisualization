@@ -173,7 +173,7 @@ def generate_report_pdf(report_data: dict) -> bytes:
 
                 map_future = executor.submit(create_route_map, map_points, 600, 300)
                 timeline_future = executor.submit(create_timeline_chart, day.get('date'), events, day_min_sec, day_max_sec) if events else None
-                astro_future = executor.submit(create_astro_timeline_chart, day.get('observedAstroEvents'), day_min_sec, day_max_sec)
+                astro_future = executor.submit(create_astro_timeline_chart, day.get('observedAstroEvents'), day_min_sec, day_max_sec, events)
 
                 day['meteogram_chart'] = create_meteogram_chart(meteo_points, prefs, day_min_sec, day_max_sec, events)
 

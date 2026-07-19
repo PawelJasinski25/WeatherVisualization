@@ -14,7 +14,7 @@ import java.util.List;
 public class AstronomyAnalyzer {
 
     public record EventPoint(LocalTime time, TrackPoint point) {}
-    private static final long TOLERANCE_SECONDS = 15 * 60;
+    private static final long TOLERANCE_SECONDS = 30;
 
     public static AstronomyStats calculateSun(List<TrackPoint> pointsOfDay, List<TimelineEvent> eventsOfDay, ZoneId zoneId) {
         if (pointsOfDay == null || pointsOfDay.isEmpty()) {

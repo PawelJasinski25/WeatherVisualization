@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw
 
 from utils import parse_dt, format_place, get_font
 
-def create_astro_timeline_chart(astro_events, min_sec=0, max_sec=86400):
+def create_astro_timeline_chart(astro_events, min_sec=0, max_sec=86400, events=None):
     if not astro_events or not isinstance(astro_events, dict):
         return None
 
@@ -48,6 +48,20 @@ def create_astro_timeline_chart(astro_events, min_sec=0, max_sec=86400):
     if not parsed_events: return None
     parsed_events.sort(key=lambda x: x['sec'])
 
+    gap_intervals = []
+    if events:
+        for ev in events:
+            ev_type = str(ev.get('type', '')).upper()
+            if "BRAK" in ev_type:
+                dt_s = parse_dt(ev.get('start'))
+                dt_e = parse_dt(ev.get('end'))
+                if dt_s and dt_e:
+                    s_sec = dt_s.hour * 3600 + dt_s.minute * 60 + dt_s.second
+                    e_sec = dt_e.hour * 3600 + dt_e.minute * 60 + dt_e.second
+                    if e_sec <= s_sec:
+                        e_sec = 86400
+                    gap_intervals.append((s_sec, e_sec))
+
     color_map = {
         "Świt astronomiczny": (26, 54, 150), "Świt nautyczny": (66, 170, 245), "Świt cywilny": (245, 80, 180),
         "Wschód słońca": (255, 220, 0), "Kulminacja": (255, 255, 255), "Zachód słońca": (245, 110, 0),
@@ -57,26 +71,50 @@ def create_astro_timeline_chart(astro_events, min_sec=0, max_sec=86400):
     }
 
     def get_band_color(sec):
-        last_sun_event = None
+
+        #brak danych
+        for (gs, ge) in gap_intervals:
+            if gs <= sec <= ge:
+                return (160, 160, 160)
+
         sun_events = [
             "Świt astronomiczny", "Świt nautyczny", "Świt cywilny",
             "Wschód słońca", "Kulminacja", "Zachód słońca",
             "Zmierzch cywilny", "Zmierzch nautyczny", "Zmierzch astronomiczny"
         ]
 
-        for ev in parsed_events:
-            if sec >= ev['sec'] and ev['name'] in sun_events:
+        filtered_sun_events = [ev for ev in parsed_events if ev['name'] in sun_events]
+        if not filtered_sun_events:
+            return (8, 12, 25)
+
+        last_sun_event = None
+        for ev in filtered_sun_events:
+            if sec >= ev['sec']:
                 last_sun_event = ev['name']
 
-        if last_sun_event == "Świt astronomiczny": return (26, 54, 150)
-        if last_sun_event == "Świt nautyczny": return (66, 170, 245)
-        if last_sun_event == "Świt cywilny": return (245, 80, 180)
-        if last_sun_event == "Wschód słońca": return (255, 220, 0)
-        if last_sun_event == "Kulminacja": return (255, 220, 0)
-        if last_sun_event == "Zachód słońca": return (245, 110, 0)
-        if last_sun_event == "Zmierzch cywilny": return (210, 30, 30)
-        if last_sun_event == "Zmierzch nautyczny": return (110, 20, 160)
-        if last_sun_event == "Zmierzch astronomiczny": return (8, 12, 25)
+        if last_sun_event:
+            if last_sun_event in ["Świt astronomiczny"]: return (26, 54, 150)
+            if last_sun_event in ["Świt nautyczny"]: return (66, 170, 245)
+            if last_sun_event in ["Świt cywilny"]: return (245, 80, 180)
+            if last_sun_event in ["Wschód słońca", "Kulminacja"]: return (255, 220, 0)
+            if last_sun_event in ["Zachód słońca"]: return (245, 110, 0)
+            if last_sun_event in ["Zmierzch cywilny"]: return (210, 30, 30)
+            if last_sun_event in ["Zmierzch nautyczny"]: return (110, 20, 160)
+            if last_sun_event in ["Zmierzch astronomiczny"]: return (8, 12, 25)
+
+        first_sun_event = filtered_sun_events[0]['name']
+
+        if first_sun_event in ["Kulminacja", "Zachód słońca", "Zmierzch cywilny", "Zmierzch nautyczny", "Zmierzch astronomiczny"]:
+            return (255, 220, 0)
+
+        if first_sun_event == "Wschód słońca":
+            return (245, 80, 180)
+
+        if first_sun_event == "Świt cywilny":
+            return (66, 170, 245)
+
+        if first_sun_event == "Świt nautyczny":
+            return (26, 54, 150)
 
         return (8, 12, 25)
 
