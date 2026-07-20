@@ -1,7 +1,7 @@
 package jasinski.pawel.weather_visualization.service;
 import jasinski.pawel.weather_visualization.dto.*;
 import jasinski.pawel.weather_visualization.entity.TrackPoint;
-import jasinski.pawel.weather_visualization.entity.Trip;
+import jasinski.pawel.weather_visualization.entity.Weather;
 import jasinski.pawel.weather_visualization.repository.TrackPointRepository;
 import jasinski.pawel.weather_visualization.utils.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,12 +13,18 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Service
 public class ReportService {
@@ -26,14 +32,16 @@ public class ReportService {
     private final GeoNamesService geoNamesService;
     private final TripService tripService;
     private final RestTemplate restTemplate;
+    private final WaterDetectionService waterDetectionService;
     private static final ZoneId DEFAULT_ZONE = ZoneId.of("Europe/Warsaw");
 
     @Autowired
-    public ReportService(TrackPointRepository trackPointRepository, GeoNamesService geoNamesService, TripService tripService, RestTemplate restTemplate){
+    public ReportService(TrackPointRepository trackPointRepository, GeoNamesService geoNamesService, TripService tripService, RestTemplate restTemplate, WaterDetectionService waterDetectionService){
         this.trackPointRepository = trackPointRepository;
         this.geoNamesService = geoNamesService;
         this.tripService = tripService;
         this.restTemplate = restTemplate;
+        this.waterDetectionService = waterDetectionService;
     }
 
     private TripAnalysisContext analyzeTrip(Long tripId) {
@@ -105,7 +113,7 @@ public class ReportService {
     @Cacheable(value = "reportData", key = "#tripId")
     public TripReportDataDto getTripReportData(Long tripId, String email) {
 
-        jasinski.pawel.weather_visualization.dto.TripResponseDto trip = tripService.getUserTrips(email).stream()
+        TripResponseDto trip = tripService.getUserTrips(email).stream()
                 .filter(t -> t.id().equals(tripId))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień"));
@@ -190,26 +198,42 @@ public class ReportService {
     }
 
     public ReportResource getCsvReportResource(Long tripId, String email) {
-        jasinski.pawel.weather_visualization.dto.TripResponseDto trip = tripService.getUserTrips(email).stream()
+        TripResponseDto trip = tripService.getUserTrips(email).stream()
                 .filter(t -> t.id().equals(tripId))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień"));
 
-        String csvContent = generateCsv(tripId);
-        byte[] csvBytes = csvContent.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        TripAnalysisContext context = analyzeTrip(tripId);
+
+        String mainCsvContent = generateSummaryCsv(context);
+        String apiCsvContent = generateApiUsageCsv(context);
 
         byte[] bom = new byte[] { (byte)0xEF, (byte)0xBB, (byte)0xBF };
-        byte[] finalBytes = new byte[bom.length + csvBytes.length];
-        System.arraycopy(bom, 0, finalBytes, 0, bom.length);
-        System.arraycopy(csvBytes, 0, finalBytes, bom.length, csvBytes.length);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
 
-        String fileName = trip.name().replaceAll("(?i)\\.gpx$", "") + ".csv";
+            // Główne podsumowanie trasy
+            zos.putNextEntry(new ZipEntry("podsumowanie_trasy.csv"));
+            zos.write(bom);
+            zos.write(mainCsvContent.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
 
-        return new ReportResource(finalBytes, fileName);
+            // Punkty z bazy i zapytania
+            zos.putNextEntry(new ZipEntry("punkty.csv"));
+            zos.write(bom);
+            zos.write(apiCsvContent.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+        } catch (IOException e) {
+            throw new RuntimeException("Błąd podczas generowania pliku ZIP", e);
+        }
+
+        String fileName = trip.name().replaceAll("(?i)\\.gpx$", "") + "_raport.zip";
+
+        return new ReportResource(baos.toByteArray(), fileName);
     }
 
-    public String generateCsv(Long tripId) {
-        TripAnalysisContext context = analyzeTrip(tripId);
+    public String generateSummaryCsv(TripAnalysisContext context) {
         List<DailySummary> summaries = generateDailySummaries(context);
         StringBuilder csv = new StringBuilder();
 
@@ -339,6 +363,128 @@ public class ReportService {
             }
             csv.append("\n");
         }
+        return csv.toString();
+    }
+
+    public String generateApiUsageCsv(TripAnalysisContext context) {
+        StringBuilder csv = new StringBuilder();
+        DateTimeFormatter fullTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(DEFAULT_ZONE);
+
+        class ApiUsageStats {
+            java.time.Instant firstPointTime;
+            java.time.Instant lastPointTime;
+            double gridLat;
+            double gridLon;
+            double origLat;
+            double origLon;
+            boolean isWater;
+            Weather weather;
+            int pointCount = 0;
+            boolean isActualHttpApiCall;
+        }
+
+        Map<String, ApiUsageStats> usageMap = new LinkedHashMap<>();
+        Set<String> executedHttpCalls = new HashSet<>();
+
+        // Odtwarzanie zapytań
+        for (TrackPoint pt : context.points()) {
+            String dateStr = pt.getTime().toString().substring(0, 10);
+            String targetHourStr = pt.getTime().toString().substring(0, 13) + ":00";
+            double gridLat = Math.round(pt.getLatitude() * 10.0) / 10.0;
+            double gridLon = Math.round(pt.getLongitude() * 10.0) / 10.0;
+
+            String hourlyKey = targetHourStr + "_" + gridLat + "_" + gridLon;
+            String dailyGridKey = dateStr + "_" + gridLat + "_" + gridLon;
+
+            ApiUsageStats stats = usageMap.get(hourlyKey);
+            if (stats == null) {
+                stats = new ApiUsageStats();
+                stats.firstPointTime = pt.getTime();
+                stats.gridLat = gridLat;
+                stats.gridLon = gridLon;
+                stats.origLat = pt.getLatitude();
+                stats.origLon = pt.getLongitude();
+                stats.isWater = waterDetectionService.isWater(pt.getLatitude(), pt.getLongitude());
+                stats.weather = pt.getWeather();
+
+                if (!executedHttpCalls.contains(dailyGridKey)) {
+                    stats.isActualHttpApiCall = true;
+                    executedHttpCalls.add(dailyGridKey);
+                } else {
+                    stats.isActualHttpApiCall = false;
+                }
+
+                usageMap.put(hourlyKey, stats);
+            }
+
+            stats.lastPointTime = pt.getTime();
+            stats.pointCount++;
+        }
+
+        csv.append("Data punktu z bazy;Szerokość;Długość;Szerokość zaokrąglona;Długość zaokrąglona;Źródło danych;Open-Meteo Historical API (0/1);Open-Meteo Marine API (0/1);Dopasowane punkty;Dopasowane punkty od;Dopasowane punkty do;");
+        csv.append("Temperatura (°C);Prędkość wiatru (km/h);Kierunek wiatru (°);Punkt rosy (°C);Porywy wiatru (km/h);Opady deszczu (mm);Opady śniegu (cm);Wilgotność (%);Ciśnienie (hPa);Zachmurzenie ogólne (%);Chmury niskie (%);Chmury średnie (%);Chmury wysokie (%);Wysokość fali (m);Okres fali (s);Kierunek fali (deg);Wysokość fal wiatrowych (m);Okres fal wiatrowych (s);Wysokość martwej fali (m);Okres martwej fali (s);Prędkość prądów (km/h);Kierunek prądów (°);Temperatura morza (°C);Kod pogody\n");
+
+        for (ApiUsageStats stats : usageMap.values()) {
+            String origLatStr = String.format(Locale.US, "%.5f", stats.origLat);
+            String origLonStr = String.format(Locale.US, "%.5f", stats.origLon);
+            String gridLatStr = String.format(Locale.US, "%.1f", stats.gridLat);
+            String gridLonStr = String.format(Locale.US, "%.1f", stats.gridLon);
+
+            String dateFullStr = fullTimeFormatter.format(stats.firstPointTime);
+            String startTimeStr = fullTimeFormatter.format(stats.firstPointTime);
+            String endTimeStr = fullTimeFormatter.format(stats.lastPointTime);
+
+            String dataSource = stats.isActualHttpApiCall ?
+                    "Zapytanie HTTP (paczka 24h)" :
+                    "Cache (paczka 24h)";
+
+            int historicalFlag = stats.isActualHttpApiCall ? 1 : 0;
+            int marineFlag = (stats.isActualHttpApiCall && stats.isWater) ? 1 : 0;
+
+            csv.append(dateFullStr).append(";")
+                    .append(origLatStr).append(";")
+                    .append(origLonStr).append(";")
+                    .append(gridLatStr).append(";")
+                    .append(gridLonStr).append(";")
+                    .append(dataSource).append(";")
+                    .append(historicalFlag).append(";")
+                    .append(marineFlag).append(";")
+                    .append(stats.pointCount).append(";")
+                    .append(startTimeStr).append(";")
+                    .append(endTimeStr).append(";");
+
+            if (stats.weather != null) {
+                appendCsv(csv, stats.weather.getTemp());
+                appendCsv(csv, stats.weather.getWindSpeed());
+                appendCsv(csv, stats.weather.getWindDir());
+                appendCsv(csv, stats.weather.getDewPoint());
+                appendCsv(csv, stats.weather.getWindGusts());
+                appendCsv(csv, stats.weather.getRain());
+                appendCsv(csv, stats.weather.getSnowfall());
+                appendCsv(csv, stats.weather.getHumidity());
+                appendCsv(csv, stats.weather.getPressure());
+                appendCsv(csv, stats.weather.getCloudCover());
+                appendCsv(csv, stats.weather.getCloudCoverLow());
+                appendCsv(csv, stats.weather.getCloudCoverMid());
+                appendCsv(csv, stats.weather.getCloudCoverHigh());
+                appendCsv(csv, stats.weather.getWaveHeight());
+                appendCsv(csv, stats.weather.getWavePeriod());
+                appendCsv(csv, stats.weather.getWaveDirection());
+                appendCsv(csv, stats.weather.getWindWaveHeight());
+                appendCsv(csv, stats.weather.getWindWavePeriod());
+                appendCsv(csv, stats.weather.getSwellWaveHeight());
+                appendCsv(csv, stats.weather.getSwellWavePeriod());
+                appendCsv(csv, stats.weather.getOceanCurrentVelocity());
+                appendCsv(csv, stats.weather.getOceanCurrentDirection());
+                appendCsv(csv, stats.weather.getSeaTemperature());
+                appendCsv(csv, stats.weather.getWeatherCode());
+            } else {
+                for (int i = 0; i < 24; i++) {
+                    csv.append("--;");
+                }
+            }
+            csv.append("\n");
+        }
 
         return csv.toString();
     }
@@ -346,7 +492,12 @@ public class ReportService {
 
     @Value("${python.pdf.service.url}")
     private String pythonUrl;
-    public byte[] generatePdfReport(Long tripId, String email, Map<String, Object> formData) {
+    public ReportResource generatePdfReportResource(Long tripId, String email, Map<String, Object> formData) {
+
+        TripResponseDto trip = tripService.getUserTrips(email).stream()
+                .filter(t -> t.id().equals(tripId))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień"));
 
         TripReportDataDto data = getTripReportData(tripId, email);
 
@@ -357,11 +508,16 @@ public class ReportService {
             payload.putAll(formData);
         }
 
+        byte[] pdfContent;
         try {
-            return restTemplate.postForObject(pythonUrl, payload, byte[].class);
+            pdfContent = restTemplate.postForObject(pythonUrl, payload, byte[].class);
         } catch (Exception e) {
             throw new RuntimeException("Błąd komunikacji z serwisem PDF: " + e.getMessage());
         }
+
+        String fileName = trip.name().replaceAll("(?i)\\.gpx$", "") + "_raport.pdf";
+
+        return new ReportResource(pdfContent, fileName);
     }
 
     private void appendCsv(StringBuilder sb, Object value) {

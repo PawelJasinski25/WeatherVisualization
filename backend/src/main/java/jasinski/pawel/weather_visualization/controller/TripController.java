@@ -5,14 +5,15 @@ import jasinski.pawel.weather_visualization.service.GeoNamesService;
 import jasinski.pawel.weather_visualization.service.ReportService;
 import jasinski.pawel.weather_visualization.service.TripMapService;
 import jasinski.pawel.weather_visualization.service.TripService;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
+
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 
@@ -83,11 +84,15 @@ public class TripController {
     public ResponseEntity<byte[]> downloadCsvReport(@PathVariable Long id, Authentication authentication) {
         ReportResource report = reportService.getCsvReportResource(id, authentication.getName());
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + report.fileName() + "\"");
-        headers.setContentType(MediaType.parseMediaType("text/csv"));
 
-        return ResponseEntity.ok().headers(headers).body(report.content());
+        ContentDisposition contentDisposition = org.springframework.http.ContentDisposition.builder("attachment")
+                .filename(report.fileName(), StandardCharsets.UTF_8)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
+                .contentType(MediaType.valueOf("application/zip"))
+                .body(report.content());
     }
 
     public record PdfDownloadRequest(List<String> modules, java.util.Map<String, Object> reportData) {}
@@ -98,14 +103,16 @@ public class TripController {
             @RequestBody PdfDownloadRequest request,
             Authentication authentication) {
 
-        String email = authentication.getName();
+        ReportResource report = reportService.generatePdfReportResource(tripId, authentication.getName(), request.reportData());
 
-        byte[] pdfContent = reportService.generatePdfReport(tripId, email, request.reportData());
+        ContentDisposition contentDisposition = org.springframework.http.ContentDisposition.builder("attachment")
+                .filename(report.fileName(), StandardCharsets.UTF_8)
+                .build();
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"raport_trasy_" + tripId + ".pdf\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
                 .contentType(MediaType.APPLICATION_PDF)
-                .body(pdfContent);
+                .body(report.content());
     }
 
     @PostMapping("/merge")

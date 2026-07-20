@@ -1,6 +1,7 @@
 package jasinski.pawel.weather_visualization.service;
 
 import jasinski.pawel.weather_visualization.dto.ReportResource;
+import jasinski.pawel.weather_visualization.dto.TripAnalysisContext;
 import jasinski.pawel.weather_visualization.dto.TripReportDataDto;
 import jasinski.pawel.weather_visualization.dto.TripResponseDto;
 import jasinski.pawel.weather_visualization.entity.TrackPoint;
@@ -9,7 +10,6 @@ import jasinski.pawel.weather_visualization.repository.TrackPointRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -123,8 +123,9 @@ class ReportServiceTest {
         TrackPoint p2 = createPoint(52.201, 21.001, "2023-05-10T10:01:00Z", 1, 16.0);
 
         when(trackPointRepository.findByTripIdOrderByTimeAsc(100L)).thenReturn(List.of(p1, p2));
+        TripAnalysisContext context = ReflectionTestUtils.invokeMethod(reportService, "analyzeTrip", 100L);
 
-        String csvContent = reportService.generateCsv(100L);
+        String csvContent = reportService.generateSummaryCsv(context);
 
         assertThat(csvContent).contains("Data;Start;Koniec;Czas w ruchu;Czas na postoju");
         assertThat(csvContent).contains("Średnia temperatura (°C)");
@@ -158,10 +159,10 @@ class ReportServiceTest {
                 any(Map.class),
                 eq(byte[].class)
         )).thenReturn(expectedPdfBytes);
+        ReportResource resource = reportService.generatePdfReportResource(100L, userEmail, Map.of("theme", "dark"));
 
-        byte[] actualPdfBytes = reportService.generatePdfReport(100L, userEmail, Map.of("theme", "dark"));
-
-        assertThat(actualPdfBytes).isEqualTo(expectedPdfBytes);
+        assertThat(resource.content()).isEqualTo(expectedPdfBytes);
+        assertThat(resource.fileName()).isEqualTo("Trasa w Tatry_raport.pdf");
     }
 
     private TrackPoint createPoint(double lat, double lon, String timeStr, int segmentId, double temp) {

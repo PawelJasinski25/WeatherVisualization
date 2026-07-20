@@ -186,6 +186,36 @@ const ReportGenerator = ({ tripId }) => {
         setFormData(prev => ({ ...prev, crew: newCrew }));
     };
 
+    const downloadFileFromResponse = (response, defaultFilename) => {
+        const contentDisposition = response.headers['content-disposition'];
+        let fileName = defaultFilename;
+
+        if (contentDisposition) {
+            const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+            if (utf8Match && utf8Match[1]) {
+                try {
+                    fileName = decodeURIComponent(utf8Match[1]);
+                } catch (e) {
+                    console.error("Błąd dekodowania UTF-8 nazwy pliku:", e);
+                }
+            } else {
+                const standardMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+                if (standardMatch && standardMatch[1]) {
+                    fileName = standardMatch[1];
+                }
+            }
+        }
+
+        const url = window.URL.createObjectURL(response.data);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    };
+
     const handleGeneratePdf = async () => {
         setIsGeneratingPdf(true);
         setError(null);
@@ -206,13 +236,8 @@ const ReportGenerator = ({ tripId }) => {
                 params: { t: new Date().getTime() }
             });
 
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `raport_trasy_${tripId}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
+            downloadFileFromResponse(response, `raport_trasy_${tripId}.pdf`);
+
         } catch (err) {
             setError("Wystąpił błąd podczas generowania pliku PDF: ");
         } finally {
@@ -229,13 +254,8 @@ const ReportGenerator = ({ tripId }) => {
                 params: { t: new Date().getTime() }
             });
 
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `raport_pogodowy_${tripId}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
+            const blob = new Blob([response.data], { type: 'application/zip' });
+            downloadFileFromResponse(response, `raport_${tripId}.zip`);
         } catch (err) {
             setError("Wystąpił błąd podczas generowania pliku CSV: ");
         } finally {
