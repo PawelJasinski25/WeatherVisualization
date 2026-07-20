@@ -8,6 +8,7 @@ import TripsPage from "./pages/TripsPage.jsx";
 import ReportPage from "./pages/ReportPage.jsx";
 import AnimationPage from "./pages/AnimationPage.jsx";
 import { UnitProvider } from "./contexts/UnitContext.jsx";
+import AboutPage from "./pages/AboutPage.jsx";
 
 function App() {
     return (
@@ -18,6 +19,7 @@ function App() {
                     <Route path="/register" element={<RegisterPage />} />
 
                     <Route element={<ProtectedRoute />}>
+                        <Route path="/about" element={<AboutPage />} />
                         <Route path="/dashboard" element={<DashboardPage />} />
                         <Route path="/trips" element={<TripsPage />} />
                         <Route path="/animation" element={<AnimationPage />} />

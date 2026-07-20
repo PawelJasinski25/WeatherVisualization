@@ -1,0 +1,151 @@
+
+.about-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #f9fafb;
+}
+
+.about-container {
+    width: 100%;
+    max-width: 50rem;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem;
+    box-sizing: border-box;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.about-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 0.625rem;
+    flex-shrink: 0;
+}
+
+.about-title {
+    color: #333;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.about-scroll-area {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+    padding-bottom: 1rem;
+}
+
+
+.about-card {
+    background-color: #ffffff;
+    border-radius: 0.625rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: none;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+}
+
+.about-section {
+    display: flex;
+    gap: 1.25rem;
+}
+
+.about-section-icon {
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+}
+
+.about-icon-blue,
+.about-icon-purple,
+.about-icon-green {
+    width: 26px;
+    height: 26px;
+}
+
+.about-icon-blue { color: #3b82f6; }
+.about-icon-purple { color: #8b5cf6; }
+.about-icon-green { color: #10b981; }
+
+.about-section-content {
+    flex: 1;
+}
+
+.about-text {
+    margin: 0;
+    color: #475569;
+    line-height: 1.6;
+    font-size: 0.95rem;
+    text-align: justify;
+}
+
+.about-text code {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.25rem;
+    font-family: monospace;
+    font-size: 0.875rem;
+    border: 1px solid #cbd5e1;
+    word-break: break-all;
+}
+
+
+.about-meta-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-top: 1rem;
+    color: #334155;
+    font-size: 0.95rem;
+}
+
+.about-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 0.5rem 0.875rem;
+    border-radius: 0.5rem;
+}
+
+.about-divider {
+    height: 1px;
+    background-color: #e2e8f0;
+    width: 100%;
+}
+
+
+.about-list {
+    margin: 0.75rem 0 0 0;
+    padding-left: 1.25rem;
+    color: #475569;
+    line-height: 1.6;
+    font-size: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.about-list li {
+    list-style-type: disc;
+    text-align: justify;
+}
+
+.about-list span {
+    display: block;
+    margin-top: 0.2rem;
+}
+

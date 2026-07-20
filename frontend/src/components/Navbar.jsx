@@ -29,8 +29,13 @@ const Navbar = ({ onOpenUpload, activeTab = 'map', currentTripId = null }) => {
     return (
         <nav className="navbar">
             <div className="navbar-left">
-                <span className="navbar-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <CloudSun size={24} color="#1e40af" /> WeatherVisualization
+                <span
+                    className="navbar-logo"
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                    onClick={() => navigate('/about')}
+                    title="Informacje o aplikacji"
+                >
+                     <CloudSun size={24} color="#1e40af" /> WeatherVisualization
                 </span>
             </div>
 
