@@ -419,7 +419,7 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
                 for i in ticks:
                     dt = parsed_dates[i] if i < len(parsed_dates) else None
                     if dt:
-                        if total_hours > 36: labels.append(dt.strftime("%d.%m"))
+                        if total_hours > 36: labels.append(dt.strftime("%d.%m\n%H:%M"))
                         else: labels.append(dt.strftime("%H:%M"))
                     else:
                         labels.append("")

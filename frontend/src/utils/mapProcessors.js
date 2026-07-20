@@ -220,8 +220,8 @@ export const generateSampledPoints = (tripData) => {
 
     //sprawdzanie kolizji
     let clearanceFactor = 6000;
-    if (totalTripDistance < 30) clearanceFactor = 1000;
-    else if (totalTripDistance < 100) clearanceFactor = 3000;
+    if (totalTripDistance < 30) clearanceFactor = 200;
+    else if (totalTripDistance < 100) clearanceFactor = 1500;
 
     const zoomLevels = [5, 6, 7, 8, 9, 10];
 
