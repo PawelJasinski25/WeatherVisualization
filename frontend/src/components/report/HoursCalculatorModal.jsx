@@ -143,15 +143,16 @@ const HoursCalculatorModal = ({ isOpen, onClose, initialLogs, onSave, cruiseDate
             return;
         }
 
+        const sanitizedValue = value.replace(/-/g, '');
         const totalVal = parseFloat(String(log.total).replace(',', '.')) || 0;
-        const floatValue = parseFloat(String(value).replace(',', '.')) || 0;
+        const floatValue = parseFloat(String(sanitizedValue).replace(',', '.')) || 0;
 
         if (field === 'sails') {
             if (floatValue > totalVal) {
                 log.sails = totalVal.toFixed(1).replace('.', ',');
                 log.engine = '0,0';
             } else {
-                log.sails = value.replace(/\./g, ',');
+                log.sails = sanitizedValue.replace(/\./g, ',');
                 log.engine = (totalVal - floatValue).toFixed(1).replace('.', ',');
             }
         }
@@ -161,7 +162,7 @@ const HoursCalculatorModal = ({ isOpen, onClose, initialLogs, onSave, cruiseDate
                 log.engine = totalVal.toFixed(1).replace('.', ',');
                 log.sails = '0,0';
             } else {
-                log.engine = value.replace(/\./g, ',');
+                log.engine = sanitizedValue.replace(/\./g, ',');
                 log.sails = (totalVal - floatValue).toFixed(1).replace('.', ',');
             }
         }
@@ -170,7 +171,7 @@ const HoursCalculatorModal = ({ isOpen, onClose, initialLogs, onSave, cruiseDate
             if (floatValue > totalVal) {
                 log.tidal = totalVal.toFixed(1).replace('.', ',');
             } else {
-                log.tidal = value.replace(/\./g, ',');
+                log.tidal = sanitizedValue.replace(/\./g, ',');
             }
         }
 
