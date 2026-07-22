@@ -22,20 +22,19 @@ public record ReportDailySummaryDto(
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
 
-    public static ReportDailySummaryDto from(DailySummary summary) {
-        if (summary == null) return null;
+    public static ReportDailySummaryDto from(DailySummary summary, List<EnrichedSegment> reducedSegments) {
+        if (summary == null)
+            return null;
 
         List<TrackPointDto> mappedPoints = new ArrayList<>();
 
-        if (summary.segments() != null && !summary.segments().isEmpty()) {
+        if (reducedSegments != null && !reducedSegments.isEmpty()) {
 
-            EnrichedSegment firstSeg = summary.segments().get(0);
-            double startSpeed = (firstSeg.p1().getSpeed() != null) ? firstSeg.p1().getSpeed() : firstSeg.rawSpeedKmh();
-            mappedPoints.add(TrackPointDto.fromEntityWithSpeed(firstSeg.p1(), startSpeed));
+            EnrichedSegment firstSeg = reducedSegments.get(0);
+            mappedPoints.add(TrackPointDto.fromEntityWithSpeed(firstSeg.p1(), firstSeg.rawSpeedKmh()));
 
-            for (EnrichedSegment seg : summary.segments()) {
-                double speed = (seg.p2().getSpeed() != null) ? seg.p2().getSpeed() : seg.rawSpeedKmh();
-                mappedPoints.add(TrackPointDto.fromEntityWithSpeed(seg.p2(), speed));
+            for (EnrichedSegment seg : reducedSegments) {
+                mappedPoints.add(TrackPointDto.fromEntityWithSpeed(seg.p2(), seg.rawSpeedKmh()));
             }
         }
 

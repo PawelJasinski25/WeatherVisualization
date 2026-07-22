@@ -13,18 +13,12 @@ from utils import parse_dt, convert_raw
 def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=None):
     if not points: return None
 
-    if len(points) > 120:
-        step = max(1, len(points) // 120)
-        points_to_plot = points[::step]
-    else:
-        points_to_plot = points
-
     is_daily_sync = (min_sec is not None and max_sec is not None)
 
     # filtrowanie po dacie
     if is_daily_sync:
         first_dt = None
-        for p in points_to_plot:
+        for p in points:
             dt = parse_dt(p.get('time') or p.get('timeMs'))
             if dt:
                 first_dt = dt.date()
@@ -32,11 +26,11 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
 
         if first_dt:
             filtered = []
-            for p in points_to_plot:
+            for p in points:
                 dt = parse_dt(p.get('time') or p.get('timeMs'))
                 if dt and dt.date() == first_dt:
                     filtered.append(p)
-            points_to_plot = filtered
+            points = filtered
 
     gap_intervals = []
     if is_daily_sync and events:
@@ -54,7 +48,7 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
 
     raw_data = []
 
-    for i, p in enumerate(points_to_plot):
+    for i, p in enumerate(points):
         dt = parse_dt(p.get('time') or p.get('timeMs'))
         s = None
         if is_daily_sync and dt:
@@ -85,7 +79,7 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
         parsed_dates.append(item[1])
         valid_points.append(item[2])
 
-    points_to_plot = valid_points
+    points = valid_points
     x = np.array(x_vals)
 
     if len(x) == 0:
@@ -93,7 +87,7 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
 
     def get_data(key, category=None, default=np.nan):
         arr = []
-        for p in points_to_plot:
+        for p in points:
             val = p.get(key)
             if category:
                 converted = convert_raw(val, category, prefs)

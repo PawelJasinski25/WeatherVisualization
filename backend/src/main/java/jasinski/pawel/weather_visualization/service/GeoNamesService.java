@@ -1,5 +1,6 @@
 package jasinski.pawel.weather_visualization.service;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -28,7 +29,17 @@ public class GeoNamesService {
     record Ocean(String name) {}
     record OceanResponse(Ocean ocean) {}
 
+    @Cacheable(
+            value = "placeNames",
+            key = "T(java.lang.Math).round(#lat * 1000.0) + '_' + T(java.lang.Math).round(#lng * 1000.0)",
+            sync = true
+    )
     public String getPlaceName(double lat, double lng) {
+
+        // Zaokrąglenie do 3 miejsc po przecinku (~100m)
+        lat = Math.round(lat * 1000.0) / 1000.0;
+        lng = Math.round(lng * 1000.0) / 1000.0;
+
         try {
             // Szukamy miasta w promieniu max 5 km
             GeoNamesResponse placeResp = restTemplate.getForObject(PLACE_API_URL, GeoNamesResponse.class, lat, lng, USERNAME);

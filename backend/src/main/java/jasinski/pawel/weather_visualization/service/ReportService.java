@@ -153,10 +153,47 @@ public class ReportService {
         WeatherStats overallMovingWeather = WeatherAnalyzer.analyzeWeather(allMovingSegments);
 
         List<ReportDailySummaryDto> reportDailySummaries = dailySummaries.stream()
-                .map(ReportDailySummaryDto::from)
+                .map(summary -> {
+                    List<EnrichedSegment> reducedSegments = reduceSegmentsForChart(summary.segments(), 300);
+
+                    return ReportDailySummaryDto.from(summary, reducedSegments);
+                })
                 .toList();
 
         return new TripReportDataDto(trip.name(), overallMovement, overallSpeed, overallWeather, overallMovingWeather, reportDailySummaries, startPort, endPort);
+    }
+
+    private List<EnrichedSegment> reduceSegmentsForChart(List<EnrichedSegment> segments, int targetCount) {
+        List<EnrichedSegment> reduced = new ArrayList<>();
+        if (segments == null || segments.isEmpty()) return reduced;
+
+        int step = Math.max(1, segments.size() / targetCount);
+
+        reduced.add(segments.get(0));
+
+        for (int i = 1; i < segments.size(); i++) {
+            EnrichedSegment curr = segments.get(i);
+            boolean keep = false;
+
+            if (i == segments.size() - 1) {
+                keep = true;
+            } else if (curr.isMoving() != segments.get(i + 1).isMoving()) {
+                keep = true;
+            }
+
+            if (curr.isMoving() != segments.get(i - 1).isMoving()) {
+                keep = true;
+            }
+
+            if (i % step == 0) {
+                keep = true;
+            }
+
+            if (keep) {
+                reduced.add(curr);
+            }
+        }
+        return reduced;
     }
 
     private List<EnrichedSegment> createEnrichedSegments(
@@ -188,7 +225,15 @@ public class ReportService {
                         }
                     }
 
-                    double speed = isMoving ? ((dist / dur) * 3.6) : 0.0;
+                    double speed = 0.0;
+
+                    if (isMoving) {
+                        if (p2.getSpeed() != null && p2.getSpeed() > 0.0) {
+                            speed = p2.getSpeed();
+                        } else {
+                            speed = (dist / dur) * 3.6;
+                        }
+                    }
 
                     segments.add(new EnrichedSegment(p1, p2, dist, dur, speed, isMoving));
                 }

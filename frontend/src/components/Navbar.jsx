@@ -35,7 +35,7 @@ const Navbar = ({ onOpenUpload, activeTab = 'map', currentTripId = null }) => {
                     onClick={() => navigate('/about')}
                     title="Informacje o aplikacji"
                 >
-                     <CloudSun size={24} color="#1e40af" /> WeatherVisualization
+                     <CloudSun size={24} color="#1e40af" /> Pogoda na trasie
                 </span>
             </div>
 

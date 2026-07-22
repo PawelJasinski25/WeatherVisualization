@@ -12,13 +12,10 @@ import jasinski.pawel.weather_visualization.repository.TripRepository;
 import jasinski.pawel.weather_visualization.repository.UserRepository;
 import jasinski.pawel.weather_visualization.repository.WeatherRepository;
 import jasinski.pawel.weather_visualization.utils.GeoUtils;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.PrecisionModel;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -26,8 +23,8 @@ import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.time.Duration;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -186,7 +183,30 @@ public class TripService {
             throw new IllegalStateException("Po przycięciu nie pozostał żaden punkt.");
         }
 
-        allPointsToClone.sort((p1, p2) -> p1.getTime().compareTo(p2.getTime()));
+        allPointsToClone.sort(Comparator.comparing(TrackPoint::getTime));
+
+        //redukcja punktów
+        List<TrackPoint> reducedPoints = new ArrayList<>();
+        Instant lastAcceptedTime = null;
+
+        long MIN_INTERVAL_SECONDS = 60;
+
+        for (TrackPoint pt : allPointsToClone) {
+            if (lastAcceptedTime == null) {
+                reducedPoints.add(pt);
+                lastAcceptedTime = pt.getTime();
+                continue;
+            }
+
+            long gap = Duration.between(lastAcceptedTime, pt.getTime()).getSeconds();
+
+            if (gap < MIN_INTERVAL_SECONDS) {
+                continue;
+            }
+
+            reducedPoints.add(pt);
+            lastAcceptedTime = pt.getTime();
+        }
 
         Map<Long, Weather> clonedWeatherMap = new HashMap<>();
         List<TrackPoint> batchPoints = new ArrayList<>();
@@ -199,14 +219,13 @@ public class TripService {
         long MAX_TIME_GAP_SECONDS = 5 * 60;
         double MAX_DISTANCE_METERS = 800.0;
 
-        for (TrackPoint originalPt : allPointsToClone) {
+        for (TrackPoint originalPt : reducedPoints) {
 
             if (lastProcessedPoint != null) {
                 boolean isNewTripFile = !originalPt.getTrip().getId().equals(lastOriginalTripId);
 
                 if (isNewTripFile) {
                     long timeGap = java.time.Duration.between(lastProcessedPoint.getTime(), originalPt.getTime()).abs().getSeconds();
-
                     double distanceGap = GeoUtils.calculateDistance(
                             lastProcessedPoint.getLatitude(), lastProcessedPoint.getLongitude(), originalPt.getLatitude(), originalPt.getLongitude());
 
@@ -285,8 +304,8 @@ public class TripService {
             trackPointRepository.saveAll(batchPoints);
         }
 
-        savedTrip.setStartTime(allPointsToClone.get(0).getTime());
-        savedTrip.setEndTime(allPointsToClone.get(allPointsToClone.size() - 1).getTime());
+        savedTrip.setStartTime(reducedPoints.get(0).getTime());
+        savedTrip.setEndTime(reducedPoints.get(reducedPoints.size() - 1).getTime());
         tripRepository.save(savedTrip);
 
         return savedTrip.getId();

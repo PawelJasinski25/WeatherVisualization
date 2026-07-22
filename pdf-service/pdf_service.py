@@ -120,6 +120,35 @@ def get_day_time_bounds(events, astro_events):
 
     return max(0, min_sec), min(86400, max_sec)
 
+def reduce_points_for_overall_chart(points, target_count=300):
+    if not points or len(points) <= target_count:
+        return points
+
+    step = max(1, len(points) // target_count)
+    reduced = [points[0]]
+
+    for i in range(1, len(points) - 1):
+        curr = points[i]
+        prev = points[i - 1]
+        next_p = points[i + 1]
+
+        curr_speed = float(curr.get('speed') or 0.0)
+        prev_speed = float(prev.get('speed') or 0.0)
+        next_speed = float(next_p.get('speed') or 0.0)
+
+        curr_moving = curr_speed > 0.5
+        prev_moving = prev_speed > 0.5
+        next_moving = next_speed > 0.5
+
+        is_edge = (curr_moving != prev_moving) or (curr_moving != next_moving)
+
+        if is_edge or (i % step == 0):
+            reduced.append(curr)
+
+    reduced.append(points[-1])
+    return reduced
+
+
 def generate_report_pdf(report_data: dict) -> bytes:
     print("\n--- ROZPOCZĘCIE GENEROWANIA RAPORTU ---")
     start_total = time.time()
@@ -199,15 +228,13 @@ def generate_report_pdf(report_data: dict) -> bytes:
 
         enrich_with_max(report_data.get('overallWeather'), all_trip_points)
 
-        overall_map_points = all_trip_points[::max(1, len(all_trip_points) // 100)]
-        overall_rose_points = all_trip_points[::max(1, len(all_trip_points) // 50)]
 
-        overall_map_future = executor.submit(create_route_map, overall_map_points, 800, 555)
+        overall_map_future = executor.submit(create_route_map, all_trip_points, 800, 555)
 
-        report_data['overall_wind_rose'] = create_polar_rose(overall_rose_points, 'windDir', 'windSpeed', 'Róża wiatrów', prefs)
-        report_data['overall_wave_rose'] = create_polar_rose(overall_rose_points, 'waveDir', 'waveHeight', 'Róża falowania', prefs)
+        report_data['overall_wind_rose'] = create_polar_rose(all_trip_points, 'windDir', 'windSpeed', 'Róża wiatrów', prefs)
+        report_data['overall_wave_rose'] = create_polar_rose(all_trip_points, 'waveDir', 'waveHeight', 'Róża falowania', prefs)
 
-        overall_meteo_points = all_trip_points[::max(1, len(all_trip_points) // 120)] if all_trip_points else []
+        overall_meteo_points = reduce_points_for_overall_chart(all_trip_points, target_count=80)
 
         if len(overall_meteo_points) > 1:
             try:
