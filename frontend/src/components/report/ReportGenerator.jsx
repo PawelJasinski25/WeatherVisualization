@@ -125,6 +125,10 @@ const ReportGenerator = ({ tripId }) => {
                         visitedPorts = Array.from(portsSet).join(', ');
                     }
 
+                    const endPortStr = reportData.endPort || '';
+                    const endDateStr = eDate || '';
+                    const combinedLocationDate = [endPortStr, endDateStr].filter(Boolean).join(', ');
+
                     setFormData(prev => ({
                         ...prev,
                         tripName: tName,
@@ -147,6 +151,10 @@ const ReportGenerator = ({ tripId }) => {
                         hours: {
                             ...prev.hours,
                             stopped: stoppedHours
+                        },
+                        opinion: {
+                            ...prev.opinion,
+                            locationDate: combinedLocationDate
                         }
                     }));
                 }

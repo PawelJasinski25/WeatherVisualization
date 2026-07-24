@@ -31,6 +31,7 @@ const CheckboxOption = ({ label, checked, onClick }) => {
 const CruiseOpinionForm = ({ formData, handleNestedChange }) => {
     const portsRef = useRef(null);
     const remarksRef = useRef(null);
+    const locationDateRef = useRef(null);
     const [isCalcOpen, setIsCalcOpen] = useState(false);
 
     const opinion = formData.opinion || {};
@@ -48,6 +49,13 @@ const CruiseOpinionForm = ({ formData, handleNestedChange }) => {
             remarksRef.current.style.height = remarksRef.current.scrollHeight + 'px';
         }
     }, [opinion.remarks]);
+
+    useEffect(() => {
+        if (locationDateRef.current) {
+            locationDateRef.current.style.height = 'auto';
+            locationDateRef.current.style.height = locationDateRef.current.scrollHeight + 'px';
+        }
+    }, [opinion.locationDate]);
 
     const handleSaveCalculatedHours = (calculatedData) => {
         handleNestedChange('hours', 'total', calculatedData.total);
@@ -395,23 +403,27 @@ const CruiseOpinionForm = ({ formData, handleNestedChange }) => {
                     </td>
                 </tr>
                 <tr>
-                    <td className="w-25">
+                    <td className="w-18" style={{ verticalAlign: 'top' }}>
                         <span className="label">tel.:</span>
                         <input className="interactive-input" value={formData.captain.phone} onChange={(e) => handleNestedChange('captain', 'phone', e.target.value)} />
                     </td>
-                    <td className="w-25">
+                    <td className="w-25" style={{ verticalAlign: 'top' }}>
                         <span className="label">adres e-mail:</span>
                         <input className="interactive-input" value={formData.captain.email} onChange={(e) => handleNestedChange('captain', 'email', e.target.value)} />
                     </td>
-                    <td className="w-25">
+                    <td className="w-25" style={{ verticalAlign: 'top' }}>
                         <span className="label">miejscowość, data:</span>
-                        <input
-                            className="interactive-input"
+                        <textarea
+                            ref={locationDateRef}
+                            className="interactive-textarea"
+                            spellCheck="false"
+                            rows="1"
                             value={opinion.locationDate || ''}
                             onChange={(e) => handleOpinionChange('locationDate', e.target.value)}
+                            style={{ resize: 'none', overflow: 'hidden' }}
                         />
                     </td>
-                    <td className="w-25">
+                    <td className="w-25" style={{ verticalAlign: 'top' }}>
                         <span className="label">podpis kapitana:</span>
                         <div style={{ borderBottom: '1px dotted #000', width: '95%', margin: '20px auto 4px auto' }}></div>
                     </td>
