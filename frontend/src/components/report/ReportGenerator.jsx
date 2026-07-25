@@ -471,9 +471,9 @@ const ReportGenerator = ({ tripId }) => {
                         {isGeneratingCsv ? (
                             <>
                                 <span className="spinner spinner-icon"></span>
-                                TWORZENIE CSV...
+                                TWORZENIE ZIP...
                             </>
-                        ) : 'POBIERZ DANE (CSV)'}
+                        ) : 'POBIERZ DANE (CSV + PNG)'}
                     </button>
                 </div>
             </div>

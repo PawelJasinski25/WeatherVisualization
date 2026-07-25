@@ -10,7 +10,7 @@ from matplotlib.ticker import FuncFormatter
 from utils import parse_dt, convert_raw
 
 
-def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=None):
+def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=None, figsize=(11, 7.4)):
     if not points: return None
 
     is_daily_sync = (min_sec is not None and max_sec is not None)
@@ -140,7 +140,7 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
     if has_waves: num_rows += 1
     if has_swell: num_rows += 1
 
-    fig = Figure(figsize=(11, 7.4))
+    fig = Figure(figsize=figsize)
     canvas = FigureCanvas(fig)
     axes = fig.subplots(nrows=num_rows, ncols=1, sharex=True, gridspec_kw={'hspace': 0.70})
 

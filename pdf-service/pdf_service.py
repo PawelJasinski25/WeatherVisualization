@@ -1,6 +1,9 @@
 from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML
 import os
+import io
+import zipfile
+import base64
 import time
 from concurrent.futures import ProcessPoolExecutor
 import matplotlib
@@ -255,3 +258,70 @@ def generate_report_pdf(report_data: dict) -> bytes:
     print(f" RAPORT WYGENEROWANY W: {total_time:.2f} s\n")
 
     return pdf_bytes
+
+def generate_charts_zip(report_data: dict) -> bytes:
+    prefs = report_data.get('preferences', {})
+    daily_summaries = report_data.get('dailySummaries', [])
+    all_trip_points = report_data.get('points', [])
+
+    if not all_trip_points:
+        for day in daily_summaries:
+            all_trip_points.extend(day.get('points', []))
+
+    futures = {}
+    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
+
+        if all_trip_points:
+            futures["Podsumowanie_ogólne/róża_wiatrów.png"] = executor.submit(
+                create_polar_rose, all_trip_points, 'windDir', 'windSpeed', 'Róża wiatrów', prefs, figsize=(7.8, 7.8))
+
+            futures["Podsumowanie_ogólne/róża_falowania.png"] = executor.submit(
+                create_polar_rose, all_trip_points, 'waveDir', 'waveHeight', 'Róża falowania', prefs, figsize=(7.8, 7.8))
+
+            futures["Podsumowanie_ogólne/mapa_trasy.png"] = executor.submit(
+                create_route_map, all_trip_points, 1600, 800)
+
+            overall_meteo_points = reduce_points_for_overall_chart(all_trip_points, target_count=300)
+            if len(overall_meteo_points) > 1:
+                futures["Podsumowanie_ogólne/meteogram.png"] = executor.submit(
+                    create_meteogram_chart, overall_meteo_points, prefs, None, None, None, figsize=(22, 14.8))
+
+        for idx, day in enumerate(daily_summaries):
+            day_index = idx + 1
+            folder = f"Dzień_{day_index:02d}_{day.get('date', 'BrakDaty')}"
+
+            events = day.get('timelineEvents', [])
+            points = day.get('points', [])
+            if not points: continue
+
+            day_min, day_max = get_day_time_bounds(events, day.get('observedAstroEvents'))
+
+            futures[f"{folder}/meteogram.png"] = executor.submit(
+                create_meteogram_chart, points, prefs, day_min, day_max, events, figsize=(22, 14.8))
+
+            futures[f"{folder}/wykres_astronomiczny.png"] = executor.submit(
+                create_astro_timeline_chart, day.get('observedAstroEvents'), day_min, day_max, events, scale=3)
+
+            futures[f"{folder}/mapa_trasy.png"] = executor.submit(
+                create_route_map, points, 1800, 900)
+
+            futures[f"{folder}/róża_wiatrów.png"] = executor.submit(
+                create_polar_rose, points, 'windDir', 'windSpeed', 'Róża wiatrów', prefs, figsize=(7.8, 7.8))
+
+            futures[f"{folder}/róża_falowania.png"] = executor.submit(
+                create_polar_rose, points, 'waveDir', 'waveHeight', 'Róża falowania', prefs, figsize=(7.8, 7.8))
+
+            futures[f"{folder}/wykres_ruchu_i_postojów.png"] = executor.submit(
+                create_timeline_chart, day.get('date'), events, day_min, day_max, scale=3)
+
+    zip_buf = io.BytesIO()
+    with zipfile.ZipFile(zip_buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for path_in_zip, future in futures.items():
+            try:
+                b64_data = future.result()
+                if b64_data:
+                    zf.writestr(path_in_zip, base64.b64decode(b64_data))
+            except Exception as e:
+                print(f"Błąd podczas zapisu wykresu {path_in_zip}: {e}")
+
+    return zip_buf.getvalue()

@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +25,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 @Service
@@ -253,9 +255,22 @@ public class ReportService {
         String mainCsvContent = generateSummaryCsv(context);
         String apiCsvContent = generateApiUsageCsv(context);
 
+        TripReportDataDto data = getTripReportData(tripId, email);
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> payload = mapper.convertValue(data, new TypeReference<Map<String, Object>>() {});
+
+        byte[] chartsZipBytes = null;
+        try {
+            String pythonZipUrl = pythonUrl.replace("/generate-pdf", "/generate-charts-zip");
+            chartsZipBytes = restTemplate.postForObject(pythonZipUrl, payload, byte[].class);
+        } catch (Exception e) {
+            System.err.println("Nie udało się pobrać wykresów: " + e.getMessage());
+        }
+
         byte[] bom = new byte[] { (byte)0xEF, (byte)0xBB, (byte)0xBF };
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+
 
             // Główne podsumowanie trasy
             zos.putNextEntry(new ZipEntry("podsumowanie_trasy.csv"));
@@ -268,6 +283,18 @@ public class ReportService {
             zos.write(bom);
             zos.write(apiCsvContent.getBytes(StandardCharsets.UTF_8));
             zos.closeEntry();
+
+            //Wykresy
+            if (chartsZipBytes != null) {
+                try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(chartsZipBytes))) {
+                    ZipEntry entry;
+                    while ((entry = zis.getNextEntry()) != null) {
+                        zos.putNextEntry(new ZipEntry("Wykresy/" + entry.getName()));
+                        zis.transferTo(zos);
+                        zos.closeEntry();
+                    }
+                }
+            }
 
         } catch (IOException e) {
             throw new RuntimeException("Błąd podczas generowania pliku ZIP", e);

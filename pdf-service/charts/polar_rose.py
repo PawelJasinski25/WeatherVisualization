@@ -9,7 +9,7 @@ import matplotlib.cm as cm
 
 from utils import convert_raw
 
-def create_polar_rose(points, dir_key, mag_key, title, prefs):
+def create_polar_rose(points, dir_key, mag_key, title, prefs, figsize=(2.6, 2.6)):
     if not points: return None
 
     category = 'wind' if 'wind' in mag_key.lower() else 'wave'
@@ -44,7 +44,7 @@ def create_polar_rose(points, dir_key, mag_key, title, prefs):
         avg_mags = np.divide(bin_mags, bin_counts, out=np.zeros_like(bin_mags), where=bin_counts!=0)
         angles = np.deg2rad(np.arange(0, 360, 22.5))
 
-        fig = Figure(figsize=(2.6, 2.6))
+        fig = Figure(figsize=figsize)
         canvas = FigureCanvas(fig)
         ax = fig.add_subplot(111, projection='polar')
 

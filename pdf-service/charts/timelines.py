@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw
 
 from utils import parse_dt, format_place, get_font
 
-def create_astro_timeline_chart(astro_events, min_sec=0, max_sec=86400, events=None):
+def create_astro_timeline_chart(astro_events, min_sec=0, max_sec=86400, events=None, scale=1):
     if not astro_events or not isinstance(astro_events, dict):
         return None
 
@@ -221,11 +221,13 @@ def create_astro_timeline_chart(astro_events, min_sec=0, max_sec=86400, events=N
             legend_x += item_widths[i] + gap
 
     buf = io.BytesIO()
+    if scale != 1:
+        image = image.resize((int(WIDTH * scale), int(HEIGHT * scale)), Image.LANCZOS)
     image.save(buf, format="PNG", dpi=(96, 96))
     return base64.b64encode(buf.getvalue()).decode('utf-8')
 
 
-def create_timeline_chart(date_str, events, min_sec=0, max_sec=86400):
+def create_timeline_chart(date_str, events, min_sec=0, max_sec=86400, scale=1):
     if not events: return None
 
     WIDTH = 1400
@@ -364,6 +366,8 @@ def create_timeline_chart(date_str, events, min_sec=0, max_sec=86400):
         draw.text((actual_x, AXIS_Y + 30), lbl['time_str'], fill="black", font=font_time)
 
     buf = io.BytesIO()
+    if scale != 1:
+        image = image.resize((int(WIDTH * scale), int(HEIGHT * scale)), Image.LANCZOS)
     image.save(buf, format="PNG", dpi=(96, 96))
     return base64.b64encode(buf.getvalue()).decode('utf-8')
 
