@@ -37,11 +37,7 @@ const ReportGenerator = ({ tripId }) => {
         distance: { nauticalMiles: '' },
         crew: Array(16).fill({ name: '', patent: '', function: '' }),
 
-        opinion: {
-            participantName: '', participantPatent: '',
-            participantPhone: '', participantEmail: '', participantFunction: '',
-            general: '', duties: '', seasickness: '', endurance: '', remarks: ''
-        }
+        opinions: []
     });
 
     useEffect(() => {
@@ -152,10 +148,6 @@ const ReportGenerator = ({ tripId }) => {
                             ...prev.hours,
                             stopped: stoppedHours
                         },
-                        opinion: {
-                            ...prev.opinion,
-                            locationDate: combinedLocationDate
-                        }
                     }));
                 }
             } catch (error) {
@@ -189,9 +181,116 @@ const ReportGenerator = ({ tripId }) => {
     };
 
     const handleCrewChange = (index, field, value) => {
-        const newCrew = [...formData.crew];
-        newCrew[index] = { ...newCrew[index], [field]: value };
-        setFormData(prev => ({ ...prev, crew: newCrew }));
+        setFormData(prev => {
+            const newCrew = [...prev.crew];
+            newCrew[index] = { ...newCrew[index], [field]: value };
+
+            let newOpinions = [...prev.opinions];
+            const opField = { name: 'participantName', patent: 'participantPatent', function: 'participantFunction' }[field];
+            const opinionIndex = newOpinions.findIndex(op => op.crewIndex === index);
+
+            const locDate = [prev.cruise.disembarkPort, prev.cruise.disembarkDate].filter(Boolean).join(', ');
+
+            const hasData = newCrew[index].name.trim() !== '' ||
+                newCrew[index].patent.trim() !== '' ||
+                newCrew[index].function.trim() !== '';
+
+            if (opinionIndex !== -1) {
+                if (!hasData) {
+                    newOpinions.splice(opinionIndex, 1);
+                } else {
+                    newOpinions[opinionIndex] = { ...newOpinions[opinionIndex], [opField]: value };
+                }
+            } else if (hasData && includeOpinion) {
+                newOpinions = newOpinions.filter(op => op.crewIndex !== -1);
+
+                newOpinions.push({
+                    id: Date.now() + Math.random(),
+                    crewIndex: index,
+                    participantName: newCrew[index].name,
+                    participantPatent: newCrew[index].patent,
+                    participantFunction: newCrew[index].function,
+                    participantPhone: '', participantEmail: '',
+                    general: '', duties: '', seasickness: '', endurance: '', remarks: '',
+                    title: 'OPINIA Z REJSU',
+                    locationDate: locDate
+                });
+            }
+
+            if (includeOpinion && newOpinions.length === 0) {
+                newOpinions.push({
+                    id: Date.now(), crewIndex: -1,
+                    participantName: '', participantPatent: '', participantFunction: '',
+                    participantPhone: '', participantEmail: '',
+                    general: '', duties: '', seasickness: '', endurance: '', remarks: '',
+                    title: 'OPINIA Z REJSU', locationDate: locDate
+                });
+            }
+
+            return { ...prev, crew: newCrew, opinions: newOpinions };
+        });
+    };
+
+    const toggleOpinionModule = () => {
+        if (!includeOpinion) {
+            const endPortStr = formData.cruise.disembarkPort || '';
+            const endDateStr = formData.cruise.disembarkDate || '';
+            const combinedLocationDate = [endPortStr, endDateStr].filter(Boolean).join(', ');
+
+            setFormData(prev => {
+                let newOpinions = [...prev.opinions];
+
+                const activeCrewWithIndices = prev.crew
+                    .map((c, i) => ({ ...c, originalIndex: i }))
+                    .filter(c => c.name.trim() !== '' || c.patent.trim() !== '' || c.function.trim() !== '');
+
+                if (activeCrewWithIndices.length > 0) {
+                    activeCrewWithIndices.forEach(c => {
+                        const exists = newOpinions.find(op => op.crewIndex === c.originalIndex);
+                        if (!exists) {
+                            newOpinions.push({
+                                id: Date.now() + Math.random(),
+                                crewIndex: c.originalIndex,
+                                participantName: c.name,
+                                participantPatent: c.patent,
+                                participantFunction: c.function,
+                                participantPhone: '',
+                                participantEmail: '',
+                                general: '', duties: '', seasickness: '', endurance: '', remarks: '',
+                                title: 'OPINIA Z REJSU',
+                                locationDate: combinedLocationDate
+                            });
+                        }
+                    });
+                } else if (newOpinions.length === 0) {
+                    newOpinions.push({
+                        id: Date.now(),
+                        crewIndex: -1,
+                        participantName: '', participantPatent: '', participantFunction: '',
+                        participantPhone: '', participantEmail: '',
+                        general: '', duties: '', seasickness: '', endurance: '', remarks: '',
+                        title: 'OPINIA Z REJSU',
+                        locationDate: combinedLocationDate
+                    });
+                }
+                return { ...prev, opinions: newOpinions };
+            });
+        }
+        setIncludeOpinion(!includeOpinion);
+    };
+
+    const handleOpinionChange = (id, field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            opinions: prev.opinions.map(op => op.id === id ? { ...op, [field]: value } : op)
+        }));
+    };
+
+    const handleRemoveOpinion = (id) => {
+        setFormData(prev => ({
+            ...prev,
+            opinions: prev.opinions.filter(op => op.id !== id)
+        }));
     };
 
     const downloadFileFromResponse = (response, defaultFilename) => {
@@ -297,12 +396,16 @@ const ReportGenerator = ({ tripId }) => {
                                 />
                             )}
 
-                            {includeOpinion && (
+                            {includeOpinion && formData.opinions.map(op => (
                                 <CruiseOpinionForm
+                                    key={op.id}
                                     formData={formData}
+                                    opinion={op}
+                                    handleOpinionChange={(field, value) => handleOpinionChange(op.id, field, value)}
+                                    handleRemove={() => handleRemoveOpinion(op.id)}
                                     handleNestedChange={handleNestedChange}
                                 />
-                            )}
+                            ))}
 
                             <ReportPreview />
                         </div>
@@ -334,7 +437,7 @@ const ReportGenerator = ({ tripId }) => {
                         <button
                             className={`panel-btn toggle-card-btn ${includeOpinion ? 'active' : ''}`}
                             disabled={isFetchingData}
-                            onClick={() => setIncludeOpinion(!includeOpinion)}
+                            onClick={toggleOpinionModule}
                         >
                             <ClipboardList size={24} color={includeOpinion ? "var(--theme-report)" : "#64748b"} />
                             <span className="panel-label">Opinia z rejsu</span>

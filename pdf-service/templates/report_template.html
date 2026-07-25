@@ -234,14 +234,15 @@
 
 <!-- STRONA 2: OPINIA Z REJSU-->
 {% if 'opinion' in modules %}
+{% for op in data.opinions %}
 <div class="form-title">
-    {{ data.opinion.title if data.opinion and data.opinion.title else 'OPINIA Z REJSU' }}
+    {{ op.title if op.title else 'OPINIA Z REJSU' }}
     <br>
     <span style="font-size: 13px; font-weight: normal; margin-top: 4px; display: inline-block;">
-        {{ data.cruise.startDate if data.cruise else '01.08.2025' }}
-        -
-        {{ data.cruise.endDate if data.cruise else '16.09.2025' }}
-    </span>
+            {{ data.cruise.startDate if data.cruise else '01.08.2025' }}
+            -
+            {{ data.cruise.endDate if data.cruise else '16.09.2025' }}
+        </span>
 </div>
 
 <!-- INFORMACJE O UCZESTNIKU -->
@@ -252,25 +253,25 @@
     <tr>
         <td colspan="2" style="width: 50%;">
             <span class="label">Imię i nazwisko:</span>
-            <div class="val" style="min-height: 14px;">{{ data.opinion.participantName if data.opinion else '' }}</div>
+            <div class="val" style="min-height: 14px;">{{ op.participantName }}</div>
         </td>
         <td colspan="2" style="width: 50%;">
             <span class="label">stop. żegl. /mot. i nr pat.:</span>
-            <div class="val" style="min-height: 14px;">{{ data.opinion.participantPatent if data.opinion else '' }}</div>
+            <div class="val" style="min-height: 14px;">{{ op.participantPatent }}</div>
         </td>
     </tr>
     <tr>
         <td colspan="2">
             <span class="label">tel.:</span>
-            <div class="val" style="min-height: 14px;">{{ data.opinion.participantPhone if data.opinion else '' }}</div>
+            <div class="val" style="min-height: 14px;">{{ op.participantPhone }}</div>
         </td>
         <td style="width: 25%;">
             <span class="label">adres e-mail:</span>
-            <div class="val" style="min-height: 14px;">{{ data.opinion.participantEmail if data.opinion else '' }}</div>
+            <div class="val" style="min-height: 14px;">{{ op.participantEmail }}</div>
         </td>
         <td style="width: 25%;">
             <span class="label">funkcja na jachcie:</span>
-            <div class="val" style="min-height: 14px;">{{ data.opinion.participantFunction if data.opinion else '' }}</div>
+            <div class="val" style="min-height: 14px;">{{ op.participantFunction }}</div>
         </td>
     </tr>
 </table>
@@ -408,10 +409,10 @@
                 <tr>
                     <td style="border: none; text-align: left; padding: 0; font-weight: bold; width: 25%;">OPINIA KAPITANA</td>
                     <td style="border: none; text-align: left; padding: 0; font-weight: normal; width: 25%;">
-                        <span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.general == 'pozytywna' else '' }}"></span> pozytywna
+                        <span class="pdf-cb {{ 'checked' if op.general == 'pozytywna' else '' }}"></span> pozytywna
                     </td>
                     <td style="border: none; text-align: left; padding: 0; font-weight: normal; width: 50%;" colspan="2">
-                        <span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.general == 'negatywna' else '' }}"></span> negatywna
+                        <span class="pdf-cb {{ 'checked' if op.general == 'negatywna' else '' }}"></span> negatywna
                     </td>
                 </tr>
             </table>
@@ -422,29 +423,29 @@
             <span class="label" style="font-weight: bold; color: #000; font-size: 11px;">Z obowiązków wywiązywał/a się:</span>
             <table style="width: 100%; border: none; font-size: 11px; margin: 2px 0 6px 0; table-layout: fixed;">
                 <tr>
-                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.duties == 'bardzo dobrze' else '' }}"></span> bardzo dobrze</td>
-                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.duties == 'dobrze' else '' }}"></span> dobrze</td>
-                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.duties == 'dostatecznie' else '' }}"></span> dostatecznie</td>
-                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.duties == 'niedostatecznie' else '' }}"></span> niedostatecznie</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if op.duties == 'bardzo dobrze' else '' }}"></span> bardzo dobrze</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if op.duties == 'dobrze' else '' }}"></span> dobrze</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if op.duties == 'dostatecznie' else '' }}"></span> dostatecznie</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if op.duties == 'niedostatecznie' else '' }}"></span> niedostatecznie</td>
                 </tr>
             </table>
 
             <span class="label" style="font-weight: bold; color: #000; font-size: 11px;">Chorobie morskiej:</span>
             <table style="width: 100%; border: none; font-size: 11px; margin: 2px 0 6px 0; table-layout: fixed;">
                 <tr>
-                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.seasickness == 'nie podlegał/a' else '' }}"></span> nie podlegał/a</td>
-                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.seasickness == 'chorował/a ciężko' else '' }}"></span> chorował/a ciężko</td>
-                    <td style="border: none; text-align: left; padding: 0; width: 50%;" colspan="2"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.seasickness == 'chorował/a lecz mógł/mogła pracować' else '' }}"></span> chorował/a lecz mógł/mogła pracować</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if op.seasickness == 'nie podlegał/a' else '' }}"></span> nie podlegał/a</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if op.seasickness == 'chorował/a ciężko' else '' }}"></span> chorował/a ciężko</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 50%;" colspan="2"><span class="pdf-cb {{ 'checked' if op.seasickness == 'chorował/a lecz mógł/mogła pracować' else '' }}"></span> chorował/a lecz mógł/mogła pracować</td>
                 </tr>
             </table>
 
             <span class="label" style="font-weight: bold; color: #000; font-size: 11px;">Odporność w trudnych warunkach:</span>
             <table style="width: 100%; border: none; font-size: 11px; margin: 2px 0 2px 0; table-layout: fixed;">
                 <tr>
-                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.endurance == 'dobra' else '' }}"></span> dobra</td>
-                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.endurance == 'dostateczna' else '' }}"></span> dostateczna</td>
-                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.endurance == 'niedostateczna' else '' }}"></span> niedostateczna</td>
-                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if data.opinion and data.opinion.endurance == 'nie sprawdzano' else '' }}"></span> nie sprawdzano</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if op.endurance == 'dobra' else '' }}"></span> dobra</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if op.endurance == 'dostateczna' else '' }}"></span> dostateczna</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if op.endurance == 'niedostateczna' else '' }}"></span> niedostateczna</td>
+                    <td style="border: none; text-align: left; padding: 0; width: 25%;"><span class="pdf-cb {{ 'checked' if op.endurance == 'nie sprawdzano' else '' }}"></span> nie sprawdzano</td>
                 </tr>
             </table>
         </td>
@@ -455,7 +456,7 @@
 <table class="form-table">
     <tr><th style="text-align: left; padding-left: 8px;">UWAGI KAPITANA</th></tr>
     <tr>
-        <td style="min-height: 40px; padding: 4px 8px; white-space: pre-wrap; font-weight: bold;">{{ data.opinion.remarks if data.opinion else '' }}</td>
+        <td style="min-height: 40px; padding: 4px 8px; white-space: pre-wrap; font-weight: bold;">{{ op.remarks }}</td>
     </tr>
 </table>
 
@@ -485,7 +486,7 @@
         </td>
         <td style="width: 25%;">
             <span class="label">miejscowość, data:</span>
-            <div class="val">{{ data.opinion.locationDate if data.opinion else '' }}</div>
+            <div class="val">{{ op.locationDate }}</div>
         </td>
         <td style="width: 25%;">
             <span class="label">podpis kapitana:</span>
@@ -494,7 +495,8 @@
     </tr>
 </table>
 
-<div class="page-break"></div>
+    <div class="page-break"></div>
+    {% endfor %}
 {% endif %}
 
 

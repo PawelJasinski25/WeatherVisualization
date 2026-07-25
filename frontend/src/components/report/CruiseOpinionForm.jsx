@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import HoursCalculatorModal from "./HoursCalculatorModal.jsx";
-import { Calculator } from 'lucide-react';
+import { Calculator, X } from 'lucide-react';
 
 const CheckboxOption = ({ label, checked, onClick }) => {
     const lineStyle = {
@@ -28,13 +28,11 @@ const CheckboxOption = ({ label, checked, onClick }) => {
     );
 };
 
-const CruiseOpinionForm = ({ formData, handleNestedChange }) => {
+const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemove, handleNestedChange }) => {
     const portsRef = useRef(null);
     const remarksRef = useRef(null);
     const locationDateRef = useRef(null);
     const [isCalcOpen, setIsCalcOpen] = useState(false);
-
-    const opinion = formData.opinion || {};
 
     useEffect(() => {
         if (portsRef.current) {
@@ -65,9 +63,6 @@ const CruiseOpinionForm = ({ formData, handleNestedChange }) => {
         handleNestedChange('hours', 'dailyLogs', calculatedData.dailyLogs);
     };
 
-    const handleOpinionChange = (field, value) => {
-        handleNestedChange('opinion', field, value);
-    };
 
     const toggleCheck = (field, value) => {
         handleOpinionChange(field, opinion[field] === value ? '' : value);
@@ -84,7 +79,15 @@ const CruiseOpinionForm = ({ formData, handleNestedChange }) => {
                 dailySummaries={formData.cruise.dailySummaries}
             />
 
-            <div className="report-header mb-10">
+            <div className="report-header mb-10" style={{ position: 'relative' }}>
+                <button
+                    onClick={handleRemove}
+                    className="no-print"
+                    style={{ position: 'absolute', top: 0, right: 0, background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}
+                    title="Usuń opinię dla tej osoby"
+                >
+                    <X size={24} />
+                </button>
                 <input
                     className="interactive-input title-input"
                     value={opinion.title !== undefined ? opinion.title : "OPINIA Z REJSU"}
