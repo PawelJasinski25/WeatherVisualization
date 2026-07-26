@@ -52,7 +52,7 @@ function DashboardPage() {
                 ) : (
                     <div className="dashboard-empty">
                         <div className="dashboard-empty-icon"><Map size={100} color="var(--theme-map)" /></div>
-                        <h2 className="dashboard-empty-title">Witaj w Weather Visualization</h2>
+                        <h2 className="dashboard-empty-title">Witaj w aplikacji Pogoda na trasie</h2>
                         <p className="dashboard-empty-text">
                             Przejdź do zakładki <b>"Moje trasy"</b> lub wgraj nowy plik GPX,<br/>
                             aby zobaczyć pogodową wizualizację trasy na mapie.

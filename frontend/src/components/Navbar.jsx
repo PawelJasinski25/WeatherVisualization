@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import '../styles/navbar.css';
 import SettingsModal from './SettingsModal';
-import {CloudSun, Map, PlayCircle, FileText, Plus, User, ChevronDown, Route, Settings, LogOut} from 'lucide-react';
+import {CloudSun, Map, PlayCircle, FileText, Plus, User, ChevronDown, Route, Settings, LogOut, Info} from 'lucide-react';
 
 const Navbar = ({ onOpenUpload, activeTab = 'map', currentTripId = null }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -32,8 +32,7 @@ const Navbar = ({ onOpenUpload, activeTab = 'map', currentTripId = null }) => {
                 <span
                     className="navbar-logo"
                     style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-                    onClick={() => navigate('/about')}
-                    title="Informacje o aplikacji"
+                    onClick={() => navigate('/dashboard', { state: { tripId: currentTripId } })}
                 >
                      <CloudSun size={24} color="#1e40af" /> Pogoda na trasie
                 </span>
@@ -86,8 +85,16 @@ const Navbar = ({ onOpenUpload, activeTab = 'map', currentTripId = null }) => {
                                 <Route size={18}  /> Moje trasy
                             </button>
 
-                            <button className="dropdown-item" onClick={() => { setIsMenuOpen(false); setIsSettingsOpen(true); }}>
+                            <button className="dropdown-item"
+                                    onClick={() => { setIsMenuOpen(false); setIsSettingsOpen(true); }}>
                                 <Settings size={18} /> Jednostki
+                            </button>
+
+                            <button
+                                className="dropdown-item"
+                                onClick={() => { setIsMenuOpen(false); navigate('/about'); }}
+                            >
+                                <Info size={18} /> O aplikacji
                             </button>
 
                             <div className="dropdown-divider"></div>

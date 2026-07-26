@@ -77,13 +77,35 @@ const AboutPage = () => {
                                 </p>
                                 <ul className="about-list">
                                     <li>
-                                        <span><strong>Open-Meteo Historical Weather API:</strong><br /> Pobieranie historycznych danych meteorologicznych.</span>
+                                        <span>
+                                            <strong>
+                                                <a
+                                                    href="https://open-meteo.com/en/docs/historical-weather-api" target="_blank" rel="noopener noreferrer" className="about-link">
+                                                    Open-Meteo Historical Weather API
+                                                </a>
+                                            </strong>
+                                            <br /> Pobieranie historycznych danych meteorologicznych.
+                                        </span>
                                     </li>
                                     <li>
-                                        <span><strong>Open-Meteo Marine Weather API:</strong><br /> Pobieranie historycznych parametrów morskich.</span>
+                                        <span>
+                                            <strong>
+                                                <a href="https://open-meteo.com/en/docs/marine-weather-api" target="_blank" rel="noopener noreferrer" className="about-link">
+                                                    Open-Meteo Marine Weather API
+                                                </a>
+                                            </strong>
+                                            <br /> Pobieranie historycznych parametrów morskich.
+                                        </span>
                                     </li>
                                     <li>
-                                        <span><strong>GeoNames API:</strong><br /> Pobieranie nazw miejscowości, w których odbywał się postój na trasie.</span>
+                                        <span>
+                                            <strong>
+                                                <a href="https://www.geonames.org/export/web-services.html" target="_blank" rel="noopener noreferrer" className="about-link">
+                                                    GeoNames API
+                                                </a>
+                                            </strong>
+                                            <br /> Pobieranie nazw miejscowości, w których odbywał się postój na trasie.
+                                        </span>
                                     </li>
                                 </ul>
                             </div>
