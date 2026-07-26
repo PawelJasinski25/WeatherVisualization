@@ -121,4 +121,19 @@ public class TripController {
         Long newTripId = tripService.mergeTrips(request, email);
         return ResponseEntity.ok(newTripId);
     }
+
+    @GetMapping("/{id}/export/gpx")
+    public ResponseEntity<byte[]> exportGpx(@PathVariable Long id, Authentication authentication) {
+        String email = authentication.getName();
+        byte[] gpxData = tripService.exportTripToGpx(id, email);
+
+        ContentDisposition contentDisposition = ContentDisposition.builder("attachment")
+                .filename("trasa_" + id + ".gpx", StandardCharsets.UTF_8)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
+                .contentType(MediaType.APPLICATION_XML)
+                .body(gpxData);
+    }
 }

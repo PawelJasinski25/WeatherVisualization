@@ -5,7 +5,7 @@ import Navbar from '../components/Navbar.jsx';
 import FileUploadModal from '../components/FileUploadModal.jsx';
 import TripMergeModal from '../components/TripMergeModal.jsx';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.jsx';
-import { Pencil, Trash2, Check, Link,  X } from 'lucide-react';
+import { Pencil, Trash2, Check, Link,  X, Download } from 'lucide-react';
 
 import "../styles/trips.css";
 
@@ -110,6 +110,30 @@ const TripsPage = () => {
             return `${sDate} - ${eDate}`;
         }
         return sDate || eDate;
+    };
+
+    const handleExportGpx = async (trip, e) => {
+        e.stopPropagation();
+        try {
+            const response = await api.get(`/trips/${trip.id}/export/gpx`, {
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+
+            const safeName = trip.name.replace(/\.gpx$/i, '').trim();
+
+            link.setAttribute('download', `${safeName}.gpx`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Błąd podczas pobierania pliku GPX:", error);
+            alert("Nie udało się pobrać pliku GPX.");
+        }
     };
 
     return (
@@ -243,6 +267,13 @@ const TripsPage = () => {
                                                 title="Zmień nazwę"
                                             >
                                                 <Pencil className="trip-icon" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleExportGpx(trip, e)}
+                                                className="icon-btn"
+                                                title="Pobierz GPX"
+                                            >
+                                                <Download className="trip-icon" />
                                             </button>
                                             <button
                                                 onClick={(e) => openDeleteModal(trip, e)}

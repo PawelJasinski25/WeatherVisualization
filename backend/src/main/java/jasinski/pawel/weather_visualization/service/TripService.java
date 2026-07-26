@@ -16,8 +16,10 @@ import jasinski.pawel.weather_visualization.utils.GeoUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
@@ -30,6 +32,9 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamWriter;
 
 @Service
 public class TripService {
@@ -309,6 +314,81 @@ public class TripService {
         tripRepository.save(savedTrip);
 
         return savedTrip.getId();
+    }
+
+    public byte[] exportTripToGpx(Long tripId, String email) {
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new EntityNotFoundException("Nie znaleziono trasy"));
+
+        if (!trip.getUser().getEmail().equals(email)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień");
+        }
+
+        List<TrackPoint> points = trackPointRepository.findByTripIdOrderByTimeAsc(tripId);
+        String cleanTripName = trip.getName().replaceAll("(?i)\\.gpx$", "").trim();
+
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            XMLOutputFactory factory = XMLOutputFactory.newInstance();
+            XMLStreamWriter writer = factory.createXMLStreamWriter(baos, "UTF-8");
+
+            writer.writeStartDocument("UTF-8", "1.0");
+            writer.writeStartElement("gpx");
+            writer.writeAttribute("version", "1.1");
+            writer.writeAttribute("creator", "WeatherVisualizationApp");
+
+            writer.writeStartElement("trk");
+
+            writer.writeStartElement("name");
+            writer.writeCharacters(cleanTripName);
+            writer.writeEndElement();
+
+            Integer currentSegment = null;
+
+            for (TrackPoint pt : points) {
+                if (currentSegment == null || !currentSegment.equals(pt.getSegmentId())) {
+                    if (currentSegment != null) {
+                        writer.writeEndElement();
+                    }
+                    writer.writeStartElement("trkseg");
+                    currentSegment = pt.getSegmentId();
+                }
+
+                writer.writeStartElement("trkpt");
+                writer.writeAttribute("lat", String.valueOf(pt.getLatitude()));
+                writer.writeAttribute("lon", String.valueOf(pt.getLongitude()));
+
+                if (pt.getTime() != null) {
+                    writer.writeStartElement("time");
+                    writer.writeCharacters(pt.getTime().toString());
+                    writer.writeEndElement();
+                }
+
+                if (pt.getSpeed() != null) {
+                    writer.writeStartElement("speed");
+                    writer.writeCharacters(String.valueOf(pt.getSpeed()));
+                    writer.writeEndElement();
+                }
+
+                writer.writeEndElement();
+            }
+
+            if (currentSegment != null) {
+                writer.writeEndElement();
+            }
+
+            writer.writeEndElement();
+            writer.writeEndElement();
+            writer.writeEndDocument();
+
+            writer.flush();
+            writer.close();
+
+            return baos.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Błąd podczas generowania pliku GPX", e);
+        }
     }
 
     public List<TripResponseDto> getUserTrips(String email){
