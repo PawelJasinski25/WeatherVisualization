@@ -18,10 +18,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.zip.ZipEntry;
@@ -92,7 +89,7 @@ public class ReportService {
                     events.add(new TimelineEvent(ev.type(), ev.start(), ev.end(), ev.lat(), ev.lon(), placeName));
                 }
             }
-            AstronomyStats astro = AstronomyAnalyzer.calculateSun(pointsInDay, events, DEFAULT_ZONE);
+            AstronomyStats astro = AstronomyAnalyzer.calculateSun(pointsInDay, context.points(), events, DEFAULT_ZONE);
 
             List<EnrichedSegment> dailySegments = context.segments().stream()
                     .filter(s -> LocalDate.ofInstant(s.p1().getTime(), DEFAULT_ZONE).equals(day))
@@ -603,12 +600,12 @@ public class ReportService {
         return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 
-    private void appendAstroTime(StringBuilder csv, LocalTime time, TrackPoint point) {
+    private void appendAstroTime(StringBuilder csv, Instant time, TrackPoint point) {
         if (time == null || point == null) {
             appendCsv(csv, "--:--");
         } else {
             DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm:ss");
-            appendCsv(csv, time.format(fmt));
+            appendCsv(csv, fmt.format(time.atZone(DEFAULT_ZONE)));
         }
     }
 }

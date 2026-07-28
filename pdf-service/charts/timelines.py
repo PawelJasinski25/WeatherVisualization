@@ -3,7 +3,7 @@ import base64
 from PIL import Image, ImageDraw
 
 from utils import parse_dt, format_place, get_font
-
+import datetime
 import io
 import base64
 import re
@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw
 
 from utils import parse_dt, format_place, get_font
 
-def create_astro_timeline_chart(astro_events, min_sec=0, max_sec=86400, events=None, scale=1):
+def create_astro_timeline_chart(astro_events, base_date_str, min_sec=0, max_sec=86400, events=None, scale=1):
     if not astro_events or not isinstance(astro_events, dict):
         return None
 
@@ -32,18 +32,19 @@ def create_astro_timeline_chart(astro_events, min_sec=0, max_sec=86400, events=N
 
     parsed_events = []
 
-    for name, time_str in astro_events.items():
-        if not time_str: continue
-        parts = str(time_str).strip().split(':')
-        if len(parts) >= 2:
-            try:
-                h = int(parts[0])
-                m = int(parts[1])
-                s = int(parts[2]) if len(parts) > 2 else 0
-                sec = h * 3600 + m * 60 + s
-                parsed_events.append({"name": str(name), "sec": sec, "time_str": f"{h:02d}:{m:02d}"})
-            except ValueError:
-                pass
+    for name, iso_str in astro_events.items():
+        if not iso_str: continue
+        try:
+            safe_iso = iso_str if len(iso_str) >= 19 else iso_str + ":00"
+            event_dt = datetime.datetime.strptime(safe_iso[:19], "%Y-%m-%dT%H:%M:%S")
+
+            sec = event_dt.hour * 3600 + event_dt.minute * 60 + event_dt.second
+            time_str = event_dt.strftime("%H:%M")
+
+            name_clean = str(name).strip()
+            parsed_events.append({"name": name_clean, "sec": sec, "time_str": time_str})
+        except Exception as e:
+            pass
 
     if not parsed_events: return None
     parsed_events.sort(key=lambda x: x['sec'])
@@ -104,17 +105,30 @@ def create_astro_timeline_chart(astro_events, min_sec=0, max_sec=86400, events=N
 
         first_sun_event = filtered_sun_events[0]['name']
 
-        if first_sun_event in ["Kulminacja", "Zachód słońca", "Zmierzch cywilny", "Zmierzch nautyczny", "Zmierzch astronomiczny"]:
-            return (255, 220, 0)
 
-        if first_sun_event == "Wschód słońca":
-            return (245, 80, 180)
-
-        if first_sun_event == "Świt cywilny":
-            return (66, 170, 245)
+        if first_sun_event == "Świt astronomiczny":
+            return (8, 12, 25)
 
         if first_sun_event == "Świt nautyczny":
-            return (26, 54, 150)
+            return (110, 20, 160)
+
+        if first_sun_event == "Świt cywilny":
+            return (210, 30, 30)
+
+        if first_sun_event == "Wschód słońca":
+            return (245, 110, 0)
+
+        if first_sun_event in ["Kulminacja", "Zachód słońca"]:
+            return (255, 220, 0)
+
+        if first_sun_event == "Zmierzch cywilny":
+            return (245, 110, 0)
+
+        if first_sun_event == "Zmierzch nautyczny":
+            return (210, 30, 30)
+
+        if first_sun_event == "Zmierzch astronomiczny":
+            return (110, 20, 160)
 
         return (8, 12, 25)
 

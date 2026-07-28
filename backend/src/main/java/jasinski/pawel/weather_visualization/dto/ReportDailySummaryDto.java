@@ -1,6 +1,7 @@
 package jasinski.pawel.weather_visualization.dto;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -20,6 +21,7 @@ public record ReportDailySummaryDto(
 
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Europe/Warsaw");
 
 
     public static ReportDailySummaryDto from(DailySummary summary, List<EnrichedSegment> reducedSegments) {
@@ -55,38 +57,28 @@ public record ReportDailySummaryDto(
 
         Map<String, String> events = new LinkedHashMap<>();
 
-        if (astro.astronomicalDawnPt() != null)
-            events.put("Świt astronomiczny", astro.astronomicalDawn().format(TIME_FORMATTER));
-
-        if (astro.nauticalDawnPt() != null)
-            events.put("Świt nautyczny", astro.nauticalDawn().format(TIME_FORMATTER));
-
-        if (astro.civilDawnPt() != null)
-            events.put("Świt cywilny", astro.civilDawn().format(TIME_FORMATTER));
-
-        if (astro.sunrisePt() != null)
-            events.put("Wschód słońca", astro.sunrise().format(TIME_FORMATTER));
-
-        if (astro.noonPt() != null)
-            events.put("Kulminacja", astro.solarNoon().format(TIME_FORMATTER));
-
-        if (astro.sunsetPt() != null)
-            events.put("Zachód słońca", astro.sunset().format(TIME_FORMATTER));
-
-        if (astro.civilDuskPt() != null)
-            events.put("Zmierzch cywilny", astro.civilDusk().format(TIME_FORMATTER));
-
-        if (astro.nauticalDuskPt() != null)
-            events.put("Zmierzch nautyczny", astro.nauticalDusk().format(TIME_FORMATTER));
-
-        if (astro.astronomicalDuskPt() != null)
-            events.put("Zmierzch astronomiczny", astro.astronomicalDusk().format(TIME_FORMATTER));
-
-        if (astro.moonRisePt() != null)
-            events.put("Wschód Księżyca", astro.moonRise().format(TIME_FORMATTER));
-
-        if (astro.moonSetPt() != null)
-            events.put("Zachód Księżyca", astro.moonSet().format(TIME_FORMATTER));
+        if (astro.astronomicalDawnPt()!= null && astro.astronomicalDawn() != null)
+            events.put("Świt astronomiczny", astro.astronomicalDawn().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+        if (astro.nauticalDawnPt() != null && astro.nauticalDawn() != null)
+            events.put("Świt nautyczny", astro.nauticalDawn().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+        if (astro.civilDawnPt() != null && astro.civilDawn() != null)
+            events.put("Świt cywilny", astro.civilDawn().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+        if (astro.sunrisePt() != null && astro.sunrise() != null)
+            events.put("Wschód słońca", astro.sunrise().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+        if (astro.noonPt() != null && astro.solarNoon() != null)
+            events.put("Kulminacja", astro.solarNoon().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+        if (astro.sunsetPt() != null && astro.sunset() != null)
+            events.put("Zachód słońca", astro.sunset().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+        if (astro.civilDuskPt() != null && astro.civilDusk() != null)
+            events.put("Zmierzch cywilny", astro.civilDusk().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+        if (astro.nauticalDusk() != null)
+            events.put("Zmierzch nautyczny", astro.nauticalDusk().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+        if (astro.astronomicalDusk() != null)
+            events.put("Zmierzch astronomiczny", astro.astronomicalDusk().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+        if (astro.moonRisePt() != null && astro.moonRise() != null)
+            events.put("Wschód Księżyca", astro.moonRise().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+        if (astro.moonSetPt() != null && astro.moonSet() != null)
+            events.put("Zachód Księżyca", astro.moonSet().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
 
         return events.isEmpty() ? null : events;
     }
