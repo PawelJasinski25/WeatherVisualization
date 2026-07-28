@@ -273,7 +273,7 @@ const AnimationPage = () => {
                         </div>
                         <h2 className="dashboard-empty-title">Brak wybranej trasy</h2>
                         <p className="dashboard-empty-text">
-                            Przejdź do zakładki <b>"Moje trasy"</b> lub wgraj nowy plik GPX,<br/>
+                            Przejdź do zakładki <b>„Moje trasy"</b> lub wgraj nowy plik GPX,<br/>
                             aby odtworzyć animację warunków pogodowych.
                         </p>
                     </div>

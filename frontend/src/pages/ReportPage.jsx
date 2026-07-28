@@ -34,7 +34,7 @@ function ReportPage() {
                         <div className="dashboard-empty-icon"><FileText size={100} color="var(--theme-report)"/></div>
                         <h2 className="dashboard-empty-title">Brak wybranej trasy</h2>
                         <p className="dashboard-empty-text">
-                            Przejdź do zakładki <b>"Moje trasy"</b> lub wgraj nowy plik GPX,<br/>
+                            Przejdź do zakładki <b>„Moje trasy"</b> lub wgraj nowy plik GPX,<br/>
                             aby wygenerować raport PDF.
                         </p>
                     </div>
