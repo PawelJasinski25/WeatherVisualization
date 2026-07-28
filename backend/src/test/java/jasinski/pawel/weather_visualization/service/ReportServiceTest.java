@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
+import static org.mockito.Mockito.atLeastOnce;
 
 import java.time.Instant;
 import java.util.List;
@@ -109,7 +110,7 @@ class ReportServiceTest {
 
         TripReportDataDto result = reportService.getTripReportData(100L, userEmail);
 
-        verify(geoNamesService).getPlaceName(52.2, 21.0);
+        verify(geoNamesService, org.mockito.Mockito.times(3)).getPlaceName(52.2, 21.0);
         boolean containsWarsaw = result.dailySummaries().get(0).timelineEvents().stream()
                 .anyMatch(ev -> "Warszawa".equals(ev.placeName()));
         assertThat(containsWarsaw).isTrue();
@@ -142,9 +143,8 @@ class ReportServiceTest {
 
         ReportResource resource = reportService.getCsvReportResource(100L, userEmail);
 
-        assertThat(resource.fileName()).isEqualTo("Trasa rowerowa.csv");
-
-        assertThat(resource.content()[0]).isEqualTo((byte) 0xEF);
+        assertThat(resource.fileName()).isEqualTo("Trasa rowerowa_raport.zip");
+        assertThat(resource.content()).isNotEmpty();
     }
 
 

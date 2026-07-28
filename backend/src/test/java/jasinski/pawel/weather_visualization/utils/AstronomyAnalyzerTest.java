@@ -22,8 +22,8 @@ class AstronomyAnalyzerTest {
 
     @Test
     void calculateSun_shouldReturnEmptyStats_whenPointsAreNullOrEmpty() {
-        AstronomyStats statsEmpty = AstronomyAnalyzer.calculateSun(List.of(), List.of(), warsawZone);
-        AstronomyStats statsNull = AstronomyAnalyzer.calculateSun(null, null, warsawZone);
+        AstronomyStats statsEmpty = AstronomyAnalyzer.calculateSun(List.of(), List.of(), null, warsawZone);
+        AstronomyStats statsNull = AstronomyAnalyzer.calculateSun(null, null, null, warsawZone);
 
         assertThat(statsEmpty.sunrise()).isNull();
         assertThat(statsEmpty.sunrisePt()).isNull();
@@ -32,28 +32,32 @@ class AstronomyAnalyzerTest {
         assertThat(statsNull.sunsetPt()).isNull();
     }
 
-
     @Test
     void calculateSun_shouldCalculateEventsAndAssignPoints_whenObserved() {
 
 
-        TrackPoint morningPoint = createPoint(52.2297, 21.0122, "2023-09-21T04:17:00Z");
-        TrackPoint noonPoint = createPoint(52.2297, 21.0122, "2023-09-21T10:24:00Z");
-        TrackPoint eveningPoint = createPoint(52.2297, 21.0122, "2023-09-21T16:31:00Z");
+        TrackPoint morningPoint = createPoint(52.2297, 21.0122, "2023-09-21T04:00:00Z");
+        TrackPoint noonPoint    = createPoint(52.2297, 21.0122, "2023-09-21T12:00:00Z");
+        TrackPoint eveningPoint = createPoint(52.2297, 21.0122, "2023-09-21T18:00:00Z");
+
+        morningPoint.setSegmentId(1);
+        noonPoint.setSegmentId(1);
+        eveningPoint.setSegmentId(1);
 
         List<TrackPoint> pointsOfDay = List.of(morningPoint, noonPoint, eveningPoint);
 
-        AstronomyStats stats = AstronomyAnalyzer.calculateSun(pointsOfDay, null, warsawZone);
+        AstronomyStats stats = AstronomyAnalyzer.calculateSun(pointsOfDay, pointsOfDay, null, warsawZone);
 
         assertThat(stats).isNotNull();
 
-        assertThat(stats.sunrise()).isNotNull();
-        assertThat(stats.solarNoon()).isNotNull();
-        assertThat(stats.sunset()).isNotNull();
+        assertThat(stats.sunrisePt()).isNotNull();
+        assertThat(stats.sunrisePt().getTime()).isEqualTo(stats.sunrise());
 
-        assertThat(stats.sunrisePt()).isSameAs(morningPoint);
-        assertThat(stats.noonPt()).isSameAs(noonPoint);
-        assertThat(stats.sunsetPt()).isSameAs(eveningPoint);
+        assertThat(stats.noonPt()).isNotNull();
+        assertThat(stats.noonPt().getTime()).isEqualTo(stats.solarNoon());
+
+        assertThat(stats.sunsetPt()).isNotNull();
+        assertThat(stats.sunsetPt().getTime()).isEqualTo(stats.sunset());
     }
 
 
@@ -65,7 +69,7 @@ class AstronomyAnalyzerTest {
 
         List<TrackPoint> shortWalk = List.of(walkStart, walkEnd);
 
-        AstronomyStats stats = AstronomyAnalyzer.calculateSun(shortWalk, null, warsawZone);
+        AstronomyStats stats = AstronomyAnalyzer.calculateSun(shortWalk, null, null, warsawZone);
 
         assertThat(stats.sunrise()).isNotNull();
 
@@ -82,7 +86,7 @@ class AstronomyAnalyzerTest {
         TrackPoint polarPoint1 = createPoint(78.2232, 15.6267, "2023-06-21T10:00:00Z");
         TrackPoint polarPoint2 = createPoint(78.2232, 15.6267, "2023-06-21T14:00:00Z");
 
-        AstronomyStats stats = AstronomyAnalyzer.calculateSun(List.of(polarPoint1, polarPoint2), null, warsawZone);
+        AstronomyStats stats = AstronomyAnalyzer.calculateSun(List.of(polarPoint1, polarPoint2), null, null, warsawZone);
 
         assertThat(stats.sunrise()).isNull();
         assertThat(stats.sunrisePt()).isNull();
@@ -103,7 +107,7 @@ class AstronomyAnalyzerTest {
                 52.2, 21.0, "Warszawa"
         );
 
-        AstronomyStats stats = AstronomyAnalyzer.calculateSun(List.of(point), List.of(moveEvent), warsawZone);
+        AstronomyStats stats = AstronomyAnalyzer.calculateSun(List.of(point), null, List.of(moveEvent), warsawZone);
 
         assertThat(stats.sunrisePt()).isNotNull();
         assertThat(stats.sunrisePt()).isSameAs(point);

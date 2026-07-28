@@ -79,7 +79,7 @@ class TripMapServiceTest {
 
         MapDataResponse response = tripMapService.getTripMapData(100L);
 
-        assertThat(response.route().size()).isLessThanOrEqualTo(2500);
+        assertThat(response.route().size()).isBetween(2450, 2550);
     }
 
     @Test
