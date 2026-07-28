@@ -326,13 +326,13 @@ def generate_charts_zip(report_data: dict) -> bytes:
             points = day.get('points', [])
             if not points: continue
 
-            day_min, day_max = get_day_time_bounds(events, day.get('observedAstroEvents'))
+            day_min, day_max = get_day_time_bounds(events, day.get('observedAstroEvents'), day.get('date'))
 
             futures[f"{folder}/meteogram.png"] = executor.submit(
                 create_meteogram_chart, points, prefs, day_min, day_max, events, figsize=(22, 14.8))
 
             futures[f"{folder}/wykres_astronomiczny.png"] = executor.submit(
-                create_astro_timeline_chart, day.get('observedAstroEvents'), day_min, day_max, events, scale=3)
+                create_astro_timeline_chart, day.get('observedAstroEvents'), day.get('date'), day_min, day_max, events, scale=3)
 
             futures[f"{folder}/mapa_trasy.png"] = executor.submit(
                 create_route_map, points, 1800, 900)
