@@ -89,7 +89,31 @@ public class ReportService {
                     events.add(new TimelineEvent(ev.type(), ev.start(), ev.end(), ev.lat(), ev.lon(), placeName));
                 }
             }
-            AstronomyStats astro = AstronomyAnalyzer.calculateSun(pointsInDay, context.points(), events, DEFAULT_ZONE);
+
+            //dodaje do analizy dodatkowe 6h z kolejnego dnia zeby zjawiska po północy zostały dobrze zinterpretowane
+            List<TrackPoint> pointsForAstro = new ArrayList<>(pointsInDay);
+            List<TimelineEvent> eventsForAstro = new ArrayList<>(events);
+
+            LocalDate nextDay = day.plusDays(1);
+            if (pointsByDay.containsKey(nextDay)) {
+                for (TrackPoint p : pointsByDay.get(nextDay)) {
+                    if (p.getTime().atZone(DEFAULT_ZONE).getHour() <= 5) {
+                        pointsForAstro.add(p);
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            DayData nextMovData = context.dailyMovements().get(nextDay);
+            if (nextMovData != null && nextMovData.events != null) {
+                for (TimelineEvent ev : nextMovData.events) {
+                    if (ev.start().atZone(DEFAULT_ZONE).getHour() <= 5) {
+                        eventsForAstro.add(ev);
+                    }
+                }
+            }
+            AstronomyStats astro = AstronomyAnalyzer.calculateSun(pointsForAstro, context.points(), eventsForAstro, DEFAULT_ZONE);
 
             List<EnrichedSegment> dailySegments = context.segments().stream()
                     .filter(s -> LocalDate.ofInstant(s.p1().getTime(), DEFAULT_ZONE).equals(day))

@@ -71,9 +71,9 @@ public record ReportDailySummaryDto(
             events.put("Zachód słońca", astro.sunset().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
         if (astro.civilDuskPt() != null && astro.civilDusk() != null)
             events.put("Zmierzch cywilny", astro.civilDusk().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
-        if (astro.nauticalDusk() != null)
+        if (astro.nauticalDuskPt()!= null &&astro.nauticalDusk() != null)
             events.put("Zmierzch nautyczny", astro.nauticalDusk().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
-        if (astro.astronomicalDusk() != null)
+        if (astro.astronomicalDuskPt()!=null && astro.astronomicalDusk() != null)
             events.put("Zmierzch astronomiczny", astro.astronomicalDusk().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
         if (astro.moonRisePt() != null && astro.moonRise() != null)
             events.put("Wschód Księżyca", astro.moonRise().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
