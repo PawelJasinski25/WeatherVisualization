@@ -173,8 +173,10 @@ export const generateSampledPoints = (tripData) => {
     });
 
     let baseInterval = 10;
-    if (totalTripDistance < 20) baseInterval = 2;
-    else if (totalTripDistance < 100) baseInterval = 5;
+    if (totalTripDistance < 10) baseInterval = 0.5;
+    else if (totalTripDistance < 30) baseInterval = 1.5;
+    else if (totalTripDistance < 100) baseInterval = 4;
+    else if (totalTripDistance < 300) baseInterval = 8;
 
     const INTERVAL_KM = baseInterval;
     const candidatePoints = [];
@@ -220,10 +222,11 @@ export const generateSampledPoints = (tripData) => {
 
     //sprawdzanie kolizji
     let clearanceFactor = 6000;
-    if (totalTripDistance < 30) clearanceFactor = 200;
+    if (totalTripDistance < 10) clearanceFactor = 2500;
+    else if (totalTripDistance < 30) clearanceFactor = 2000;
     else if (totalTripDistance < 100) clearanceFactor = 1500;
 
-    const zoomLevels = [5, 6, 7, 8, 9, 10];
+    const zoomLevels = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
     for (const z of zoomLevels) {
         const MIN_CLEARANCE_KM = clearanceFactor / Math.pow(2, z);
