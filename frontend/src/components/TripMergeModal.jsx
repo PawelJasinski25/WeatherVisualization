@@ -159,21 +159,6 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
 
                 <form onSubmit={handleMergeSubmit}>
                     <div className="modal-body custom-gap">
-                        <div className="form-group">
-                            <label className="form-label">Nazwa nowej, połączonej trasy:</label>
-                            <input
-                                type="text"
-                                className="interactive-input merge-name-input"
-                                placeholder="Nazwa"
-                                value={newTripName}
-                                onChange={e => {
-                                    setNewTripName(e.target.value);
-                                    setError('');
-                                }}
-                                required
-                            />
-                        </div>
-
                         <div className="form-group filter-container">
                             <label className="form-label filter-label">
                                 Filtruj dostępne trasy po dacie:
@@ -270,6 +255,20 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
                                     })
                                 )}
                             </div>
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Nazwa nowej, połączonej trasy:</label>
+                            <input
+                                type="text"
+                                className="interactive-input merge-name-input"
+                                placeholder="Nazwa"
+                                value={newTripName}
+                                onChange={e => {
+                                    setNewTripName(e.target.value);
+                                    setError('');
+                                }}
+                                required
+                            />
                         </div>
                     </div>
 

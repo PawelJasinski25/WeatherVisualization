@@ -234,7 +234,7 @@ const HoursCalculatorModal = ({ isOpen, onClose, initialLogs, onSave, cruiseDate
             sails: sumSails > 0 ? sumSails.toFixed(1).replace('.', ',') : '',
             engine: sumEngine > 0 ? sumEngine.toFixed(1).replace('.', ',') : '',
             tidal: sumTidal > 0 ? sumTidal.toFixed(1).replace('.', ',') : '',
-            stopped: sumStopped > 0 ? sumStopped.toFixed(1).replace('.', ',') : '', // <-- NOWE
+            stopped: sumStopped > 0 ? sumStopped.toFixed(1).replace('.', ',') : '',
             dailyLogs: logs
         });
         onClose();
