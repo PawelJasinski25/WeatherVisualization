@@ -1,18 +1,20 @@
-export const formatWind = (valKmh, pref) => {
-    if (valKmh === null || valKmh === undefined) return { val: '--', unit: '' };
-    if (pref === 'm/s') return { val: (valKmh / 3.6).toFixed(1), unit: 'm/s' };
-    if (pref === 'kt') return { val: (valKmh / 1.852).toFixed(1), unit: 'kt' };
-    if (pref === 'mph') return { val: (valKmh / 1.60934).toFixed(1), unit: 'mph' };
+export const formatWind = (valMs, pref) => {
+    if (valMs === null || valMs === undefined) return { val: '--', unit: '' };
+
+    if (pref === 'km/h') return { val: (valMs * 3.6).toFixed(1), unit: 'km/h' };
+    if (pref === 'kt') return { val: (valMs * 1.94384).toFixed(1), unit: 'kt' };
+    if (pref === 'mph') return { val: (valMs * 2.23694).toFixed(1), unit: 'mph' };
+
     if (pref === 'bft') {
-        const ms = valKmh / 3.6;
         let bft = 0;
-        if (ms >= 0.3) bft = 1; if (ms >= 1.6) bft = 2; if (ms >= 3.4) bft = 3;
-        if (ms >= 5.5) bft = 4; if (ms >= 8.0) bft = 5; if (ms >= 10.8) bft = 6;
-        if (ms >= 13.9) bft = 7; if (ms >= 17.2) bft = 8; if (ms >= 20.8) bft = 9;
-        if (ms >= 24.5) bft = 10; if (ms >= 28.5) bft = 11; if (ms >= 32.7) bft = 12;
+        if (valMs >= 0.3) bft = 1; if (valMs >= 1.6) bft = 2; if (valMs >= 3.4) bft = 3;
+        if (valMs >= 5.5) bft = 4; if (valMs >= 8.0) bft = 5; if (valMs >= 10.8) bft = 6;
+        if (valMs >= 13.9) bft = 7; if (valMs >= 17.2) bft = 8; if (valMs >= 20.8) bft = 9;
+        if (valMs >= 24.5) bft = 10; if (valMs >= 28.5) bft = 11; if (valMs >= 32.7) bft = 12;
         return { val: bft.toString(), unit: 'bft' };
     }
-    return { val: Number(valKmh).toFixed(1), unit: 'km/h' };
+
+    return { val: Number(valMs).toFixed(1), unit: 'm/s' };
 };
 
 export const formatCurrents = (valMs, pref) => {

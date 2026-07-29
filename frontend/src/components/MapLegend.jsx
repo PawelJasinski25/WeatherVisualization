@@ -78,15 +78,49 @@ const AstronomyLegend = ({ config }) => {
     );
 };
 
-const DefaultLegend = ({ metricId, config }) => {
+const DefaultLegend = ({ metricId, config, minVal, maxVal }) => {
     const { palette, formatValue, label, unit, labelCount } = config;
-    const gradientString = palette.map(stop => `rgb(${stop[1].join(",")})`).join(", ");
 
-    const limit = labelCount || 6;
-    const numLabels = Math.min(limit, palette.length);
-    const labelIndices = Array.from({ length: numLabels }, (_, i) =>
-        Math.floor(i * (palette.length - 1) / (numLabels - 1))
-    );
+    let startIndex = 0;
+    let endIndex = palette.length - 1;
+
+    if (minVal !== undefined && maxVal !== undefined && minVal !== null && maxVal !== null) {
+        const start = palette.findIndex(stop => stop[0] >= minVal);
+        startIndex = start > 0 ? start - 1 : 0;
+
+        const end = palette.findIndex(stop => stop[0] >= maxVal);
+        endIndex = end !== -1 ? end : palette.length - 1;
+
+        if (startIndex >= endIndex) {
+            if (startIndex > 0) startIndex -= 1;
+            else if (endIndex < palette.length - 1) endIndex += 1;
+        }
+    }
+
+    const croppedPalette = palette.slice(startIndex, endIndex + 1);
+    const croppedMin = croppedPalette[0][0];
+    const croppedMax = croppedPalette[croppedPalette.length - 1][0];
+    const range = croppedMax - croppedMin || 1;
+
+    const gradientString = croppedPalette.map(stop => {
+        const percent = ((stop[0] - croppedMin) / range) * 100;
+        return `rgb(${stop[1].join(",")}) ${percent}%`;
+    }).join(", ");
+
+    let limit = labelCount || 6;
+    let step = range / (limit - 1);
+    let labelValues = Array.from({ length: limit }, (_, i) => croppedMin + (i * step));
+
+    let rawFormattedLabels = labelValues.map(val => formatValue ? formatValue(val) : val);
+    let roundedNumericLabels = rawFormattedLabels.map(str => Math.round(Number(str)));
+    let hasDuplicates = new Set(roundedNumericLabels).size !== roundedNumericLabels.length;
+
+    if (hasDuplicates && limit > 5) {
+        limit = 5;
+        step = range / (limit - 1);
+        labelValues = Array.from({ length: limit }, (_, i) => croppedMin + (i * step));
+        rawFormattedLabels = labelValues.map(val => formatValue ? formatValue(val) : val);
+    }
 
     return (
         <div className="legend-box">
@@ -96,21 +130,25 @@ const DefaultLegend = ({ metricId, config }) => {
             </div>
 
             <div className="legend-bar-wrapper" style={{ background: `linear-gradient(to right, ${gradientString})` }}>
-                {labelIndices.map((index, i) => {
-                    const val = palette[index][0];
-                    const formattedVal = metricId === 'ocean_current_velocity'
-                        ? (formatValue ? formatValue(val) : val)
-                        : Math.round(Number(formatValue ? formatValue(val) : val));
+                {labelValues.map((val, i) => {
+                    const rawStr = rawFormattedLabels[i];
+                    const numVal = Number(rawStr);
 
-                    const leftPercent = (index / (palette.length - 1)) * 100;
+                    let displayStr;
+                    if (isNaN(numVal)) {
+                        displayStr = rawStr;
+                    } else {
+                        displayStr = hasDuplicates ? Number(rawStr) : Math.round(numVal);
+                    }
 
+                    const leftPercent = ((val - croppedMin) / range) * 100;
                     let transform = "translateX(-50%)";
-                    if (index === 0) transform = "translateX(4px)";
-                    if (index === palette.length - 1) transform = "translateX(calc(-100% - 4px))";
+                    if (i === 0) transform = "translateX(4px)";
+                    if (i === limit - 1) transform = "translateX(calc(-100% - 4px))";
 
                     return (
                         <span key={i} className="legend-label" style={{ left: `${leftPercent}%`, transform }}>
-                            {formattedVal}
+                            {displayStr}
                         </span>
                     );
                 })}
@@ -119,7 +157,7 @@ const DefaultLegend = ({ metricId, config }) => {
     );
 };
 
-const MapLegend = ({ metricId }) => {
+const MapLegend = ({ metricId, minVal, maxVal }) => {
     const metricConfig = useMetricConfig();
 
     if (!metricId || !metricConfig[metricId]) return null;
@@ -130,7 +168,8 @@ const MapLegend = ({ metricId }) => {
         return <AstronomyLegend config={config} />;
     }
 
-    return <DefaultLegend metricId={metricId} config={config} />;
+    return <DefaultLegend metricId={metricId} config={config} minVal={minVal} maxVal={maxVal} />;
+
 };
 
 export default MapLegend;

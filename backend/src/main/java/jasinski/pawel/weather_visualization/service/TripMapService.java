@@ -34,7 +34,7 @@ public class TripMapService {
 
     public MapDataResponse getTripMapData(Long tripId) {
         List<TrackPoint> rawPoints = trackPointRepository.findByTripIdOrderByTimeAsc(tripId);
-        if (rawPoints.isEmpty()) return new MapDataResponse(List.of(), List.of());
+        if (rawPoints.isEmpty()) return new MapDataResponse(List.of(), List.of(), Map.of());
 
         List<TrackPoint> points = filterPointsForMap(rawPoints, MIN_DISTANCE_METERS, MIN_TIME_SECONDS);
         System.out.println("Optymalizacja mapy: Zredukowano z " + rawPoints.size() + " do " + points.size() + " punktów.");
@@ -96,12 +96,39 @@ public class TripMapService {
         }
 
         allEnrichedPoints.sort(Comparator.comparing(TrackPoint::getTime));
+        Map<String, double[]> ranges = new HashMap<>();
+
         for (TrackPoint point : allEnrichedPoints) {
             int phase = calculatePhaseFromTimeline(point, timeline, firstDayAstro, firstDate);
             route.add(mapToDto(point, phase));
+
+            Weather w = point.getWeather();
+            if (w != null) {
+                updateRanges(ranges, "temp", w.getTemp() != null ? w.getTemp() + 273.15 : null);
+                updateRanges(ranges, "humidity", w.getHumidity());
+                updateRanges(ranges, "dew", w.getDewPoint() != null ? w.getDewPoint() + 273.15 : null);
+                updateRanges(ranges, "pressure", w.getPressure() != null ? w.getPressure() * 100 : null);
+                updateRanges(ranges, "rain", w.getRain());
+                updateRanges(ranges, "snow", w.getSnowfall());
+                updateRanges(ranges, "clouds", w.getCloudCover());
+                updateRanges(ranges, "clouds_low", w.getCloudCoverLow());
+                updateRanges(ranges, "clouds_mid", w.getCloudCoverMid());
+                updateRanges(ranges, "clouds_high", w.getCloudCoverHigh());
+                updateRanges(ranges, "wind", w.getWindSpeed() != null ? w.getWindSpeed() / 3.6 : null);
+                updateRanges(ranges, "gusts", w.getWindGusts() != null ? w.getWindGusts() / 3.6 : null);
+                updateRanges(ranges, "wave_h", w.getWaveHeight());
+                updateRanges(ranges, "wave_p", w.getWavePeriod());
+                updateRanges(ranges, "sea_temperature", w.getSeaTemperature() != null ? w.getSeaTemperature() + 273.15 : null);
+                updateRanges(ranges, "ocean_current_velocity", w.getOceanCurrentVelocity() != null ? w.getOceanCurrentVelocity() / 3.6 : null);
+                updateRanges(ranges, "wind_wave_h", w.getWindWaveHeight());
+                updateRanges(ranges, "wind_wave_p", w.getWindWavePeriod());
+                updateRanges(ranges, "swell_wave_h", w.getSwellWaveHeight());
+                updateRanges(ranges, "swell_wave_p", w.getSwellWavePeriod());
+            }
+
         }
 
-        return new MapDataResponse(route, markers);
+        return new MapDataResponse(route, markers, ranges);
     }
 
     private Map<LocalDate, List<TrackPoint>> groupPointsByDay(List<TrackPoint> points) {
@@ -253,5 +280,16 @@ public class TripMapService {
             }
         }
         return heavilyFiltered;
+    }
+
+    private void updateRanges(Map<String, double[]> ranges, String key, Number value) {
+        if (value == null || Double.isNaN(value.doubleValue())) return;
+
+        ranges.computeIfAbsent(key, k -> new double[]{Double.MAX_VALUE, -Double.MAX_VALUE});
+        double[] minMax = ranges.get(key);
+        double val = value.doubleValue();
+
+        if (val < minMax[0]) minMax[0] = val;
+        if (val > minMax[1]) minMax[1] = val;
     }
 }

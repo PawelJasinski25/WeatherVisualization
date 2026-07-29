@@ -9,8 +9,8 @@ import { formatWind, formatCurrents, formatTemp, formatWave, formatPressure, for
 
 export const metricConfig = {
     astronomy: { label: "Pory dnia", getValue: pt => pt.dayPhase, palette: [ [0, [8, 12, 25]], [1, [26, 54, 150]], [2, [66, 170, 245]], [3, [245, 80, 180]], [4, [255, 220, 0]], [5, [245, 110, 0]], [6, [210, 30, 30]], [7, [110, 20, 160]], [8, [8, 12, 25]] ], labelCount: 9 },
-    wind: { label: "Wiatr", palette: windColors, getValue: pt => pt.windSpeed, labelCount: 7 },
-    gusts: { label: "Porywy", palette: gustsColors, getValue: pt => pt.gusts, labelCount: 7 },
+    wind: { label: "Wiatr", palette: windColors, getValue: pt => pt.windSpeed !== null ? pt.windSpeed / 3.6 : null, labelCount: 7 },
+    gusts: { label: "Porywy", palette: gustsColors, getValue: pt => pt.gusts !== null ? pt.gusts / 3.6 : null, labelCount: 7 },
     ocean_current_velocity: { label: "Prędkość prądów", palette: oceanCurrentColors, getValue: pt => pt.oceanCurrentVel !== null ? pt.oceanCurrentVel / 3.6 : null, labelCount: 6 },
     temp: { label: "Temperatura", palette: tempColors, getValue: pt => pt.temp !== null ? pt.temp + 273.15 : null, labelCount: 7 },
     dew: { label: "Punkt rosy", palette: dewColors, getValue: pt => pt.dewPoint !== null ? pt.dewPoint + 273.15 : null, labelCount: 7 },

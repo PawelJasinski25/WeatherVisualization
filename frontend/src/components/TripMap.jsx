@@ -23,6 +23,7 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
     const mapRef = useRef(null);
     const [astroMarkers, setAstroMarkers] = useState([]);
     const [selectedAstroMarker, setSelectedAstroMarker] = useState(null);
+    const [tripRanges, setTripRanges] = useState({});
 
     const activeMetrics = selectedPrimary.filter(Boolean);
 
@@ -30,12 +31,14 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
         if (tripId) {
             setSelectedAstroMarker(null);
 
+
             api.get(`/trips/${tripId}/coordinates`).then(res => {
                 const points = res.data.route || [];
                 const markers = res.data.astronomyMarkers || [];
 
                 setTripData(points);
                 setAstroMarkers(markers);
+                setTripRanges(res.data.ranges || {});
 
                 if (points && points.length > 0 && mapRef.current) {
                     const lats = points.map(d => d.latitude);
@@ -180,9 +183,17 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
                         : "var(--panel-margin)"
                 }}
             >
-                {activeMetrics.map((metricId, index) => (
-                    <MapLegend key={`${metricId}-${index}`} metricId={metricId} />
-                ))}
+                {activeMetrics.map((metricId, index) => {
+                    const range = tripRanges[metricId];
+                    return (
+                        <MapLegend
+                            key={`${metricId}-${index}`}
+                            metricId={metricId}
+                            minVal={range ? range[0] : null}
+                            maxVal={range ? range[1] : null}
+                        />
+                    );
+                })}
             </div>
         </div>
     );
