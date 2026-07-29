@@ -39,7 +39,10 @@ public class TripMapService {
         List<TrackPoint> points = filterPointsForMap(rawPoints, MIN_DISTANCE_METERS, MIN_TIME_SECONDS);
         System.out.println("Optymalizacja mapy: Zredukowano z " + rawPoints.size() + " do " + points.size() + " punktów.");
 
+
+
         Map<LocalDate, List<TrackPoint>> pointsByDay = groupPointsByDay(points);
+        Map<LocalDate, List<TrackPoint>> rawPointsByDay = groupPointsByDay(rawPoints);
         List<TrackPointDto> route = new ArrayList<>();
         List<AstronomyMarkerDto> markers = new ArrayList<>();
 
@@ -53,7 +56,8 @@ public class TripMapService {
             LocalDate currentDate = entry.getKey();
             List<TrackPoint> dayPoints = entry.getValue();
 
-            AstronomyStats astro = AstronomyAnalyzer.calculateSun(dayPoints, points, null, DEFAULT_ZONE);
+            List<TrackPoint> rawDayPoints = rawPointsByDay.get(currentDate);
+            AstronomyStats astro = AstronomyAnalyzer.calculateSun(rawDayPoints, rawPoints, null, DEFAULT_ZONE);
 
             if (firstDayAstro == null) {
                 firstDayAstro = astro;
