@@ -19,7 +19,23 @@ const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handl
         handleNestedChange('hours', 'sails', calculatedData.sails);
         handleNestedChange('hours', 'engine', calculatedData.engine);
         handleNestedChange('hours', 'tidal', calculatedData.tidal);
+        handleNestedChange('hours', 'stopped', calculatedData.stopped);
         handleNestedChange('hours', 'dailyLogs', calculatedData.dailyLogs);
+    };
+
+    const formatDateForPicker = (dateStr) => {
+        if (!dateStr) return '';
+        if (dateStr.includes('-')) return dateStr;
+        const parts = dateStr.split('.');
+        if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        return dateStr;
+    };
+
+    const formatDateFromPicker = (dateStr) => {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
+        return dateStr;
     };
 
     return (
@@ -30,7 +46,7 @@ const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handl
                 onClose={() => setIsCalcOpen(false)}
                 initialLogs={formData.hours.dailyLogs || []}
                 onSave={handleSaveCalculatedHours}
-                cruiseDates={{ start: formData.cruise.startDate, end: formData.cruise.endDate }}
+                cruiseDates={{ start: formData.cruise.embarkDate, end: formData.cruise.disembarkDate }}
                 dailySummaries={formData.cruise.dailySummaries}
             />
 
@@ -191,9 +207,11 @@ const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handl
                     <td className="w-25">
                         <span className="label">Data:</span>
                         <input
-                            className="interactive-input"
-                            value={formData.cruise.embarkDate}
-                            onChange={(e) => handleNestedChange('cruise', 'embarkDate', e.target.value)}
+                            type="date"
+                            className="interactive-input date-input"
+                            value={formatDateForPicker(formData.cruise.embarkDate)}
+                            onChange={(e) => handleNestedChange('cruise', 'embarkDate', formatDateFromPicker(e.target.value))}
+                            onClick={(e) => e.target.showPicker && e.target.showPicker()}
                         />
                     </td>
                     <td className="w-40" colSpan="2">
@@ -217,9 +235,11 @@ const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handl
                     <td>
                         <span className="label">Data:</span>
                         <input
-                            className="interactive-input"
-                            value={formData.cruise.disembarkDate}
-                            onChange={(e) => handleNestedChange('cruise', 'disembarkDate', e.target.value)}
+                            type="date"
+                            className="interactive-input date-input"
+                            value={formatDateForPicker(formData.cruise.disembarkDate)}
+                            onChange={(e) => handleNestedChange('cruise', 'disembarkDate', formatDateFromPicker(e.target.value))}
+                            onClick={(e) => e.target.showPicker && e.target.showPicker()}
                         />
                     </td>
                     <td colSpan="2">

@@ -60,12 +60,28 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
         handleNestedChange('hours', 'sails', calculatedData.sails);
         handleNestedChange('hours', 'engine', calculatedData.engine);
         handleNestedChange('hours', 'tidal', calculatedData.tidal);
+        handleNestedChange('hours', 'stopped', calculatedData.stopped);
         handleNestedChange('hours', 'dailyLogs', calculatedData.dailyLogs);
     };
 
 
     const toggleCheck = (field, value) => {
         handleOpinionChange(field, opinion[field] === value ? '' : value);
+    };
+
+    const formatDateForPicker = (dateStr) => {
+        if (!dateStr) return '';
+        if (dateStr.includes('-')) return dateStr;
+        const parts = dateStr.split('.');
+        if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        return dateStr;
+    };
+
+    const formatDateFromPicker = (dateStr) => {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
+        return dateStr;
     };
 
     return (
@@ -75,7 +91,7 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                 onClose={() => setIsCalcOpen(false)}
                 initialLogs={formData.hours.dailyLogs || []}
                 onSave={handleSaveCalculatedHours}
-                cruiseDates={{ start: formData.cruise.startDate, end: formData.cruise.endDate }}
+                cruiseDates={{ start: formData.cruise.embarkDate, end: formData.cruise.disembarkDate }}
                 dailySummaries={formData.cruise.dailySummaries}
             />
 
@@ -215,11 +231,17 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                     </td>
                     <td className="w-25">
                         <span className="label">Data:</span>
-                        <input className="interactive-input" value={formData.cruise.embarkDate} onChange={(e) => handleNestedChange('cruise', 'embarkDate', e.target.value)} />
+                        <input
+                            type="date"
+                            className="interactive-input date-input"
+                            value={formatDateForPicker(formData.cruise.embarkDate)}
+                            onChange={(e) => handleNestedChange('cruise', 'embarkDate', formatDateFromPicker(e.target.value))}
+                            onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                        />
                     </td>
                     <td className="w-40" colSpan="2">
                         <span className="label">Pływowy:</span>
-                        <input className="interactive-input" style={{ textDecoration: 'underline' }} value={formData.cruise.embarkTidal} onChange={(e) => handleNestedChange('cruise', 'embarkTidal', e.target.value)} />
+                        <input className="interactive-input" value={formData.cruise.embarkTidal} onChange={(e) => handleNestedChange('cruise', 'embarkTidal', e.target.value)} />
                     </td>
                 </tr>
                 <tr>
@@ -229,11 +251,17 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                     </td>
                     <td>
                         <span className="label">Data:</span>
-                        <input className="interactive-input" value={formData.cruise.disembarkDate} onChange={(e) => handleNestedChange('cruise', 'disembarkDate', e.target.value)} />
+                        <input
+                            type="date"
+                            className="interactive-input date-input"
+                            value={formatDateForPicker(formData.cruise.disembarkDate)}
+                            onChange={(e) => handleNestedChange('cruise', 'disembarkDate', formatDateFromPicker(e.target.value))}
+                            onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                        />
                     </td>
                     <td colSpan="2">
                         <span className="label">Pływowy:</span>
-                        <input className="interactive-input" style={{ textDecoration: 'underline' }} value={formData.cruise.disembarkTidal} onChange={(e) => handleNestedChange('cruise', 'disembarkTidal', e.target.value)} />
+                        <input className="interactive-input" value={formData.cruise.disembarkTidal} onChange={(e) => handleNestedChange('cruise', 'disembarkTidal', e.target.value)} />
                     </td>
                 </tr>
                 <tr>

@@ -434,7 +434,7 @@
 .calc-modal-content {
     background: white;
     width: 90%;
-    max-width: 800px;
+    max-width: 870px;
     border-radius: 8px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     padding: 20px;
@@ -483,12 +483,20 @@
 
 .calc-input {
     width: 100%;
+    height: 32px;
     border: 1px solid #cbd5e1;
     border-radius: 4px;
     padding: 6px;
     font-size: 0.85rem;
     box-sizing: border-box;
     transition: border-color 0.2s;
+}
+
+.calc-select {
+    cursor: pointer;
+    font-weight: normal;
+    text-align: center;
+    text-align-last: center;
 }
 
 .calc-input:focus {
@@ -580,6 +588,13 @@
 }
 
 .time-input::-webkit-calendar-picker-indicator {
+    display: none;
+}
+
+.date-input {
+    cursor: pointer;
+}
+.date-input::-webkit-calendar-picker-indicator {
     display: none;
 }
 
