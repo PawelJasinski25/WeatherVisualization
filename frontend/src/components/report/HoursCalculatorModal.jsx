@@ -39,6 +39,37 @@ const HoursCalculatorModal = ({ isOpen, onClose, initialLogs, onSave, cruiseDate
     };
 
 
+    const sortAndFormatLogs = (logsArray) => {
+        const sorted = [...logsArray].sort((a, b) => {
+            const dateA = parseDate(a.date);
+            const dateB = parseDate(b.date);
+
+            if (dateA && dateB && dateA.getTime() !== dateB.getTime()) {
+                return dateA.getTime() - dateB.getTime();
+            }
+
+            if (!a.startTime && b.startTime) return -1;
+            if (a.startTime && !b.startTime) return 1;
+            if (a.startTime && b.startTime && a.startTime !== b.startTime) {
+                return a.startTime.localeCompare(b.startTime);
+            }
+
+            if (!a.endTime && b.endTime) return -1;
+            if (a.endTime && !b.endTime) return 1;
+            if (a.endTime && b.endTime) {
+                return a.endTime.localeCompare(b.endTime);
+            }
+
+            return 0;
+        });
+
+        return sorted.map((log, idx, arr) => ({
+            ...log,
+            isBase: idx === 0 || arr[idx - 1].date !== log.date
+        }));
+    };
+
+
     useEffect(() => {
         if (!isOpen) return;
 
@@ -102,20 +133,11 @@ const HoursCalculatorModal = ({ isOpen, onClose, initialLogs, onSave, cruiseDate
             }
         }
 
-        loadedLogs.sort((a, b) => {
-            const dateA = parseDate(a.date);
-            const dateB = parseDate(b.date);
-            if (!dateA) return 1;
-            if (!dateB) return -1;
-            return dateA.getTime() - dateB.getTime();
-        });
+        const finalLogs = loadedLogs.length > 0
+            ? loadedLogs
+            : [{ id: Date.now(), date: 'Brak daty', type: 'RUCH', startTime: '', endTime: '', total: '', sails: '', engine: '', tidal: '', isBase: true }];
 
-        loadedLogs = loadedLogs.map((log, idx) => ({
-            ...log,
-            isBase: idx === 0 || loadedLogs[idx - 1].date !== log.date
-        }));
-
-        setLogs(loadedLogs.length > 0 ? loadedLogs : [{ id: Date.now(), date: 'Brak daty', type: 'RUCH', startTime: '', endTime: '', total: '', sails: '', engine: '', tidal: '', isBase: true }]);
+        setLogs(sortAndFormatLogs(finalLogs));
 
     }, [isOpen, initialLogs, cruiseDates, dailySummaries]);
 
@@ -150,11 +172,11 @@ const HoursCalculatorModal = ({ isOpen, onClose, initialLogs, onSave, cruiseDate
             }
             log.sails = '';
             log.engine = '';
-            setLogs(newLogs);
+            setLogs(sortAndFormatLogs(newLogs));
             return;
         }
 
-        const sanitizedValue = value.replace(/-/g, '');
+        const sanitizedValue = value.replace(/[^\d.,]/g, '');
         const totalVal = parseFloat(String(log.total).replace(',', '.')) || 0;
         const floatValue = parseFloat(String(sanitizedValue).replace(',', '.')) || 0;
 
@@ -190,27 +212,19 @@ const HoursCalculatorModal = ({ isOpen, onClose, initialLogs, onSave, cruiseDate
     };
 
     const addStage = (id, dateStr) => {
-        const newLogs = [...logs];
-        const index = newLogs.findIndex(l => l.id === id);
-        newLogs.splice(index + 1, 0, {
+        const newLogs = [...logs, {
             id: Date.now() + Math.random(),
             date: dateStr,
             type: 'RUCH',
             startTime: '', endTime: '', total: '', sails: '', engine: '', tidal: '',
             isBase: false
-        });
-        setLogs(newLogs);
+        }];
+        setLogs(sortAndFormatLogs(newLogs));
     };
 
     const removeRow = (id) => {
         const filteredLogs = logs.filter(l => l.id !== id);
-
-        const newLogs = filteredLogs.map((log, index) => {
-            const isFirst = filteredLogs.findIndex(l => l.date === log.date) === index;
-            return { ...log, isBase: isFirst };
-        });
-
-        setLogs(newLogs);
+        setLogs(sortAndFormatLogs(filteredLogs));
     };
 
     const handleSave = () => {
