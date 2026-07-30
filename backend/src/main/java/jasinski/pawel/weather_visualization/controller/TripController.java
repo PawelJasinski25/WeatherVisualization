@@ -24,13 +24,11 @@ public class TripController {
     private final TripService tripService;
     private final ReportService reportService;
     private final TripMapService tripMapService;
-    private final GeoNamesService geoNamesService;
 
     public TripController(TripService tripService, TripMapService tripMapService, ReportService reportService, GeoNamesService geoNamesService) {
         this.tripService = tripService;
         this.tripMapService = tripMapService;
         this.reportService = reportService;
-        this.geoNamesService = geoNamesService;
     }
 
     @GetMapping("/{id}/coordinates")
@@ -41,10 +39,10 @@ public class TripController {
 
 
     @PostMapping("/upload")
-    public ResponseEntity<Long> uploadGpxFile(@RequestParam("file") MultipartFile file, Authentication authentication) throws Exception {
+    public ResponseEntity<UploadTripResponseDto> uploadGpxFile(@RequestParam("file") MultipartFile file, Authentication authentication) throws Exception {
         String email = authentication.getName();
-        Long newTripId = tripService.processGpxFile(file, email);
-        return ResponseEntity.ok(newTripId);
+        UploadTripResponseDto response = tripService.processGpxFile(file, email);
+        return ResponseEntity.ok(response);
     }
 
 

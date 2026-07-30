@@ -3,6 +3,7 @@ package jasinski.pawel.weather_visualization.service;
 import jasinski.pawel.weather_visualization.dto.GridReq;
 import jasinski.pawel.weather_visualization.dto.TripMergeRequestDto;
 import jasinski.pawel.weather_visualization.dto.TripResponseDto;
+import jasinski.pawel.weather_visualization.dto.UploadTripResponseDto;
 import jasinski.pawel.weather_visualization.entity.TrackPoint;
 import jasinski.pawel.weather_visualization.entity.Trip;
 import jasinski.pawel.weather_visualization.entity.User;
@@ -62,7 +63,7 @@ public class TripService {
 
 
 
-    public Long processGpxFile(MultipartFile file, String email) throws Exception {
+    public UploadTripResponseDto processGpxFile(MultipartFile file, String email) throws Exception {
         long startTime = System.currentTimeMillis();
 
         User user = userRepository.findByEmail(email)
@@ -77,7 +78,7 @@ public class TripService {
 
             Optional<Trip> existingTrip = tripRepository.findByFileHashAndUser_Email(fileHash, email);
             if (existingTrip.isPresent()) {
-                return existingTrip.get().getId();
+                return new UploadTripResponseDto(existingTrip.get().getId(), true, existingTrip.get().getName());
             }
 
             Trip savedTrip = tripPersistenceService.createAndSaveTripHeader(file.getOriginalFilename(), user, fileHash);
@@ -109,7 +110,7 @@ public class TripService {
 
             printProcessingReport(allTrackPoints.size(), apiLimitUsed, startTime);
 
-            return savedTrip.getId();
+            return new UploadTripResponseDto(savedTrip.getId(), false, savedTrip.getName());
 
         } catch (Exception e){
             throw new IllegalArgumentException("Nie udało się przetworzyć pliku GPX. Upewnij się, że format jest poprawny.", e);

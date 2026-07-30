@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios.js";
-import { FileUp, Loader2, AlertCircle } from "lucide-react";
+import { FileUp, Loader2, AlertCircle, AlertTriangle } from "lucide-react";
 import "../styles/modal.css";
 
 const FileUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
     const [file, setFile] = useState(null);
     const [status, setStatus] = useState("");
     const [isUploading, setIsUploading] = useState(false);
+    const [existingId, setExistingId] = useState(null);
+    const isTripsPage = window.location.pathname.includes('/trips');
 
     useEffect(() => {
         if (isOpen) {
             setFile(null);
             setStatus("");
             setIsUploading(false);
+            setExistingId(null);
         }
     }, [isOpen]);
 
@@ -21,6 +24,7 @@ const FileUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
     const handleFileChange = (e) => {
         setFile(e.target.files[0]);
         setStatus("");
+        setExistingId(null);
     };
 
     const handleUpload = async () => {
@@ -40,13 +44,23 @@ const FileUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
-            const newTripId = response.data;
-            onUploadSuccess(newTripId);
-            onClose();
+            const { tripId, isDuplicate, tripName } = response.data;
+
+            if (isDuplicate) {
+                setExistingId(tripId);
+                setStatus({
+                    type: "warning",
+                    message: "Plik z tą trasą znajduje się już na twoim koncie pod nazwą:",
+                    tripName: tripName
+                });
+                setIsUploading(false);
+            } else {
+                onUploadSuccess(tripId);
+                onClose();
+            }
         } catch (error) {
             console.error("Błąd:", error);
-            setStatus("Błąd: Nie udało się wgrać pliku.");
-        } finally {
+            setStatus({ type: "error", message: "Nie udało się wgrać pliku." });
             setIsUploading(false);
         }
     };
@@ -76,10 +90,17 @@ const FileUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
                         />
                     </label>
 
-                    {status && status.includes("Błąd") && (
-                        <div className="modal-error-message">
-                            <AlertCircle size={18} />
-                            <span>{status}</span>
+                    {status.message && (
+                        <div className={`modal-message ${status.type === 'warning' ? 'modal-warning-message' : 'modal-error-message'}`}>
+                            {status.type === 'warning' ? <AlertTriangle size={18} /> : <AlertCircle size={18} />}
+                            <div>
+                                <span>{status.message} </span>
+                                {status.tripName && (
+                                    <strong style={{ color: '#b45309' }}>
+                                        "{status.tripName}"
+                                    </strong>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -88,17 +109,30 @@ const FileUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
                     <button onClick={onClose} disabled={isUploading} className="modal-btn btn-cancel">
                         Anuluj
                     </button>
-                    <button
-                        onClick={handleUpload}
-                        disabled={isUploading || !file}
-                        className="modal-btn btn-submit"
-                    >
-                        {isUploading ? (
-                            <span className="btn-loading-content">
-                                <Loader2 size={16} className="anim-spin" /> Wgrywanie...
-                            </span>
-                        ) : "Wgraj"}
-                    </button>
+
+                    {existingId ? (
+                        <button
+                            onClick={() => {
+                                onUploadSuccess(existingId);
+                                onClose();
+                            }}
+                            className="modal-btn btn-submit"
+                        >
+                            {isTripsPage ? "Przejdź do tras" : "Otwórz trasę"}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleUpload}
+                            disabled={isUploading || !file}
+                            className="modal-btn btn-submit"
+                        >
+                            {isUploading ? (
+                                <span className="btn-loading-content">
+                                    <Loader2 size={16} className="anim-spin" /> Wgrywanie...
+                                </span>
+                            ) : "Wgraj"}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
