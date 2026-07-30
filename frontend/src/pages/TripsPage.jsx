@@ -8,6 +8,7 @@ import ConfirmDeleteModal from '../components/ConfirmDeleteModal.jsx';
 import { Pencil, Trash2, Check, Link,  X, Download } from 'lucide-react';
 
 import "../styles/trips.css";
+import ErrorModal from "../components/ErrorModal.jsx";
 
 const TripsPage = () => {
     const [trips, setTrips] = useState([]);
@@ -20,6 +21,9 @@ const TripsPage = () => {
     const [filterStartDate, setFilterStartDate] = useState('');
     const [filterEndDate, setFilterEndDate] = useState('');
 
+    const [errorModalOpen, setErrorModalOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+
     useEffect(() => {
         fetchTrips();
     }, []);
@@ -30,7 +34,13 @@ const TripsPage = () => {
             setTrips(response.data);
         } catch (error) {
             console.error("Błąd podczas pobierania tras:", error);
+            showError("Wystąpił błąd podczas pobierania listy tras");
         }
+    };
+
+    const showError = (msg) => {
+        setErrorMessage(msg);
+        setErrorModalOpen(true);
     };
 
     const filteredAndSortedTrips = useMemo(() => {
@@ -76,7 +86,7 @@ const TripsPage = () => {
             setTrips(trips.filter(t => t.id !== tripToDelete.id));
         } catch (error) {
             console.error("Błąd usuwania trasy:", error);
-            alert("Wystąpił błąd podczas usuwania. Spróbuj ponownie.");
+            showError("Wystąpił błąd podczas usuwania trasy.");
         }
     };
 
@@ -90,10 +100,11 @@ const TripsPage = () => {
         e.stopPropagation();
         try {
             const response = await api.put(`/trips/${id}`, { name: editName });
-            setTrips(trips.map(t => t.id === id ? { ...t, name: response.data.name } : t));
+            setTrips(trips.map(t => t.id === id ? { ...t, name: editName } : t));
             setEditingId(null);
         } catch (error) {
             console.error("Błąd podczas zmiany nazwy:", error);
+            showError("Nie udało się zmienić nazwy trasy.")
         }
     };
 
@@ -132,7 +143,7 @@ const TripsPage = () => {
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error("Błąd podczas pobierania pliku GPX:", error);
-            alert("Nie udało się pobrać pliku GPX.");
+            showError("Nie udało się pobrać pliku GPX.");
         }
     };
 
@@ -164,6 +175,12 @@ const TripsPage = () => {
                 onClose={() => setTripToDelete(null)}
                 onConfirm={confirmDelete}
                 tripName={tripToDelete?.name}
+            />
+
+            <ErrorModal
+                isOpen={errorModalOpen}
+                onClose={() => setErrorModalOpen(false)}
+                errorMessage={errorMessage}
             />
 
             <div className="trips-container">

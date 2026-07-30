@@ -52,12 +52,13 @@ public class TripController {
         return ResponseEntity.ok(tripService.getUserTrips(email));
     }
 
-    @PutMapping("/{id}/name")
-    public ResponseEntity<Trip> updateTripName(@PathVariable Long id, @RequestBody String newName, Authentication authentication) {
+    @PutMapping("/{id}")
+    public ResponseEntity<Void> updateTripName(@PathVariable Long id, @RequestBody java.util.Map<String, String> payload, Authentication authentication) {
+        String newName = payload.get("name");
         String email = authentication.getName();
-        newName = newName.replace("\"", "");
-        Trip updatedTrip = tripService.updateTripName(id, newName, email);
-        return ResponseEntity.ok(updatedTrip);
+
+        tripService.updateTripName(id, newName, email);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")

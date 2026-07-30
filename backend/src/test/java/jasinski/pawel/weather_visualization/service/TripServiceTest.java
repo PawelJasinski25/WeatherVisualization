@@ -2,6 +2,7 @@ package jasinski.pawel.weather_visualization.service;
 
 import jasinski.pawel.weather_visualization.dto.TripMergeRequestDto;
 import jasinski.pawel.weather_visualization.dto.TripResponseDto;
+import jasinski.pawel.weather_visualization.dto.UploadTripResponseDto;
 import jasinski.pawel.weather_visualization.entity.TrackPoint;
 import jasinski.pawel.weather_visualization.entity.Trip;
 import jasinski.pawel.weather_visualization.entity.User;
@@ -99,8 +100,11 @@ class TripServiceTest {
         when(userRepository.findByEmail("email@example.com")).thenReturn(Optional.of(owner));
         when(tripRepository.findByFileHashAndUser_Email(anyString(), anyString())).thenReturn(Optional.of(trip));
 
-        Long id = tripService.processGpxFile(mockFile, "email@example.com");
-        assertThat(id).isEqualTo(100L);
+        UploadTripResponseDto response = tripService.processGpxFile(mockFile, "email@example.com");
+        assertThat(response.tripId()).isEqualTo(100L);
+        assertThat(response.isDuplicate()).isTrue();
+        assertThat(response.tripName()).isEqualTo("Przykładowa wyprawa");
+
         verify(gpxParserService, never()).extractTrackPoints(any(Path.class), any());
     }
 
@@ -113,11 +117,17 @@ class TripServiceTest {
 
         Trip newTrip = new Trip();
         newTrip.setId(200L);
+        newTrip.setName("Nowa trasa GPX");
+
         when(tripPersistenceService.createAndSaveTripHeader(any(), any(), any())).thenReturn(newTrip);
         when(gpxParserService.extractTrackPoints(any(Path.class), eq(newTrip))).thenReturn(List.of(new TrackPoint()));
 
-        Long id = tripService.processGpxFile(mockFile, "email@example.com");
-        assertThat(id).isEqualTo(200L);
+        UploadTripResponseDto response = tripService.processGpxFile(mockFile, "email@example.com");
+
+        assertThat(response.tripId()).isEqualTo(200L);
+        assertThat(response.isDuplicate()).isFalse();
+        assertThat(response.tripName()).isEqualTo("Nowa trasa GPX");
+
         verify(gpxParserService).extractTrackPoints(any(Path.class), eq(newTrip));
     }
 
