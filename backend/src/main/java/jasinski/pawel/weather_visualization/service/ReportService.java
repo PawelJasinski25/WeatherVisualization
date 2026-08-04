@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -251,11 +252,13 @@ public class ReportService {
                     segments.add(new EnrichedSegment(p1, p2, dist, dur, speed, isMoving));
                 }
             }
+
         }
         return segments;
     }
 
-    public ReportResource getCsvReportResource(Long tripId, String email) {
+    public ReportResource getCsvReportResource(Long tripId, String email, Map<String, String> prefs) {
+        if(prefs == null) prefs = new HashMap<>();
         TripResponseDto trip = tripService.getUserTrips(email).stream()
                 .filter(t -> t.id().equals(tripId))
                 .findFirst()
@@ -263,12 +266,15 @@ public class ReportService {
 
         TripAnalysisContext context = analyzeTrip(tripId);
 
-        String mainCsvContent = generateSummaryCsv(context);
-        String apiCsvContent = generateApiUsageCsv(context);
+        String mainCsvContent = generateSummaryCsv(context, prefs);
+        String apiCsvContent = generateApiUsageCsv(context, prefs);
+        String detailedPointsCsvContent = generateDetailedPointsCsv(context, prefs);
 
         TripReportDataDto data = getTripReportData(tripId, email);
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> payload = mapper.convertValue(data, new TypeReference<Map<String, Object>>() {});
+
+        payload.put("preferences", prefs);
 
         byte[] chartsZipBytes = null;
         try {
@@ -279,30 +285,36 @@ public class ReportService {
         }
 
         byte[] bom = new byte[] { (byte)0xEF, (byte)0xBB, (byte)0xBF };
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(byteArrayOutputStream)) {
 
 
             // Główne podsumowanie trasy
-            zos.putNextEntry(new ZipEntry("podsumowanie_trasy.csv"));
-            zos.write(bom);
-            zos.write(mainCsvContent.getBytes(StandardCharsets.UTF_8));
-            zos.closeEntry();
+            zipOutputStream.putNextEntry(new ZipEntry("podsumowanie_trasy.csv"));
+            zipOutputStream.write(bom);
+            zipOutputStream.write(mainCsvContent.getBytes(StandardCharsets.UTF_8));
+            zipOutputStream.closeEntry();
 
             // Punkty z bazy i zapytania
-            zos.putNextEntry(new ZipEntry("punkty.csv"));
-            zos.write(bom);
-            zos.write(apiCsvContent.getBytes(StandardCharsets.UTF_8));
-            zos.closeEntry();
+            zipOutputStream.putNextEntry(new ZipEntry("punkty.csv"));
+            zipOutputStream.write(bom);
+            zipOutputStream.write(apiCsvContent.getBytes(StandardCharsets.UTF_8));
+            zipOutputStream.closeEntry();
+
+            // Szczegóły punktów (jeden punkt - jeden wiersz)
+            zipOutputStream.putNextEntry(new ZipEntry("szczegolowe_punkty.csv"));
+            zipOutputStream.write(bom);
+            zipOutputStream.write(detailedPointsCsvContent.getBytes(StandardCharsets.UTF_8));
+            zipOutputStream.closeEntry();
 
             //Wykresy
             if (chartsZipBytes != null) {
                 try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(chartsZipBytes))) {
                     ZipEntry entry;
                     while ((entry = zis.getNextEntry()) != null) {
-                        zos.putNextEntry(new ZipEntry("Wykresy/" + entry.getName()));
-                        zis.transferTo(zos);
-                        zos.closeEntry();
+                        zipOutputStream.putNextEntry(new ZipEntry("Wykresy/" + entry.getName()));
+                        zis.transferTo(zipOutputStream);
+                        zipOutputStream.closeEntry();
                     }
                 }
             }
@@ -313,10 +325,10 @@ public class ReportService {
 
         String fileName = trip.name().replaceAll("(?i)\\.gpx$", "") + "_raport.zip";
 
-        return new ReportResource(baos.toByteArray(), fileName);
+        return new ReportResource(byteArrayOutputStream.toByteArray(), fileName);
     }
 
-    public String generateSummaryCsv(TripAnalysisContext context) {
+    public String generateSummaryCsv(TripAnalysisContext context, Map<String, String> prefs) {
         List<DailySummary> summaries = generateDailySummaries(context);
         StringBuilder csv = new StringBuilder();
 
@@ -328,13 +340,30 @@ public class ReportService {
         }
         maxEvents = Math.max(1, maxEvents);
 
+        String tempUnit = prefs.getOrDefault("temp", "°C");
+        String windUnit = prefs.getOrDefault("wind", "km/h");
+        String pressureUnit = prefs.getOrDefault("pressure", "hPa");
+        String rainUnit = prefs.getOrDefault("rain", "mm");
+        String snowUnit = prefs.getOrDefault("snow", "cm");
+        String waveUnit = prefs.getOrDefault("wave", "m");
+        String currentsUnit = prefs.getOrDefault("currents", "km/h");
+
         csv.append("Data;Start;Koniec;Czas w ruchu;Czas na postoju;Czas braku danych;")
-                .append("Średnia temperatura (°C);Średnia temperatura w ruchu (°C);Średnia siła wiatru (km/h);Średnia siła wiatru w ruchu (km/h);Średni kierunek wiatru (deg);Średni kierunek wiatru w ruchu (deg);Średnie porywy wiatru (km/h);Średnie porywy wiatru w ruchu (km/h);Średni punkt rosy (°C);Średni punkt rosy w ruchu (°C);")
-                .append("Suma opadów deszczu (mm);Suma opadów deszczu w ruchu (mm);Suma opadów śniegu (cm);Suma opadów śniegu w ruchu (cm);Średnia wilgotność (%);Średnia wilgotność w ruchu (%);Średnie ciśnienie (hPa);Średnie ciśnienie w ruchu (hPa);")
+                .append("Średnia temperatura (").append(tempUnit).append(");Średnia temperatura w ruchu (").append(tempUnit).append(");")
+                .append("Średnia siła wiatru (").append(windUnit).append(");Średnia siła wiatru w ruchu (").append(windUnit).append(");")
+                .append("Średni kierunek wiatru (°);Średni kierunek wiatru w ruchu (°);")
+                .append("Średnie porywy wiatru (").append(windUnit).append(");Średnie porywy wiatru w ruchu (").append(windUnit).append(");")
+                .append("Średni punkt rosy (").append(tempUnit).append(");Średni punkt rosy w ruchu (").append(tempUnit).append(");")
+                .append("Suma opadów deszczu (").append(rainUnit).append(");Suma opadów deszczu w ruchu (").append(rainUnit).append(");")
+                .append("Suma opadów śniegu (").append(snowUnit).append(");Suma opadów śniegu w ruchu (").append(snowUnit).append(");")
+                .append("Średnia wilgotność (%);Średnia wilgotność w ruchu (%);")
+                .append("Średnie ciśnienie (").append(pressureUnit).append(");Średnie ciśnienie w ruchu (").append(pressureUnit).append(");")
                 .append("Średnie zachmurzenie (%);Średnie zachmurzenie w ruchu (%);Średnie chmury niskie (%);Średnie chmury niskie w ruchu (%);Średnie chmury średnie (%);Średnie chmury średnie w ruchu (%);Średnie chmury wysokie (%);Średnie chmury wysokie w ruchu (%);")
-                .append("Średnia wysokość fal (m);Średnia wysokość fal w ruchu (m);Średni okres fal (s);Średni okres fal w ruchu (s);Średni kierunek fal (deg);Średni kierunek fal w ruchu (deg);")
-                .append("Średnia wysokość fal wiatrowych (m);Średnia wysokość fal wiatrowych w ruchu (m);Średni okres fal wiatrowych (s);Średni okres fal wiatrowych w ruchu (s);Średnia wysokość martwej fali (m);Średnia wysokość martwej fali w ruchu (m);Średni okres martwej fali (s);Średni okres martwej fali w ruchu (s);")
-                .append("Średnia prędkość prądów (m/s);Średnia prędkość prądów w ruchu (m/s);Średni kierunek prądów (deg);Średni kierunek prądów w ruchu (deg);Średnia temperatura morza (°C);Średnia temperatura morza w ruchu (°C);")
+                .append("Średnia wysokość fal (").append(waveUnit).append(");Średnia wysokość fal w ruchu (").append(waveUnit).append(");Średni okres fal (s);Średni okres fal w ruchu (s);Średni kierunek fal (°);Średni kierunek fal w ruchu (°);")
+                .append("Średnia wysokość fal wiatrowych (").append(waveUnit).append(");Średnia wysokość fal wiatrowych w ruchu (").append(waveUnit).append(");Średni okres fal wiatrowych (s);Średni okres fal wiatrowych w ruchu (s);")
+                .append("Średnia wysokość martwej fali (").append(waveUnit).append(");Średnia wysokość martwej fali w ruchu (").append(waveUnit).append(");Średni okres martwej fali (s);Średni okres martwej fali w ruchu (s);")
+                .append("Średnia prędkość prądów (").append(currentsUnit).append(");Średnia prędkość prądów w ruchu (").append(currentsUnit).append(");Średni kierunek prądów (°);Średni kierunek prądów w ruchu (°);")
+                .append("Średnia temperatura morza (").append(tempUnit).append(");Średnia temperatura morza w ruchu (").append(tempUnit).append(");")
                 .append("Świt astronomiczny;Świt nautyczny;Świt cywilny;Wschód słońca;Kulminacja słońca;Zachód słońca;")
                 .append("Zmierzch cywilny;Zmierzch nautyczny;Zmierzch astronomiczny;");
 
@@ -386,34 +415,34 @@ public class ReportService {
             WeatherStats oWs = summary.overallWeatherStats();
             WeatherStats mWs = summary.movingWeatherStats();
 
-            appendCsv(csv, oWs.avgTemp()); appendCsv(csv, mWs.avgTemp());
-            appendCsv(csv, oWs.avgWindSpeed()); appendCsv(csv, mWs.avgWindSpeed());
+            appendCsv(csv, formatUnit(oWs.avgTemp(), tempUnit, "temp")); appendCsv(csv, formatUnit(mWs.avgTemp(), tempUnit, "temp"));
+            appendCsv(csv, formatUnit(oWs.avgWindSpeed(), windUnit, "wind")); appendCsv(csv, formatUnit(mWs.avgWindSpeed(), windUnit, "wind"));
             appendCsv(csv, oWs.avgWindDir()); appendCsv(csv, mWs.avgWindDir());
-            appendCsv(csv, oWs.avgWindGusts()); appendCsv(csv, mWs.avgWindGusts());
-            appendCsv(csv, oWs.avgDewPoint()); appendCsv(csv, mWs.avgDewPoint());
+            appendCsv(csv, formatUnit(oWs.avgWindGusts(), windUnit, "wind")); appendCsv(csv, formatUnit(mWs.avgWindGusts(), windUnit, "wind"));
+            appendCsv(csv, formatUnit(oWs.avgDewPoint(), tempUnit, "temp")); appendCsv(csv, formatUnit(mWs.avgDewPoint(), tempUnit, "temp"));
 
-            appendCsv(csv, oWs.sumRain()); appendCsv(csv, mWs.sumRain());
-            appendCsv(csv, oWs.sumSnowfall()); appendCsv(csv, mWs.sumSnowfall());
+            appendCsv(csv, formatUnit(oWs.sumRain(), rainUnit, "rain")); appendCsv(csv, formatUnit(mWs.sumRain(), rainUnit, "rain"));
+            appendCsv(csv, formatUnit(oWs.sumSnowfall(), snowUnit, "snow")); appendCsv(csv, formatUnit(mWs.sumSnowfall(), snowUnit, "snow"));
             appendCsv(csv, oWs.avgHumidity()); appendCsv(csv, mWs.avgHumidity());
-            appendCsv(csv, oWs.avgPressure()); appendCsv(csv, mWs.avgPressure());
+            appendCsv(csv, formatUnit(oWs.avgPressure(), pressureUnit, "pressure")); appendCsv(csv, formatUnit(mWs.avgPressure(), pressureUnit, "pressure"));
 
             appendCsv(csv, oWs.avgCloudCover()); appendCsv(csv, mWs.avgCloudCover());
             appendCsv(csv, oWs.avgCloudCoverLow()); appendCsv(csv, mWs.avgCloudCoverLow());
             appendCsv(csv, oWs.avgCloudCoverMid()); appendCsv(csv, mWs.avgCloudCoverMid());
             appendCsv(csv, oWs.avgCloudCoverHigh()); appendCsv(csv, mWs.avgCloudCoverHigh());
 
-            appendCsv(csv, oWs.avgWaveHeight()); appendCsv(csv, mWs.avgWaveHeight());
+            appendCsv(csv, formatUnit(oWs.avgWaveHeight(), waveUnit, "wave")); appendCsv(csv, formatUnit(mWs.avgWaveHeight(), waveUnit, "wave"));
             appendCsv(csv, oWs.avgWavePeriod()); appendCsv(csv, mWs.avgWavePeriod());
             appendCsv(csv, oWs.avgWaveDirection()); appendCsv(csv, mWs.avgWaveDirection());
 
-            appendCsv(csv, oWs.avgWindWaveHeight()); appendCsv(csv, mWs.avgWindWaveHeight());
+            appendCsv(csv, formatUnit(oWs.avgWindWaveHeight(), waveUnit, "wave")); appendCsv(csv, formatUnit(mWs.avgWindWaveHeight(), waveUnit, "wave"));
             appendCsv(csv, oWs.avgWindWavePeriod()); appendCsv(csv, mWs.avgWindWavePeriod());
-            appendCsv(csv, oWs.avgSwellWaveHeight()); appendCsv(csv, mWs.avgSwellWaveHeight());
+            appendCsv(csv, formatUnit(oWs.avgSwellWaveHeight(), waveUnit, "wave")); appendCsv(csv, formatUnit(mWs.avgSwellWaveHeight(), waveUnit, "wave"));
             appendCsv(csv, oWs.avgSwellWavePeriod()); appendCsv(csv, mWs.avgSwellWavePeriod());
 
-            appendCsv(csv, oWs.avgOceanCurrentVelocity()); appendCsv(csv, mWs.avgOceanCurrentVelocity());
+            appendCsv(csv, formatUnit(oWs.avgOceanCurrentVelocity(), currentsUnit, "currents")); appendCsv(csv, formatUnit(mWs.avgOceanCurrentVelocity(), currentsUnit, "currents"));
             appendCsv(csv, oWs.avgOceanCurrentDirection()); appendCsv(csv, mWs.avgOceanCurrentDirection());
-            appendCsv(csv, oWs.avgSeaTemperature()); appendCsv(csv, mWs.avgSeaTemperature());
+            appendCsv(csv, formatUnit(oWs.avgSeaTemperature(), tempUnit, "temp")); appendCsv(csv, formatUnit(mWs.avgSeaTemperature(), tempUnit, "temp"));
 
             AstronomyStats astro = summary.astroStats();
             appendAstroTime(csv, astro.astronomicalDawn(), astro.astronomicalDawnPt());
@@ -449,7 +478,7 @@ public class ReportService {
         return csv.toString();
     }
 
-    public String generateApiUsageCsv(TripAnalysisContext context) {
+    public String generateApiUsageCsv(TripAnalysisContext context, Map<String, String> prefs) {
         StringBuilder csv = new StringBuilder();
         DateTimeFormatter fullTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(DEFAULT_ZONE);
 
@@ -504,8 +533,16 @@ public class ReportService {
             stats.pointCount++;
         }
 
+        String tempUnit = prefs.getOrDefault("temp", "°C");
+        String windUnit = prefs.getOrDefault("wind", "km/h");
+        String pressureUnit = prefs.getOrDefault("pressure", "hPa");
+        String rainUnit = prefs.getOrDefault("rain", "mm");
+        String snowUnit = prefs.getOrDefault("snow", "cm");
+        String waveUnit = prefs.getOrDefault("wave", "m");
+        String currentsUnit = prefs.getOrDefault("currents", "km/h");
+
         csv.append("Data punktu z bazy;Szerokość;Długość;Szerokość zaokrąglona;Długość zaokrąglona;Źródło danych;Open-Meteo Historical API (0/1);Open-Meteo Marine API (0/1);Dopasowane punkty;Dopasowane punkty od;Dopasowane punkty do;");
-        csv.append("Temperatura (°C);Prędkość wiatru (km/h);Kierunek wiatru (°);Punkt rosy (°C);Porywy wiatru (km/h);Opady deszczu (mm);Opady śniegu (cm);Wilgotność (%);Ciśnienie (hPa);Zachmurzenie ogólne (%);Chmury niskie (%);Chmury średnie (%);Chmury wysokie (%);Wysokość fali (m);Okres fali (s);Kierunek fali (deg);Wysokość fal wiatrowych (m);Okres fal wiatrowych (s);Wysokość martwej fali (m);Okres martwej fali (s);Prędkość prądów (km/h);Kierunek prądów (°);Temperatura morza (°C);Kod pogody\n");
+        csv.append("Temperatura (").append(tempUnit).append(");Prędkość wiatru (").append(windUnit).append(");Kierunek wiatru (°);Punkt rosy (").append(tempUnit).append(");Porywy wiatru (").append(windUnit).append(");Opady deszczu (").append(rainUnit).append(");Opady śniegu (").append(snowUnit).append(");Wilgotność (%);Ciśnienie (").append(pressureUnit).append(");Zachmurzenie ogólne (%);Chmury niskie (%);Chmury średnie (%);Chmury wysokie (%);Wysokość fali (").append(waveUnit).append(");Okres fali (s);Kierunek fali (°);Wysokość fal wiatrowych (").append(waveUnit).append(");Okres fal wiatrowych (s);Wysokość martwej fali (").append(waveUnit).append(");Okres martwej fali (s);Prędkość prądów (").append(currentsUnit).append(");Kierunek prądów (°);Temperatura morza (").append(tempUnit).append(");Kod pogody\n");
 
         for (ApiUsageStats stats : usageMap.values()) {
             String origLatStr = String.format(Locale.US, "%.5f", stats.origLat);
@@ -536,37 +573,203 @@ public class ReportService {
                     .append(startTimeStr).append(";")
                     .append(endTimeStr).append(";");
 
-            if (stats.weather != null) {
-                appendCsv(csv, stats.weather.getTemp());
-                appendCsv(csv, stats.weather.getWindSpeed());
-                appendCsv(csv, stats.weather.getWindDir());
-                appendCsv(csv, stats.weather.getDewPoint());
-                appendCsv(csv, stats.weather.getWindGusts());
-                appendCsv(csv, stats.weather.getRain());
-                appendCsv(csv, stats.weather.getSnowfall());
-                appendCsv(csv, stats.weather.getHumidity());
-                appendCsv(csv, stats.weather.getPressure());
-                appendCsv(csv, stats.weather.getCloudCover());
-                appendCsv(csv, stats.weather.getCloudCoverLow());
-                appendCsv(csv, stats.weather.getCloudCoverMid());
-                appendCsv(csv, stats.weather.getCloudCoverHigh());
-                appendCsv(csv, stats.weather.getWaveHeight());
-                appendCsv(csv, stats.weather.getWavePeriod());
-                appendCsv(csv, stats.weather.getWaveDirection());
-                appendCsv(csv, stats.weather.getWindWaveHeight());
-                appendCsv(csv, stats.weather.getWindWavePeriod());
-                appendCsv(csv, stats.weather.getSwellWaveHeight());
-                appendCsv(csv, stats.weather.getSwellWavePeriod());
-                appendCsv(csv, stats.weather.getOceanCurrentVelocity());
-                appendCsv(csv, stats.weather.getOceanCurrentDirection());
-                appendCsv(csv, stats.weather.getSeaTemperature());
-                appendCsv(csv, stats.weather.getWeatherCode());
+            Weather w = stats.weather;
+            if (w != null) {
+                appendCsv(csv, formatUnit(w.getTemp(), tempUnit, "temp"));
+                appendCsv(csv, formatUnit(w.getWindSpeed(), windUnit, "wind"));
+                appendCsv(csv, w.getWindDir());
+                appendCsv(csv, formatUnit(w.getDewPoint(), tempUnit, "temp"));
+                appendCsv(csv, formatUnit(w.getWindGusts(), windUnit, "wind"));
+                appendCsv(csv, formatUnit(w.getRain(), rainUnit, "rain"));
+                appendCsv(csv, formatUnit(w.getSnowfall(), snowUnit, "snow"));
+                appendCsv(csv, w.getHumidity());
+                appendCsv(csv, formatUnit(w.getPressure(), pressureUnit, "pressure"));
+                appendCsv(csv, w.getCloudCover());
+                appendCsv(csv, w.getCloudCoverLow());
+                appendCsv(csv, w.getCloudCoverMid());
+                appendCsv(csv, w.getCloudCoverHigh());
+                appendCsv(csv, formatUnit(w.getWaveHeight(), waveUnit, "wave"));
+                appendCsv(csv, w.getWavePeriod());
+                appendCsv(csv, w.getWaveDirection());
+                appendCsv(csv, formatUnit(w.getWindWaveHeight(), waveUnit, "wave"));
+                appendCsv(csv, w.getWindWavePeriod());
+                appendCsv(csv, formatUnit(w.getSwellWaveHeight(), waveUnit, "wave"));
+                appendCsv(csv, w.getSwellWavePeriod());
+                appendCsv(csv, formatUnit(w.getOceanCurrentVelocity(), currentsUnit, "currents"));
+                appendCsv(csv, w.getOceanCurrentDirection());
+                appendCsv(csv, formatUnit(w.getSeaTemperature(), tempUnit, "temp"));
+                appendCsv(csv, w.getWeatherCode());
             } else {
-                for (int i = 0; i < 24; i++) {
+                for (int i = 0; i < 24; i++) csv.append("--;");
+            }
+            csv.append("\n");
+        }
+        return csv.toString();
+    }
+
+    public String generateDetailedPointsCsv(TripAnalysisContext context, Map<String, String> prefs) {
+        StringBuilder csv = new StringBuilder();
+        DateTimeFormatter fullTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(DEFAULT_ZONE);
+
+        String tempUnit = prefs.getOrDefault("temp", "°C");
+        String windUnit = prefs.getOrDefault("wind", "km/h");
+        String pressureUnit = prefs.getOrDefault("pressure", "hPa");
+        String rainUnit = prefs.getOrDefault("rain", "mm");
+        String snowUnit = prefs.getOrDefault("snow", "cm");
+        String waveUnit = prefs.getOrDefault("wave", "m");
+        String currentsUnit = prefs.getOrDefault("currents", "km/h");
+        String distanceUnit = prefs.getOrDefault("distance", "NM");
+        String speedUnit = prefs.getOrDefault("speed", "kt");
+
+        csv.append("ID punktu;Czas punktu;Szerokość punktu;Długość punktu;Stan ruchu;Szerokość siatki;Długość siatki;Czy reprezentant siatki;Odchylenie od reprezentanta (km);Czas API;Różnica czasu (min);Akwen morski;");
+        csv.append("Odstęp czasu (min);Odległość (").append(distanceUnit).append(");Kurs (°);Prędkość z GPX (").append(speedUnit).append(");Prędkość wyliczona (").append(speedUnit).append(");");
+        csv.append("Temperatura (").append(tempUnit).append(");Prędkość wiatru (").append(windUnit).append(");Kierunek wiatru (°);Punkt rosy (").append(tempUnit).append(");Porywy wiatru (").append(windUnit).append(");Opady deszczu (").append(rainUnit).append(");Opady śniegu (").append(snowUnit).append(");Wilgotność (%);Ciśnienie (").append(pressureUnit).append(");Zachmurzenie ogólne (%);Chmury niskie (%);Chmury średnie (%);Chmury wysokie (%);Wysokość fali (").append(waveUnit).append(");Okres fali (s);Kierunek fali (°);Wysokość fal wiatrowych (").append(waveUnit).append(");Okres fal wiatrowych (s);Wysokość martwej fali (").append(waveUnit).append(");Okres martwej fali (s);Prędkość prądów (").append(currentsUnit).append(");Kierunek prądów (°);Temperatura morza (").append(tempUnit).append(");Kod pogody\n");
+
+        Map<String, TrackPoint> gridRepresentatives = new HashMap<>();
+        List<TrackPoint> points = context.points();
+        int pointSeq = 1;
+
+        for (int i = 0; i < points.size(); i++) {
+            TrackPoint pt = points.get(i);
+
+            String dateStr = pt.getTime().toString().substring(0, 10);
+            double gridLat = Math.round(pt.getLatitude() * 10.0) / 10.0;
+            double gridLon = Math.round(pt.getLongitude() * 10.0) / 10.0;
+            String gridKey = dateStr + "_" + gridLat + "_" + gridLon;
+
+            TrackPoint rep = gridRepresentatives.get(gridKey);
+            boolean isRep = false;
+            if (rep == null) {
+                rep = pt;
+                gridRepresentatives.put(gridKey, rep);
+                isRep = true;
+            }
+
+            double offsetKm = GeoUtils.calculateDistance(pt.getLatitude(), pt.getLongitude(), rep.getLatitude(), rep.getLongitude()) / 1000.0;
+
+            String movementStatus = "POSTÓJ";
+            if (pt.getTime() != null) {
+                LocalDate localDate = LocalDate.ofInstant(pt.getTime(), DEFAULT_ZONE);
+                DayData dayData = context.dailyMovements().get(localDate);
+                if (dayData != null && dayData.events != null) {
+                    for (TimelineEvent ev : dayData.events) {
+                        if (!pt.getTime().isBefore(ev.start()) && !pt.getTime().isAfter(ev.end())) {
+                            if (!"BRAK DANYCH".equals(ev.type())) {
+                                movementStatus = ev.type();
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            String apiTimeStr = "--";
+            String timeDiffMinStr = "--";
+            Weather w = pt.getWeather();
+
+            if (pt.getTime() != null) {
+                Instant apiTime = pt.getTime().plus(30, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.HOURS);
+                apiTimeStr = fullTimeFormatter.format(apiTime);
+                double diffMin = Math.abs(Duration.between(pt.getTime(), apiTime).getSeconds()) / 60.0;
+                timeDiffMinStr = String.format(Locale.US, "%.1f", diffMin);
+            }
+
+            String timeIntervalMinStr = "--";
+            String distanceMmStr = "--";
+            String courseDegStr = "--";
+
+            String speedGpxStr = "--";
+            if(pt.getSpeed() != null) {
+                speedGpxStr = formatUnit(pt.getSpeed(), speedUnit, "speed");
+            }
+
+            String speedCalcKnStr = "--";
+
+            if (i > 0 && i < points.size() - 1) {
+                TrackPoint prev = points.get(i - 1);
+                TrackPoint next = points.get(i + 1);
+
+                if (prev.getTime() != null && next.getTime() != null) {
+                    double secondsBetween = Math.abs(Duration.between(prev.getTime(), next.getTime()).getSeconds());
+                    double minutesBetween = secondsBetween / 60.0;
+                    timeIntervalMinStr = String.format(Locale.US, "%.1f", minutesBetween);
+
+                    double distanceMeters = GeoUtils.calculateDistance(prev.getLatitude(), prev.getLongitude(), next.getLatitude(), next.getLongitude());
+                    distanceMmStr = formatUnit(distanceMeters, distanceUnit, "distance");
+
+                    if (secondsBetween > 0) {
+                        double hoursBetween = secondsBetween / 3600.0;
+                        double speedKmhCalc = (distanceMeters / 1000.0) / hoursBetween;
+                        speedCalcKnStr = formatUnit(speedKmhCalc, speedUnit, "speed");
+                    }
+                }
+
+                double lat1 = Math.toRadians(prev.getLatitude());
+                double lon1 = Math.toRadians(prev.getLongitude());
+                double lat2 = Math.toRadians(next.getLatitude());
+                double lon2 = Math.toRadians(next.getLongitude());
+
+                double dLon = lon2 - lon1;
+                double y = Math.sin(dLon) * Math.cos(lat2);
+                double x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+                double azimuth = Math.toDegrees(Math.atan2(y, x));
+                double course = (azimuth + 360) % 360;
+                courseDegStr = String.format(Locale.US, "%.1f", course);
+            }
+
+            boolean isWater = waterDetectionService.isWater(pt.getLatitude(), pt.getLongitude());
+
+            appendCsv(csv, pt.getId() != null ? pt.getId() : pointSeq);
+            appendCsv(csv, pt.getTime() != null ? fullTimeFormatter.format(pt.getTime()) : "--");
+            appendCsv(csv, String.format(Locale.US, "%.6f", pt.getLatitude()));
+            appendCsv(csv, String.format(Locale.US, "%.6f", pt.getLongitude()));
+            appendCsv(csv, movementStatus);
+            appendCsv(csv, String.format(Locale.US, "%.1f", gridLat));
+            appendCsv(csv, String.format(Locale.US, "%.1f", gridLon));
+            appendCsv(csv, isRep ? "TAK" : "NIE");
+            appendCsv(csv, String.format(Locale.US, "%.2f", offsetKm));
+            appendCsv(csv, apiTimeStr);
+            appendCsv(csv, timeDiffMinStr);
+            appendCsv(csv, isWater ? "TAK" : "NIE");
+
+            appendCsv(csv, timeIntervalMinStr);
+            appendCsv(csv, distanceMmStr);
+            appendCsv(csv, courseDegStr);
+            appendCsv(csv, speedGpxStr);
+            appendCsv(csv, speedCalcKnStr);
+
+            if (w != null) {
+                appendCsv(csv, formatUnit(w.getTemp(), tempUnit, "temp"));
+                appendCsv(csv, formatUnit(w.getWindSpeed(), windUnit, "wind"));
+                appendCsv(csv, w.getWindDir());
+                appendCsv(csv, formatUnit(w.getDewPoint(), tempUnit, "temp"));
+                appendCsv(csv, formatUnit(w.getWindGusts(), windUnit, "wind"));
+                appendCsv(csv, formatUnit(w.getRain(), rainUnit, "rain"));
+                appendCsv(csv, formatUnit(w.getSnowfall(), snowUnit, "snow"));
+                appendCsv(csv, w.getHumidity());
+                appendCsv(csv, formatUnit(w.getPressure(), pressureUnit, "pressure"));
+                appendCsv(csv, w.getCloudCover());
+                appendCsv(csv, w.getCloudCoverLow());
+                appendCsv(csv, w.getCloudCoverMid());
+                appendCsv(csv, w.getCloudCoverHigh());
+                appendCsv(csv, formatUnit(w.getWaveHeight(), waveUnit, "wave"));
+                appendCsv(csv, w.getWavePeriod());
+                appendCsv(csv, w.getWaveDirection());
+                appendCsv(csv, formatUnit(w.getWindWaveHeight(), waveUnit, "wave"));
+                appendCsv(csv, w.getWindWavePeriod());
+                appendCsv(csv, formatUnit(w.getSwellWaveHeight(), waveUnit, "wave"));
+                appendCsv(csv, w.getSwellWavePeriod());
+                appendCsv(csv, formatUnit(w.getOceanCurrentVelocity(), currentsUnit, "currents"));
+                appendCsv(csv, w.getOceanCurrentDirection());
+                appendCsv(csv, formatUnit(w.getSeaTemperature(), tempUnit, "temp"));
+                appendCsv(csv, w.getWeatherCode());
+            } else {
+                for (int i_csv = 0; i_csv < 24; i_csv++) {
                     csv.append("--;");
                 }
             }
             csv.append("\n");
+            pointSeq++;
         }
 
         return csv.toString();
@@ -621,5 +824,63 @@ public class ReportService {
             DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm:ss");
             appendCsv(csv, fmt.format(time.atZone(DEFAULT_ZONE)));
         }
+    }
+
+    private String formatUnit(Double value, String targetUnit, String category) {
+        if (value == null) return "--";
+        double res = value;
+        try {
+            switch (category) {
+                case "temp":
+                    if ("°F".equals(targetUnit)) res = (value * 9.0 / 5.0) + 32;
+                    break;
+                case "wind":
+                case "currents":
+                case "speed":
+                    if ("kt".equals(targetUnit)) res = value / 1.852;
+                    else if ("m/s".equals(targetUnit)) res = value / 3.6;
+                    else if ("mph".equals(targetUnit)) res = value / 1.609344;
+                    else if ("bft".equals(targetUnit)) return String.valueOf(getBft(value));
+                    break;
+                case "distance":
+                    if ("km".equals(targetUnit)) res = value / 1000.0;
+                    else if ("NM".equals(targetUnit) || "MM".equals(targetUnit)) res = value / 1852.0;
+                    else if ("mi".equals(targetUnit)) res = value / 1609.344;
+                    break;
+                case "pressure":
+                    if ("inHg".equals(targetUnit)) res = value / 33.863886666667;
+                    else if ("mmHg".equals(targetUnit)) res = value * 0.75006157584566;
+                    break;
+                case "wave":
+                    if ("ft".equals(targetUnit)) res = value * 3.280839895;
+                    break;
+                case "rain":
+                    if ("inch".equals(targetUnit)) res = value / 25.4;
+                    break;
+                case "snow":
+                    if ("mm".equals(targetUnit)) res = value * 10.0;
+                    else if ("inch".equals(targetUnit)) res = value / 2.54;
+                    break;
+            }
+            return String.format(Locale.US, "%.2f", res);
+        } catch (Exception e) {
+            return "--";
+        }
+    }
+
+    private int getBft(double kmh) {
+        if (kmh < 2) return 0;
+        if (kmh <= 5) return 1;
+        if (kmh <= 11) return 2;
+        if (kmh <= 19) return 3;
+        if (kmh <= 28) return 4;
+        if (kmh <= 38) return 5;
+        if (kmh <= 49) return 6;
+        if (kmh <= 61) return 7;
+        if (kmh <= 74) return 8;
+        if (kmh <= 88) return 9;
+        if (kmh <= 102) return 10;
+        if (kmh <= 117) return 11;
+        return 12;
     }
 }

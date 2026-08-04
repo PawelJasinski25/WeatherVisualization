@@ -7,6 +7,8 @@ import jasinski.pawel.weather_visualization.entity.Weather;
 import jasinski.pawel.weather_visualization.utils.GeoUtils;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -68,7 +70,8 @@ public class TripWeatherService {
 
         for (TrackPoint pt : allTrackPoints) {
             String dateStr = pt.getTime().toString().substring(0, 10);
-            String targetHourStr = pt.getTime().toString().substring(0, 13) + ":00";
+            Instant roundedTime = pt.getTime().plus(30, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.HOURS);
+            String targetHourStr = roundedTime.toString().substring(0, 13) + ":00";
 
             double gridLat = Math.round(pt.getLatitude() * 10.0) / 10.0;
             double gridLon = Math.round(pt.getLongitude() * 10.0) / 10.0;

@@ -20,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -128,10 +129,10 @@ public class TripService {
 
     private String saveFileAndCalculateHash(MultipartFile file, Path tempFile) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        try (InputStream is = file.getInputStream();
-             DigestInputStream dis = new DigestInputStream(is, digest);
-             java.io.OutputStream os = Files.newOutputStream(tempFile)) {
-            dis.transferTo(os);
+        try (InputStream inputStream = file.getInputStream();
+             DigestInputStream digestInputStream = new DigestInputStream(inputStream, digest);
+             OutputStream outputStream = Files.newOutputStream(tempFile)) {
+             digestInputStream.transferTo(outputStream);
         }
         return HexFormat.of().formatHex(digest.digest());
     }

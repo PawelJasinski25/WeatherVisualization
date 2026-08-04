@@ -1,7 +1,5 @@
 package jasinski.pawel.weather_visualization.utils;
 
-import org.locationtech.jts.geom.Point;
-
 public class GeoUtils {
     public static double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
         double earthRadius = 6371000;

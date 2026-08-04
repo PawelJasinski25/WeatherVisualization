@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -141,7 +142,8 @@ public class OpenMeteoService {
     }
 
     public Weather buildWeatherEntity(Trip trip, double lat, double lon, Instant time, OpenMeteoResponse response) {
-        String targetHourStr = time.toString().substring(0, 13) + ":00";
+        Instant roundedTime = time.plus(30, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.HOURS);
+        String targetHourStr = roundedTime.toString().substring(0, 13) + ":00";
 
         if (response != null && response.hourly != null) {
             int index = response.hourly.time.indexOf(targetHourStr);

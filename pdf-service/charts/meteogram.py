@@ -32,20 +32,6 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
                     filtered.append(p)
             points = filtered
 
-    gap_intervals = []
-    if is_daily_sync and events:
-        for ev in events:
-            ev_type = str(ev.get('type', '')).upper()
-            if "BRAK" in ev_type or "GAP" in ev_type:
-                dt_s = parse_dt(ev.get('start'))
-                dt_e = parse_dt(ev.get('end'))
-                if dt_s and dt_e:
-                    s_sec = dt_s.hour * 3600 + dt_s.minute * 60 + dt_s.second
-                    e_sec = dt_e.hour * 3600 + dt_e.minute * 60 + dt_e.second
-                    if e_sec <= s_sec:
-                        e_sec = 86400
-                    gap_intervals.append((s_sec, e_sec))
-
     raw_data = []
 
     for i, p in enumerate(points):
@@ -53,20 +39,9 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
         s = None
         if is_daily_sync and dt:
             s = dt.hour * 3600 + dt.minute * 60 + dt.second
-            for (gs, ge) in gap_intervals:
-                if gs <= s <= ge:
-                    p = {}
-                    break
-
-        if is_daily_sync and s is not None:
             raw_data.append((s, dt, p))
         else:
             raw_data.append((i, dt, p))
-
-    if is_daily_sync:
-        for (gs, ge) in gap_intervals:
-            raw_data.append((gs + 1, None, {}))
-            raw_data.append((ge - 1, None, {}))
 
     raw_data.sort(key=lambda item: item[0])
 

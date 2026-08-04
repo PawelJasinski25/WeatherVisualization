@@ -18,8 +18,8 @@ public class MovementAnalyzer {
     private static final long SMOOTHING_WINDOW_SECONDS = 60;
     private static final long MIN_PHASE_DURATION_SECONDS = 60;
 
-    private static final double MIN_GAP_DISTANCE_METERS = 6000;
-    private static final long MIN_GAP_DURATION_SECONDS = 60 * 90;
+    private static final double MIN_GAP_DISTANCE_METERS = 2000;
+    private static final long MIN_GAP_DURATION_SECONDS = 60 * 45;
 
     public static Map<LocalDate, DayData> analyzeTripTimeline(List<TrackPoint> allPoints, ZoneId zoneId) {
         if (allPoints == null || allPoints.isEmpty()) {

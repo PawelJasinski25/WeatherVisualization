@@ -80,8 +80,8 @@ public class TripController {
 
 
     @GetMapping("/{id}/report/csv")
-    public ResponseEntity<byte[]> downloadCsvReport(@PathVariable Long id, Authentication authentication) {
-        ReportResource report = reportService.getCsvReportResource(id, authentication.getName());
+    public ResponseEntity<byte[]> downloadCsvReport(@PathVariable Long id, Authentication authentication, @RequestParam java.util.Map<String, String> prefs) {
+        ReportResource report = reportService.getCsvReportResource(id, authentication.getName(), prefs);
 
 
         ContentDisposition contentDisposition = org.springframework.http.ContentDisposition.builder("attachment")

@@ -37,6 +37,7 @@ class ReportServiceTest {
     @Mock private GeoNamesService geoNamesService;
     @Mock private TripService tripService;
     @Mock private RestTemplate restTemplate;
+    @Mock private WaterDetectionService waterDetectionService;
 
     @InjectMocks
     private ReportService reportService;
@@ -126,7 +127,7 @@ class ReportServiceTest {
         when(trackPointRepository.findByTripIdOrderByTimeAsc(100L)).thenReturn(List.of(p1, p2));
         TripAnalysisContext context = ReflectionTestUtils.invokeMethod(reportService, "analyzeTrip", 100L);
 
-        String csvContent = reportService.generateSummaryCsv(context);
+        String csvContent = reportService.generateSummaryCsv(context, Map.of());
 
         assertThat(csvContent).contains("Data;Start;Koniec;Czas w ruchu;Czas na postoju");
         assertThat(csvContent).contains("Średnia temperatura (°C)");
@@ -141,7 +142,7 @@ class ReportServiceTest {
         when(tripService.getUserTrips(userEmail)).thenReturn(List.of(tripWithoutGpx));
         when(trackPointRepository.findByTripIdOrderByTimeAsc(100L)).thenReturn(List.of());
 
-        ReportResource resource = reportService.getCsvReportResource(100L, userEmail);
+        ReportResource resource = reportService.getCsvReportResource(100L, userEmail, Map.of());
 
         assertThat(resource.fileName()).isEqualTo("Trasa rowerowa_raport.zip");
         assertThat(resource.content()).isNotEmpty();
