@@ -633,8 +633,8 @@ public class ReportService {
         String distanceUnit = prefs.getOrDefault("distance", "NM");
         String speedUnit = prefs.getOrDefault("speed", "kt");
 
-        csv.append("ID punktu;Czas punktu;Szerokość punktu;Długość punktu;Stan ruchu;Szerokość siatki;Długość siatki;Czy reprezentant siatki;Odchylenie od reprezentanta (km);Czas API;Różnica czasu (min);Akwen morski;");
-        csv.append("Odstęp czasu (min);Odległość (").append(distanceUnit).append(");Kurs (°);Prędkość z GPX (").append(speedUnit).append(");Prędkość wyliczona (").append(speedUnit).append(");");
+        csv.append("ID punktu;Czas punktu;Szerokość punktu;Długość punktu;Stan ruchu;Szerokość zaokr. o 0,1°;Długość zaokr. o 0,1°;Czy współrzędne z zapytania API;Odchylenie od współrzędnych z zapytania (km);Czas z zapytania API;Różnica od czasu z zapytania API (min);Akwen morski;");
+        csv.append("Czas od poprzedniego punktu (min);Odległość od poprzedniego punktu (").append(distanceUnit).append(");Kurs (°);Prędkość z GPX (").append(speedUnit).append(");Prędkość wyliczona (").append(speedUnit).append(");");
         csv.append("Temperatura (").append(tempUnit).append(");Prędkość wiatru (").append(windUnit).append(");Kierunek wiatru (°);Punkt rosy (").append(tempUnit).append(");Porywy wiatru (").append(windUnit).append(");Opady deszczu (").append(rainUnit).append(");Opady śniegu (").append(snowUnit).append(");Wilgotność (%);Ciśnienie (").append(pressureUnit).append(");Zachmurzenie ogólne (%);Chmury niskie (%);Chmury średnie (%);Chmury wysokie (%);Wysokość fali (").append(waveUnit).append(");Okres fali (s);Kierunek fali (°);Wysokość fal wiatrowych (").append(waveUnit).append(");Okres fal wiatrowych (s);Wysokość martwej fali (").append(waveUnit).append(");Okres martwej fali (s);Prędkość prądów (").append(currentsUnit).append(");Kierunek prądów (°);Temperatura morza (").append(tempUnit).append(");Kod pogody\n");
 
         Map<String, TrackPoint> gridRepresentatives = new HashMap<>();
