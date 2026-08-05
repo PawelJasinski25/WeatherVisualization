@@ -50,25 +50,26 @@ class SpeedAnalyzerTest {
 
 
     @Test
-    void calculateSpeed_shouldIgnoreStationarySegments_inAverageSpeed() {
+    void calculateSpeed_shouldIgnoreStationarySegments_inAverageSpeed_butKeepInTotalDistance() {
         EnrichedSegment moving = createSegment(100.0, 10.0, 36.0, null, true);
         EnrichedSegment stopped = createSegment(10.0, 60.0, 0.6, null, false);
 
         SpeedStats stats = SpeedAnalyzer.calculateSpeed(List.of(moving, stopped));
 
         assertThat(stats.avgSpeed()).isEqualTo(36.0);
-        assertThat(stats.distanceKm()).isEqualTo(0.10);
+        assertThat(stats.distanceKm()).isEqualTo(0.11);
     }
 
     @Test
-    void calculateSpeed_shouldAddStationaryDistance_onlyIfDurationExceeds300Seconds() {
-        EnrichedSegment longStop = createSegment(500.0, 400.0, 4.5, null, false);
+    void calculateSpeed_shouldSafelyIgnoreNullDistance_DataGapSegments() {
+        EnrichedSegment moving = createSegment(100.0, 10.0, 36.0, null, true);
+        EnrichedSegment gap = createSegment(null, 5000.0, null, null, false);
 
-        SpeedStats stats = SpeedAnalyzer.calculateSpeed(List.of(longStop));
+        SpeedStats stats = SpeedAnalyzer.calculateSpeed(List.of(moving, gap));
 
-        assertThat(stats.avgSpeed()).isNull();
-        assertThat(stats.maxSpeed()).isNull();
-        assertThat(stats.distanceKm()).isEqualTo(0.50);
+        assertThat(stats.avgSpeed()).isEqualTo(36.0);
+        assertThat(stats.maxSpeed()).isEqualTo(36.0);
+        assertThat(stats.distanceKm()).isEqualTo(0.10);
     }
 
 
@@ -107,7 +108,7 @@ class SpeedAnalyzerTest {
         assertThat(stats.maxSpeed()).isEqualTo(32.0);
     }
 
-    private EnrichedSegment createSegment(double distance, double duration, double rawSpeed, Double p2Speed, boolean isMoving) {
+    private EnrichedSegment createSegment(Double distance, double duration, Double rawSpeed, Double p2Speed, boolean isMoving) {
         TrackPoint p1 = new TrackPoint();
         TrackPoint p2 = new TrackPoint();
         p2.setSpeed(p2Speed);

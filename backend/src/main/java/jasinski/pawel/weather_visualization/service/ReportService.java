@@ -221,36 +221,48 @@ public class ReportService {
             TrackPoint p1 = points.get(i);
             TrackPoint p2 = points.get(i + 1);
 
-            if (p1.getSegmentId() != null && p1.getSegmentId().equals(p2.getSegmentId())) {
-                double dist = GeoUtils.calculateDistance(p1.getLatitude(), p1.getLongitude(), p2.getLatitude(), p2.getLongitude());
-                double dur = Math.abs(Duration.between(p1.getTime(), p2.getTime()).toMillis()) / 1000.0;
+            double dur = Math.abs(Duration.between(p1.getTime(), p2.getTime()).toMillis()) / 1000.0;
 
-                if (dur > 0) {
-                    boolean isMoving = false;
-                    LocalDate date = LocalDate.ofInstant(p1.getTime(), zoneId);
-                    DayData movData = dailyMovements.get(date);
+            if (dur > 0) {
+                boolean isMoving = false;
+                boolean isDataGap = false;
 
-                    if (movData != null && movData.events != null) {
-                        for (TimelineEvent ev : movData.events) {
-                            if ("RUCH".equals(ev.type()) && !p1.getTime().isBefore(ev.start()) && !p1.getTime().isAfter(ev.end())) {
+                LocalDate date = LocalDate.ofInstant(p1.getTime(), zoneId);
+                DayData movData = dailyMovements.get(date);
+
+                if (movData != null && movData.events != null) {
+                    for (TimelineEvent ev : movData.events) {
+                        if (!p1.getTime().isBefore(ev.start()) && p1.getTime().isBefore(ev.end())) {
+                            if ("RUCH".equals(ev.type())) {
                                 isMoving = true;
-                                break;
+                            } else if ("BRAK DANYCH".equals(ev.type())) {
+                                isDataGap = true;
                             }
+                            break;
                         }
                     }
-
-                    double speed = 0.0;
-
-                    if (isMoving) {
-                        if (p2.getSpeed() != null && p2.getSpeed() > 0.0) {
-                            speed = p2.getSpeed();
-                        } else {
-                            speed = (dist / dur) * 3.6;
-                        }
-                    }
-
-                    segments.add(new EnrichedSegment(p1, p2, dist, dur, speed, isMoving));
                 }
+
+                boolean isDifferentSegment = p1.getSegmentId() == null || p2.getSegmentId() == null || !p1.getSegmentId().equals(p2.getSegmentId());
+
+                //jeżeli id segmentów się rożni i jest brak danych to prędkość i dystans nie jest liczony
+                if (isDataGap && isDifferentSegment) {
+                    segments.add(new EnrichedSegment(p1, p2, null, dur, null, false));
+                    continue;
+                }
+
+                double dist = GeoUtils.calculateDistance(p1.getLatitude(), p1.getLongitude(), p2.getLatitude(), p2.getLongitude());
+                double speed = 0.0;
+
+                if (isMoving) {
+                    if (p2.getSpeed() != null && p2.getSpeed() > 0.0) {
+                        speed = p2.getSpeed();
+                    } else {
+                        speed = (dist / dur) * 3.6;
+                    }
+                }
+
+                segments.add(new EnrichedSegment(p1, p2, dist, dur, speed, isMoving));
             }
 
         }
@@ -685,16 +697,16 @@ public class ReportService {
 
             String speedCalcKnStr = "--";
 
-            if (i > 0 && i < points.size() - 1) {
+            if (i > 0) {
                 TrackPoint prev = points.get(i - 1);
-                TrackPoint next = points.get(i + 1);
+                TrackPoint current = pt;
 
-                if (prev.getTime() != null && next.getTime() != null) {
-                    double secondsBetween = Math.abs(Duration.between(prev.getTime(), next.getTime()).getSeconds());
+                if (prev.getTime() != null && current.getTime() != null) {
+                    double secondsBetween = Math.abs(Duration.between(prev.getTime(), current.getTime()).getSeconds());
                     double minutesBetween = secondsBetween / 60.0;
                     timeIntervalMinStr = String.format(Locale.US, "%.1f", minutesBetween);
 
-                    double distanceMeters = GeoUtils.calculateDistance(prev.getLatitude(), prev.getLongitude(), next.getLatitude(), next.getLongitude());
+                    double distanceMeters = GeoUtils.calculateDistance(prev.getLatitude(), prev.getLongitude(), current.getLatitude(), current.getLongitude());
                     distanceMmStr = formatUnit(distanceMeters, distanceUnit, "distance");
 
                     if (secondsBetween > 0) {
@@ -706,8 +718,8 @@ public class ReportService {
 
                 double lat1 = Math.toRadians(prev.getLatitude());
                 double lon1 = Math.toRadians(prev.getLongitude());
-                double lat2 = Math.toRadians(next.getLatitude());
-                double lon2 = Math.toRadians(next.getLongitude());
+                double lat2 = Math.toRadians(current.getLatitude());
+                double lon2 = Math.toRadians(current.getLongitude());
 
                 double dLon = lon2 - lon1;
                 double y = Math.sin(dLon) * Math.cos(lat2);

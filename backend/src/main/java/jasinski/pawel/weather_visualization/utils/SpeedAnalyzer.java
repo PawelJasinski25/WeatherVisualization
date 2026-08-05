@@ -22,16 +22,25 @@ public class SpeedAnalyzer {
 
         for (EnrichedSegment seg : segments) {
 
-            if (seg.isMoving()) {
-                totalMovingDistanceMeters += seg.distanceMeters();
-                totalDistanceMeters += seg.distanceMeters();
-                totalMovingSeconds += seg.durationSeconds();
+            Double dist = seg.distanceMeters();
 
-                double actualSpeed = (seg.p2().getSpeed() != null) ? seg.p2().getSpeed() : seg.rawSpeedKmh();
-                validSpeeds.add(actualSpeed);
-            }
-            else if (seg.durationSeconds() > 300) {
-                totalDistanceMeters += seg.distanceMeters();
+            if (dist != null) {
+
+                totalDistanceMeters += dist;
+
+                if (seg.isMoving()) {
+                    totalMovingDistanceMeters += dist;
+                    totalMovingSeconds += seg.durationSeconds();
+
+                    Double actualSpeed = seg.p2().getSpeed();
+                    if (actualSpeed == null) {
+                        actualSpeed = seg.rawSpeedKmh();
+                    }
+
+                    if (actualSpeed != null) {
+                        validSpeeds.add(actualSpeed);
+                    }
+                }
             }
         }
 

@@ -5,8 +5,8 @@ import jasinski.pawel.weather_visualization.entity.TrackPoint;
 public record EnrichedSegment(
         TrackPoint p1,
         TrackPoint p2,
-        double distanceMeters,
+        Double distanceMeters,
         double durationSeconds,
-        double rawSpeedKmh,
+        Double rawSpeedKmh,
         boolean isMoving
 ) {}
