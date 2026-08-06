@@ -118,6 +118,18 @@ public class AstronomyAnalyzer {
         }
 
         if (before != null && after != null) {
+            if (!Objects.equals(before.getSegmentId(), after.getSegmentId())) {
+
+                double gapDist = jasinski.pawel.weather_visualization.utils.GeoUtils.calculateDistance(
+                        before.getLatitude(), before.getLongitude(),
+                        after.getLatitude(), after.getLongitude()
+                );
+                long gapSec = Math.abs(java.time.Duration.between(before.getTime(), after.getTime()).getSeconds());
+
+                if (gapDist >= 2000.0 && gapSec >= 2700) {
+                    return new EventPoint(exactEventTime, null);
+                }
+            }
 
             long totalDiff = after.getTime().toEpochMilli() - before.getTime().toEpochMilli();
             long targetDiff = exactEventTime.toEpochMilli() - before.getTime().toEpochMilli();

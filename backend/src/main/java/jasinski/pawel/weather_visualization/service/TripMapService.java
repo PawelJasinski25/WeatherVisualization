@@ -69,7 +69,7 @@ public class TripMapService {
             addMarkerIfPresent(markers, "ŚWIT NAUTYCZNY", astro.nauticalDawnPt(), astro.nauticalDawn());
             addMarkerIfPresent(markers, "ŚWIT CYWILNY", astro.civilDawnPt(), astro.civilDawn());
             addMarkerIfPresent(markers, "WSCHÓD", astro.sunrisePt(), astro.sunrise());
-            addMarkerIfPresent(markers, "KULMINACJA", astro.noonPt(), astro.solarNoon());
+            addMarkerIfPresent(markers, "KULMINACJA SŁOŃCA", astro.noonPt(), astro.solarNoon());
             addMarkerIfPresent(markers, "ZACHÓD", astro.sunsetPt(), astro.sunset());
             addMarkerIfPresent(markers, "ZMIERZCH CYWILNY", astro.civilDuskPt(), astro.civilDusk());
             addMarkerIfPresent(markers, "ZMIERZCH NAUTYCZNY", astro.nauticalDuskPt(), astro.nauticalDusk());

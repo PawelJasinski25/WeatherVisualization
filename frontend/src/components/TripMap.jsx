@@ -142,7 +142,7 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
 
                 {/* Rysowanie kropek astronomicznych */}
                 {showAstro && markersWithOffset.map((marker, idx) => {
-                    const isMajor = ['WSCHÓD', 'ZACHÓD', 'KULMINACJA'].includes(marker.type);
+                    const isMajor = ['WSCHÓD', 'ZACHÓD', 'KULMINACJA SŁOŃCA'].includes(marker.type);
 
                     return (
                         <Marker

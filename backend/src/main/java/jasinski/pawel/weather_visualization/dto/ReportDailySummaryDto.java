@@ -64,11 +64,11 @@ public record ReportDailySummaryDto(
         if (astro.civilDawnPt() != null && astro.civilDawn() != null)
             events.put("Świt cywilny", astro.civilDawn().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
         if (astro.sunrisePt() != null && astro.sunrise() != null)
-            events.put("Wschód słońca", astro.sunrise().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+            events.put("Wschód Słońca", astro.sunrise().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
         if (astro.noonPt() != null && astro.solarNoon() != null)
-            events.put("Kulminacja", astro.solarNoon().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+            events.put("Kulminacja Słońca", astro.solarNoon().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
         if (astro.sunsetPt() != null && astro.sunset() != null)
-            events.put("Zachód słońca", astro.sunset().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+            events.put("Zachód Słońca", astro.sunset().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
         if (astro.civilDuskPt() != null && astro.civilDusk() != null)
             events.put("Zmierzch cywilny", astro.civilDusk().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
         if (astro.nauticalDuskPt()!= null &&astro.nauticalDusk() != null)

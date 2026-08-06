@@ -357,7 +357,12 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
                 current += best_step
 
             if ticks[-1] != int(max_sec):
+                if (max_sec - ticks[-1]) < (best_step * 0.4):
+                    ticks.pop()
                 ticks.append(int(max_sec))
+
+            if len(ticks) >= 3 and (ticks[1] - ticks[0]) < (best_step * 0.4):
+                ticks.pop(1)
 
             ticks = sorted(list(set(ticks)))
 

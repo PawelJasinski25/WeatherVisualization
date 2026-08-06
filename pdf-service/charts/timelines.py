@@ -65,7 +65,7 @@ def create_astro_timeline_chart(astro_events, base_date_str, min_sec=0, max_sec=
 
     color_map = {
         "Świt astronomiczny": (26, 54, 150), "Świt nautyczny": (66, 170, 245), "Świt cywilny": (245, 80, 180),
-        "Wschód słońca": (255, 220, 0), "Kulminacja": (255, 255, 255), "Zachód słońca": (245, 110, 0),
+        "Wschód Słońca": (255, 220, 0), "Kulminacja Słońca": (255, 255, 255), "Zachód Słońca": (245, 110, 0),
         "Zmierzch cywilny": (210, 30, 30), "Zmierzch nautyczny": (110, 20, 160), "Zmierzch astronomiczny": (8, 12, 25),
         "Wschód Księżyca": (92,213,70),
         "Zachód Księżyca": (18,92,12)
@@ -80,7 +80,7 @@ def create_astro_timeline_chart(astro_events, base_date_str, min_sec=0, max_sec=
 
         sun_events = [
             "Świt astronomiczny", "Świt nautyczny", "Świt cywilny",
-            "Wschód słońca", "Kulminacja", "Zachód słońca",
+            "Wschód Słońca", "Kulminacja Słońca", "Zachód Słońca",
             "Zmierzch cywilny", "Zmierzch nautyczny", "Zmierzch astronomiczny"
         ]
 
@@ -97,8 +97,8 @@ def create_astro_timeline_chart(astro_events, base_date_str, min_sec=0, max_sec=
             if last_sun_event in ["Świt astronomiczny"]: return (26, 54, 150)
             if last_sun_event in ["Świt nautyczny"]: return (66, 170, 245)
             if last_sun_event in ["Świt cywilny"]: return (245, 80, 180)
-            if last_sun_event in ["Wschód słońca", "Kulminacja"]: return (255, 220, 0)
-            if last_sun_event in ["Zachód słońca"]: return (245, 110, 0)
+            if last_sun_event in ["Wschód Słońca", "Kulminacja Słońca"]: return (255, 220, 0)
+            if last_sun_event in ["Zachód Słońca"]: return (245, 110, 0)
             if last_sun_event in ["Zmierzch cywilny"]: return (210, 30, 30)
             if last_sun_event in ["Zmierzch nautyczny"]: return (110, 20, 160)
             if last_sun_event in ["Zmierzch astronomiczny"]: return (8, 12, 25)
@@ -115,10 +115,10 @@ def create_astro_timeline_chart(astro_events, base_date_str, min_sec=0, max_sec=
         if first_sun_event == "Świt cywilny":
             return (210, 30, 30)
 
-        if first_sun_event == "Wschód słońca":
+        if first_sun_event == "Wschód Słońca":
             return (245, 110, 0)
 
-        if first_sun_event in ["Kulminacja", "Zachód słońca"]:
+        if first_sun_event in ["Kulminacja Słońca", "Zachód Słońca"]:
             return (255, 220, 0)
 
         if first_sun_event == "Zmierzch cywilny":
@@ -146,7 +146,7 @@ def create_astro_timeline_chart(astro_events, base_date_str, min_sec=0, max_sec=
             x = MARGIN_SIDE + int(((ev['sec'] - min_sec) / range_sec) * PLOT_WIDTH)
             color = color_map.get(ev['name'], (150, 150, 150))
             r = 8
-            if ev['name'] == "Kulminacja":
+            if ev['name'] == "Kulminacja Słońca":
                 outline_color = "#000000"
             else:
                 outline_color = "#FFFFFF"
@@ -316,7 +316,10 @@ def create_timeline_chart(date_str, events, min_sec=0, max_sec=86400, scale=1):
 
         if i == len(valid_events) - 1:
             draw.line([(x2, AXIS_Y - 15), (x2, AXIS_Y + 15)], fill="darkgray", width=3)
-            end_time_str = dt_end.strftime("%H:%M")
+            if end_sec >= 86400:
+                end_time_str = "24:00"
+            else:
+                end_time_str = dt_end.strftime("%H:%M")
             etw = draw.textlength(end_time_str, font=font_time)
             bot_labels.append({
                 'x': x2 - etw / 2, 'w': etw, 'anchor_x': x2, 'time_str': end_time_str

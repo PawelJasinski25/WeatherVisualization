@@ -376,7 +376,7 @@ public class ReportService {
                 .append("Średnia wysokość martwej fali (").append(waveUnit).append(");Średnia wysokość martwej fali w ruchu (").append(waveUnit).append(");Średni okres martwej fali (s);Średni okres martwej fali w ruchu (s);")
                 .append("Średnia prędkość prądów (").append(currentsUnit).append(");Średnia prędkość prądów w ruchu (").append(currentsUnit).append(");Średni kierunek prądów (°);Średni kierunek prądów w ruchu (°);")
                 .append("Średnia temperatura morza (").append(tempUnit).append(");Średnia temperatura morza w ruchu (").append(tempUnit).append(");")
-                .append("Świt astronomiczny;Świt nautyczny;Świt cywilny;Wschód słońca;Kulminacja słońca;Zachód słońca;")
+                .append("Świt astronomiczny;Świt nautyczny;Świt cywilny;Wschód Słońca;Kulminacja Słońca;Zachód Słońca;")
                 .append("Zmierzch cywilny;Zmierzch nautyczny;Zmierzch astronomiczny;");
 
         for (int i = 1; i <= maxEvents; i++) {

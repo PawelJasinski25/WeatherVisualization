@@ -17,7 +17,7 @@ const AstronomyLegend = ({ config }) => {
     ];
 
     const pointEvents = [
-        { label: "Kulminacja", color: "#FFFFFF", border: "#cbd5e1" },
+        { label: "Kulminacja Słońca", color: "#FFFFFF", border: "#cbd5e1" },
         { label: "Wschód Księżyca", color: "#5cd546", border: "#94a3b8" },
         { label: "Zachód Księżyca", color: "#125c0c", border: "#475569" }
     ];

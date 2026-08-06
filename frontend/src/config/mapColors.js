@@ -22,7 +22,7 @@ export const getEventDotColor = (type) => {
     if (type === 'ŚWIT NAUTYCZNY') return 'rgb(66, 170, 245)';
     if (type === 'ŚWIT CYWILNY') return 'rgb(245, 80, 180)';
     if (type === 'WSCHÓD') return 'rgb(255, 220, 0)';
-    if (type === 'KULMINACJA') return 'rgb(255, 255, 255)';
+    if (type === 'KULMINACJA SŁOŃCA') return 'rgb(255, 255, 255)';
     if (type === 'ZACHÓD') return 'rgb(245, 110, 0)';
     if (type === 'ZMIERZCH CYWILNY') return 'rgb(210, 30, 30)';
     if (type === 'ZMIERZCH NAUTYCZNY') return 'rgb(110, 20, 160)';

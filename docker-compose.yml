@@ -26,7 +26,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "8081:8080"
+      - "8081:8081"
     environment:
       - DB_URL=jdbc:postgresql://db:5432/weather_visualization?reWriteBatchedInserts=true
       - DB_USER=postgres
