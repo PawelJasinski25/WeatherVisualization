@@ -118,9 +118,6 @@ public class AstronomyAnalyzer {
         }
 
         if (before != null && after != null) {
-            if (!Objects.equals(before.getSegmentId(), after.getSegmentId())) {
-                return new EventPoint(exactEventTime, null);
-            }
 
             long totalDiff = after.getTime().toEpochMilli() - before.getTime().toEpochMilli();
             long targetDiff = exactEventTime.toEpochMilli() - before.getTime().toEpochMilli();
