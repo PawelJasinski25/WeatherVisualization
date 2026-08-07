@@ -3,89 +3,89 @@
     <thead>
     <tr>
         <th style="width: 33%">Parametr</th>
-        <th>Średnia</th>
-        {% if moving %}<th>W ruchu</th>{% endif %}
+        <th>Średnia w ruchu</th>
+        <th>Min.</th>
         <th>Maks.</th>
     </tr>
     </thead>
     <tbody>
-    <tr><th colspan="{{ 4 if moving else 3 }}" style="background-color: #e2e8f0; color: #000;">Temperatura/powietrze</th></tr>
+    <tr><th colspan="4" style="background-color: #e2e8f0; color: #000;">Temperatura/powietrze</th></tr>
     <tr>
         <td>Temperatura</td>
-        <td><b>{{ overall.avgTemp | format_metric('temp', prefs) }}</b></td>
-        {% if moving %}<td><b>{{ moving.avgTemp | format_metric('temp', prefs) }}</b></td>{% endif %}
+        <td><b>{{ (moving.avgTemp if moving else overall.avgTemp) | format_metric('temp', prefs) }}</b></td>
+        <td><b>{{ overall.minTemp | format_metric('temp', prefs) }}</b></td>
         <td><b>{{ overall.maxTemp | format_metric('temp', prefs) }}</b></td>
     </tr>
     <tr>
         <td>Wilgotność</td>
-        <td><b>{{ overall.avgHumidity | format_metric('humidity', prefs, 0) }}</b></td>
-        {% if moving %}<td><b>{{ moving.avgHumidity | format_metric('humidity', prefs, 0) }}</b></td>{% endif %}
+        <td><b>{{ (moving.avgHumidity if moving else overall.avgHumidity) | format_metric('humidity', prefs, 0) }}</b></td>
+        <td><b>{{ overall.minHumidity | format_metric('humidity', prefs, 0) }}</b></td>
         <td><b>{{ overall.maxHumidity | format_metric('humidity', prefs, 0) }}</b></td>
     </tr>
     <tr>
         <td>Ciśnienie</td>
-        <td><b>{{ overall.avgPressure | format_metric('pressure', prefs) }}</b></td>
-        {% if moving %}<td><b>{{ moving.avgPressure | format_metric('pressure', prefs) }}</b></td>{% endif %}
+        <td><b>{{ (moving.avgPressure if moving else overall.avgPressure) | format_metric('pressure', prefs) }}</b></td>
+        <td><b>{{ overall.minPressure | format_metric('pressure', prefs) }}</b></td>
         <td><b>{{ overall.maxPressure | format_metric('pressure', prefs) }}</b></td>
     </tr>
 
-    <tr><th colspan="{{ 4 if moving else 3 }}" style="background-color: #e2e8f0; color: #000;">Wiatr</th></tr>
+    <tr><th colspan="4" style="background-color: #e2e8f0; color: #000;">Wiatr</th></tr>
     <tr>
         <td>Siła wiatru</td>
-        <td><b>{{ overall.avgWindSpeed | format_metric('wind', prefs) }}</b></td>
-        {% if moving %}<td><b>{{ moving.avgWindSpeed | format_metric('wind', prefs) }}</b></td>{% endif %}
+        <td><b>{{ (moving.avgWindSpeed if moving else overall.avgWindSpeed) | format_metric('wind', prefs) }}</b></td>
+        <td><b>{{ overall.minWindSpeed | format_metric('wind', prefs) }}</b></td>
         <td><b>{{ overall.maxWindSpeed | format_metric('wind', prefs) }}</b></td>
     </tr>
     <tr>
         <td>Porywy</td>
-        <td><b>{{ overall.avgWindGusts | format_metric('wind', prefs) }}</b></td>
-        {% if moving %}<td><b>{{ moving.avgWindGusts | format_metric('wind', prefs) }}</b></td>{% endif %}
+        <td><b>{{ (moving.avgWindGusts if moving else overall.avgWindGusts) | format_metric('wind', prefs) }}</b></td>
+        <td><b>{{ overall.minWindGusts | format_metric('wind', prefs) }}</b></td>
         <td><b>{{ overall.maxWindGusts | format_metric('wind', prefs) }}</b></td>
     </tr>
 
-    <tr><th colspan="{{ 4 if moving else 3 }}" style="background-color: #e2e8f0; color: #000;">Opady/chmury</th></tr>
+    <tr><th colspan="4" style="background-color: #e2e8f0; color: #000;">Opady/chmury</th></tr>
     <tr>
         <td>Deszcz (suma)</td>
-        <td><b>{{ overall.sumRain | format_metric('rain', prefs) }}</b></td>
-        {% if moving %}<td><b>{{ moving.sumRain | format_metric('rain', prefs) }}</b></td>{% endif %}
+        <td><b>{{ moving.sumRain | format_metric('rain', prefs) if moving and moving.avgTemp is not none else '--' }}</b></td>
+        <td>--</td>
         <td>--</td>
     </tr>
     <tr>
         <td>Śnieg (suma)</td>
-        <td><b>{{ overall.sumSnowfall | format_metric('snow', prefs) }}</b></td>
-        {% if moving %}<td><b>{{ moving.sumSnowfall | format_metric('snow', prefs) }}</b></td>{% endif %}
+        <td><b>{{ moving.sumSnowfall | format_metric('snow', prefs) if moving and moving.avgTemp is not none else '--' }}</b></td>
+        <td>--</td>
         <td>--</td>
     </tr>
     <tr>
         <td>Zachmurzenie</td>
-        <td><b>{{ overall.avgCloudCover | format_metric('clouds', prefs, 0) }}</b></td>
-        {% if moving %}<td><b>{{ moving.avgCloudCover | format_metric('clouds', prefs, 0) }}</b></td>{% endif %}
+        <td><b>{{ (moving.avgCloudCover if moving else overall.avgCloudCover) | format_metric('clouds', prefs, 0) }}</b></td>
+        <td><b>{{ overall.minCloudCover | format_metric('clouds', prefs, 0) }}</b></td>
         <td><b>{{ overall.maxCloudCover | format_metric('clouds', prefs, 0) }}</b></td>
     </tr>
 
-    <tr><th colspan="{{ 4 if moving else 3 }}" style="background-color: #e2e8f0; color: #000;">Morze</th></tr>
+    <tr><th colspan="4" style="background-color: #e2e8f0; color: #000;">Morze</th></tr>
     <tr>
         <td>Temp. morza</td>
-        <td><b>{{ overall.avgSeaTemperature | format_metric('temp', prefs) }}</b></td>
-        {% if moving %}<td><b>{{ moving.avgSeaTemperature | format_metric('temp', prefs) }}</b></td>{% endif %}
+        <td><b>{{ (moving.avgSeaTemperature if moving else overall.avgSeaTemperature) | format_metric('temp', prefs) }}</b></td>
+        <td><b>{{ overall.minSeaTemperature | format_metric('temp', prefs) }}</b></td>
         <td><b>{{ overall.maxSeaTemperature | format_metric('temp', prefs) }}</b></td>
     </tr>
     <tr>
         <td>Fale (wys. | okr.)</td>
-        <td><b>{{ overall.avgWaveHeight | format_metric('wave', prefs) }} | {{ overall.avgWavePeriod | format_val('s') }}</b></td>
-        {% if moving %}<td><b>{{ moving.avgWaveHeight | format_metric('wave', prefs) }} | {{ moving.avgWavePeriod | format_val('s') }}</b></td>{% endif %}
+        <td><b>{{ (moving.avgWaveHeight if moving else overall.avgWaveHeight) | format_metric('wave', prefs) }} | {{ (moving.avgWavePeriod if moving else overall.avgWavePeriod) | format_val('s') }}</b></td>
+        <td><b>{{ overall.minWaveHeight | format_metric('wave', prefs) }} | {{ overall.minWavePeriod | format_val('s') }}</b></td>
         <td><b>{{ overall.maxWaveHeight | format_metric('wave', prefs) }} | {{ overall.maxWavePeriod | format_val('s') }}</b></td>
     </tr>
     <tr>
         <td>Fale martwe (wys. | okr.)</td>
-        <td><b>{{ overall.avgSwellWaveHeight | format_metric('wave', prefs) }} | {{ overall.avgSwellWavePeriod | format_val('s') }}</b></td>
-        {% if moving %}<td><b>{{ moving.avgSwellWaveHeight | format_metric('wave', prefs) }} | {{ moving.avgSwellWavePeriod | format_val('s') }}</b></td>{% endif %}
+        <td><b>{{ (moving.avgSwellWaveHeight if moving else overall.avgSwellWaveHeight) | format_metric('wave', prefs) }} | {{ (moving.avgSwellWavePeriod if moving else overall.avgSwellWavePeriod) | format_val('s') }}</b></td>
+        <td><b>{{ overall.minSwellWaveHeight | format_metric('wave', prefs) }} | {{ overall.minSwellWavePeriod | format_val('s') }}</b></td>
         <td><b>{{ overall.maxSwellWaveHeight | format_metric('wave', prefs) }} | {{ overall.maxSwellWavePeriod | format_val('s') }}</b></td>
     </tr>
     <tr>
         <td>Prądy</td>
-        <td><b>{{ overall.avgOceanCurrentVelocity | format_metric('currents', prefs) }}</b></td>
-        {% if moving %}<td><b>{{ moving.avgOceanCurrentVelocity | format_metric('currents', prefs) }}</b></td>{% endif %}
+        <td><b>{{ (moving.avgOceanCurrentVelocity if moving else overall.avgOceanCurrentVelocity) | format_metric('currents', prefs) }}</b></td>
+        <td><b>{{ overall.minOceanCurrentVelocity | format_metric('currents', prefs) }}</b></td>
         <td><b>{{ overall.maxOceanCurrentVelocity | format_metric('currents', prefs) }}</b></td>
     </tr>
     </tbody>

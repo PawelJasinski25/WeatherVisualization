@@ -41,50 +41,56 @@ env.filters['format_time'] = format_time
 env.filters['get_duration'] = get_duration_seconds
 env.filters['format_place'] = format_place
 
-def enrich_with_max(stats_dict, points):
+def enrich_with_min_max(stats_dict, points):
     if not isinstance(stats_dict, dict):
         return
 
-    max_keys_map = {
-        'maxTemp': ['temp', 'temperature'], 'maxDewPoint': ['dewPoint'],
-        'maxHumidity': ['humidity'], 'maxPressure': ['pressure'],
-        'maxWindSpeed': ['windSpeed'], 'maxWindGusts': ['gusts', 'windGusts'],
-        'maxCloudCover': ['cloudCover'], 'maxSeaTemperature': ['seaTemp', 'seaTemperature'],
-        'maxWaveHeight': ['waveHeight'], 'maxSwellWaveHeight': ['swellWaveH', 'swellWaveHeight'],
-        'maxOceanCurrentVelocity': ['oceanCurrentVel', 'currentVelocity'], 'maxRain': ['rain'],
-        'maxSnowfall': ['snowfall', 'snow'], 'maxWavePeriod': ['wavePeriod'],
-        'maxSwellWavePeriod': ['swellWavePeriod', 'swellWaveP']
+    keys_map = {
+        'Temp': ['temp', 'temperature'], 'DewPoint': ['dewPoint'],
+        'Humidity': ['humidity'], 'Pressure': ['pressure'],
+        'WindSpeed': ['windSpeed'], 'WindGusts': ['gusts', 'windGusts'],
+        'CloudCover': ['cloudCover'], 'SeaTemperature': ['seaTemp', 'seaTemperature'],
+        'WaveHeight': ['waveHeight'], 'SwellWaveHeight': ['swellWaveH', 'swellWaveHeight'],
+        'OceanCurrentVelocity': ['oceanCurrentVel', 'currentVelocity'], 'Rain': ['rain'],
+        'Snowfall': ['snowfall', 'snow'], 'WavePeriod': ['wavePeriod'],
+        'SwellWavePeriod': ['swellWavePeriod', 'swellWaveP']
     }
 
-    for k in max_keys_map:
-        if k not in stats_dict:
-            stats_dict[k] = None
+    for k in keys_map:
+        if f'max{k}' not in stats_dict:
+            stats_dict[f'max{k}'] = None
+        if f'min{k}' not in stats_dict:
+            stats_dict[f'min{k}'] = None
 
     if not points:
         return
 
-    current_maxes = {k: -float('inf') for k in max_keys_map}
-    has_valid = {k: False for k in max_keys_map}
+    current_maxes = {k: -float('inf') for k in keys_map}
+    current_mins = {k: float('inf') for k in keys_map}
+    has_valid = {k: False for k in keys_map}
 
     for p in points:
-        for target_key, search_keys in max_keys_map.items():
+        for target_key, search_keys in keys_map.items():
             for sk in search_keys:
                 val = p.get(sk)
                 if val is not None and str(val).lower() != 'nan':
                     try:
                         v_float = float(val)
-                        if target_key == 'maxOceanCurrentVelocity':
+                        if target_key == 'OceanCurrentVelocity':
                             v_float = v_float / 3.6
                         if v_float > current_maxes[target_key]:
                             current_maxes[target_key] = v_float
-                            has_valid[target_key] = True
+                        if v_float < current_mins[target_key]:
+                            current_mins[target_key] = v_float
+                        has_valid[target_key] = True
                     except ValueError:
                         pass
                     break
 
-    for k in max_keys_map:
+    for k in keys_map:
         if has_valid[k]:
-            stats_dict[k] = current_maxes[k]
+            stats_dict[f'max{k}'] = current_maxes[k]
+            stats_dict[f'min{k}'] = current_mins[k]
 
 def get_day_time_bounds(events, astro_events, base_date_str):
     min_sec = 86400
@@ -243,7 +249,7 @@ def generate_report_pdf(report_data: dict) -> bytes:
                 day['timeline_chart'] = timeline_future.result() if timeline_future else None
                 day['astro_timeline_chart'] = astro_future.result()
 
-                enrich_with_max(day.get('overallWeatherStats'), points)
+                enrich_with_min_max(day.get('overallWeatherStats'), points)
                 display_summaries.append(day)
 
         if current_gap:
@@ -255,7 +261,7 @@ def generate_report_pdf(report_data: dict) -> bytes:
 
         report_data['display_summaries'] = display_summaries
 
-        enrich_with_max(report_data.get('overallWeather'), all_trip_points)
+        enrich_with_min_max(report_data.get('overallWeather'), all_trip_points)
 
 
         overall_map_future = executor.submit(create_route_map, all_trip_points, 800, 555)

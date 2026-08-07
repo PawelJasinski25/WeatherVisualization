@@ -6,8 +6,8 @@ const PlaceholderWeatherTable = () => (
         <thead>
         <tr>
             <th className="w-40">Parametr</th>
-            <th>Średnia</th>
-            <th>W ruchu</th>
+            <th style={{ whiteSpace: 'nowrap' }}>Średnia w ruchu</th>
+            <th>Min.</th>
             <th>Maks.</th>
         </tr>
         </thead>
@@ -17,26 +17,26 @@ const PlaceholderWeatherTable = () => (
         </tr>
         <tr>
             <td>Temperatura</td>
-            <td><b>11,5°C</b></td>
             <td><b>12,1°C</b></td>
+            <td><b>7,5°C</b></td>
             <td><b>23,6°C</b></td>
         </tr>
         <tr>
             <td>Punkt rosy</td>
-            <td><b>7,5°C</b></td>
             <td><b>7,8°C</b></td>
+            <td><b>2,1°C</b></td>
             <td><b>18,0°C</b></td>
         </tr>
         <tr>
             <td>Wilgotność</td>
-            <td><b>77%</b></td>
             <td><b>75%</b></td>
+            <td><b>45%</b></td>
             <td><b>97%</b></td>
         </tr>
         <tr>
             <td>Ciśnienie</td>
-            <td><b>1008,0 hPa</b></td>
             <td><b>1009,2 hPa</b></td>
+            <td><b>998,0 hPa</b></td>
             <td><b>1024,8 hPa</b></td>
         </tr>
 
@@ -45,14 +45,14 @@ const PlaceholderWeatherTable = () => (
         </tr>
         <tr>
             <td>Siła wiatru</td>
-            <td><b>24,0 km/h</b></td>
             <td><b>26,5 km/h</b></td>
+            <td><b>5,0 km/h</b></td>
             <td><b>47,6 km/h</b></td>
         </tr>
         <tr>
             <td>Porywy wiatru</td>
-            <td><b>44,5 km/h</b></td>
             <td><b>48,2 km/h</b></td>
+            <td><b>12,0 km/h</b></td>
             <td><b>72,0 km/h</b></td>
         </tr>
 
@@ -62,19 +62,19 @@ const PlaceholderWeatherTable = () => (
         <tr>
             <td>Deszcz (suma)</td>
             <td><b>3,1 mm</b></td>
-            <td><b>0,0 mm</b></td>
+            <td>--</td>
             <td>--</td>
         </tr>
         <tr>
             <td>Śnieg (suma)</td>
-            <td><b>2,0 cm</b></td>
             <td><b>0,0 cm</b></td>
+            <td>--</td>
             <td>--</td>
         </tr>
         <tr>
             <td>Zachmurzenie</td>
-            <td><b>65%</b></td>
             <td><b>60%</b></td>
+            <td><b>10%</b></td>
             <td><b>100%</b></td>
         </tr>
 
@@ -83,26 +83,26 @@ const PlaceholderWeatherTable = () => (
         </tr>
         <tr>
             <td>Temperatura morza</td>
-            <td><b>13,4°C</b></td>
             <td><b>13,5°C</b></td>
+            <td><b>11,2°C</b></td>
             <td><b>22,5°C</b></td>
         </tr>
         <tr>
             <td>Fale (wys. | okr.)</td>
-            <td><b>1,3 m | 6,6 s</b></td>
             <td><b>1,5 m | 6,8 s</b></td>
+            <td><b>0,2 m | 2,1 s</b></td>
             <td><b>2,8 m | 12,4 s</b></td>
         </tr>
         <tr>
             <td>Fale martwe (wys. | okr.)</td>
-            <td><b>0,8 m | 6,2 s</b></td>
             <td><b>0,9 m | 6,5 s</b></td>
+            <td><b>0,1 m | 1,5 s</b></td>
             <td><b>2,5 m | 11,7 s</b></td>
         </tr>
         <tr>
             <td>Prądy </td>
-            <td><b>0,6 m/s</b></td>
             <td><b>0,7 m/s</b></td>
+            <td><b>0,0 m/s</b></td>
             <td><b>2,1 m/s</b></td>
         </tr>
         </tbody>
