@@ -119,15 +119,46 @@ const DummyChart = ({ icon, label, height = 'auto', flex = 'none' }) => (
     </div>
 );
 
-const ReportPreview = () => {
+const ReportPreview = ({ formData, handleFieldChange, handleNestedChange, formatDateForPicker, formatDateFromPicker }) => {
     return (
         <>
             {/* STRONA 2: PODSUMOWANIE TRASY */}
             <div className="a4-paper">
-                <div className="report-header">
-                    <h1>PODSUMOWANIE TRASY</h1>
-                    <p>Podgląd raportu (dane przykładowe)</p>
+                <div className="report-header summary-header-wrapper">
+                    <input
+                        className="interactive-input summary-title-input"
+                        value={formData?.summaryTitle || ''}
+                        onChange={(e) => handleFieldChange('summaryTitle', e.target.value)}
+                        placeholder="Podsumowanie trasy"
+                    />
+                    <div className="summary-dates-container">
+                        <input
+                            type="date"
+                            className="interactive-input date-input inline-input"
+                            value={formatDateForPicker(formData?.cruise?.startDate)}
+                            onChange={(e) => {
+                                const val = formatDateFromPicker(e.target.value);
+                                handleNestedChange('cruise', 'startDate', val);
+                                handleNestedChange('cruise', 'embarkDate', val);
+                            }}
+                            onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                        />
+                        <span className="date-separator">-</span>
+                        <input
+                            type="date"
+                            className="interactive-input date-input inline-input"
+                            value={formatDateForPicker(formData?.cruise?.endDate)}
+                            onChange={(e) => {
+                                const val = formatDateFromPicker(e.target.value);
+                                handleNestedChange('cruise', 'endDate', val);
+                                handleNestedChange('cruise', 'disembarkDate', val);
+                            }}
+                            onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                        />
+                    </div>
                 </div>
+
+                <p className="summary-mock-info">Podgląd raportu (dane przykładowe)</p>
 
                 <div className="report-flex-container">
                     {/* LEWA KOLUMNA (STATYSTYKI) */}
@@ -185,7 +216,7 @@ const ReportPreview = () => {
             {/* STRONA 3: DZIEŃ 1 */}
             <div className="a4-paper mt-20">
                 <div className="report-header">
-                    <h2 className="mb-0">Dzień 1 (2025-01-03)</h2>
+                    <h2 className="mb-0">Dzień 1 (03.01.2025)</h2>
                 </div>
 
                 <div className="report-mock-section mb-10">

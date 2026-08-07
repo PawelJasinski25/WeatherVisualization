@@ -74,9 +74,12 @@ def create_astro_timeline_chart(astro_events, base_date_str, min_sec=0, max_sec=
     def get_band_color(sec):
 
         #brak danych
+        gap_end = None
         for (gs, ge) in gap_intervals:
             if gs <= sec <= ge:
                 return (160, 160, 160)
+            if sec > ge:
+                gap_end = ge
 
         sun_events = [
             "Świt astronomiczny", "Świt nautyczny", "Świt cywilny",
@@ -88,49 +91,62 @@ def create_astro_timeline_chart(astro_events, base_date_str, min_sec=0, max_sec=
         if not filtered_sun_events:
             return (8, 12, 25)
 
-        last_sun_event = None
+        last_ev = None
+        next_ev = None
         for ev in filtered_sun_events:
             if sec >= ev['sec']:
-                last_sun_event = ev['name']
+                last_ev = ev
+            else:
+                next_ev = ev
+                break
 
-        if last_sun_event:
-            if last_sun_event in ["Świt astronomiczny"]: return (26, 54, 150)
-            if last_sun_event in ["Świt nautyczny"]: return (66, 170, 245)
-            if last_sun_event in ["Świt cywilny"]: return (245, 80, 180)
-            if last_sun_event in ["Wschód Słońca", "Kulminacja Słońca"]: return (255, 220, 0)
-            if last_sun_event in ["Zachód Słońca"]: return (245, 110, 0)
-            if last_sun_event in ["Zmierzch cywilny"]: return (210, 30, 30)
-            if last_sun_event in ["Zmierzch nautyczny"]: return (110, 20, 160)
-            if last_sun_event in ["Zmierzch astronomiczny"]: return (8, 12, 25)
+        def get_color_for_event(event_name):
+            mapping = {
+                "Świt astronomiczny": (26, 54, 150),
+                "Świt nautyczny": (66, 170, 245),
+                "Świt cywilny": (245, 80, 180),
+                "Wschód Słońca": (255, 220, 0),
+                "Kulminacja Słońca": (255, 220, 0),
+                "Zachód Słońca": (245, 110, 0),
+                "Zmierzch cywilny": (210, 30, 30),
+                "Zmierzch nautyczny": (110, 20, 160),
+                "Zmierzch astronomiczny": (8, 12, 25)
+            }
+            return mapping.get(event_name, (8, 12, 25))
 
-        first_sun_event = filtered_sun_events[0]['name']
+        def get_preceding_color(next_event_name):
+            mapping = {
+                "Świt astronomiczny": (8, 12, 25),
+                "Świt nautyczny": (26, 54, 150),
+                "Świt cywilny": (66, 170, 245),
+                "Wschód Słońca": (245, 80, 180),
+                "Kulminacja Słońca": (255, 220, 0),
+                "Zachód Słońca": (255, 220, 0),
+                "Zmierzch cywilny": (245, 110, 0),
+                "Zmierzch nautyczny": (210, 30, 30),
+                "Zmierzch astronomiczny": (110, 20, 160)
+            }
+            return mapping.get(next_event_name, (8, 12, 25))
 
+        if last_ev and next_ev:
+            if gap_end is not None and gap_end > last_ev['sec']:
+                return get_preceding_color(next_ev['name'])
+            else:
+                return get_color_for_event(last_ev['name'])
 
-        if first_sun_event == "Świt astronomiczny":
+        elif last_ev:
+            if gap_end is not None and gap_end > last_ev['sec']:
+                if last_ev['name'] in ["Wschód Słońca", "Kulminacja Słońca", "Świt cywilny"]:
+                    return (255, 220, 0)
+                else:
+                    return (8, 12, 25)
+
+            return get_color_for_event(last_ev['name'])
+
+        elif next_ev:
+            return get_preceding_color(next_ev['name'])
+        else:
             return (8, 12, 25)
-
-        if first_sun_event == "Świt nautyczny":
-            return (110, 20, 160)
-
-        if first_sun_event == "Świt cywilny":
-            return (210, 30, 30)
-
-        if first_sun_event == "Wschód Słońca":
-            return (245, 110, 0)
-
-        if first_sun_event in ["Kulminacja Słońca", "Zachód Słońca"]:
-            return (255, 220, 0)
-
-        if first_sun_event == "Zmierzch cywilny":
-            return (245, 110, 0)
-
-        if first_sun_event == "Zmierzch nautyczny":
-            return (210, 30, 30)
-
-        if first_sun_event == "Zmierzch astronomiczny":
-            return (110, 20, 160)
-
-        return (8, 12, 25)
 
     for x in range(MARGIN_SIDE, WIDTH - MARGIN_SIDE + 1):
         sec = min_sec + ((x - MARGIN_SIDE) / float(PLOT_WIDTH)) * range_sec

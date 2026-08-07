@@ -502,10 +502,15 @@
 
 <!-- STRONA 3: PODSUMOWANIE TRASY               -->
 <div>
-    <div class="report-header">
-        <h1>PODSUMOWANIE TRASY</h1>
-        <p>{{ data.tripName }}</p>
-    </div>
+    <div>
+        <div class="report-header">
+            <h1>{{ data.summaryTitle if data.summaryTitle else 'PODSUMOWANIE TRASY' }}</h1>
+            <p>
+                {{ data.cruise.startDate if data.cruise.startDate else '' }}
+                {% if data.cruise.startDate and data.cruise.endDate %} - {% endif %}
+                {{ data.cruise.endDate if data.cruise.endDate else '' }}
+            </p>
+        </div>
 
     <table style="width: 100%; border-collapse: collapse; border: none; margin-bottom: 5px;">
         <tr>
@@ -597,10 +602,10 @@
     <h3 style="color: #64748b; margin: 0 0 10px 0;">BRAK DANYCH</h3>
     <p style="color: #94a3b8; font-size: 14px; margin: 0;">
         {% if day.count == 1 %}
-        Dzień {{ day.start_index }} ({{ day.start_date }})
+        Dzień {{ day.start_index }} ({{ day.start_date.split('-')[2] }}.{{ day.start_date.split('-')[1] }}.{{ day.start_date.split('-')[0] }})
         {% else %}
         Dni {{ day.start_index }} – {{ day.end_index }} <br>
-        (od {{ day.start_date }} do {{ day.end_date }})
+        (od {{ day.start_date.split('-')[2] }}.{{ day.start_date.split('-')[1] }}.{{ day.start_date.split('-')[0] }} do {{ day.end_date.split('-')[2] }}.{{ day.end_date.split('-')[1] }}.{{ day.end_date.split('-')[0] }})
         {% endif %}
     </p>
 </div>
@@ -608,7 +613,7 @@
 {% else %}
 <div class="day-container">
     <div class="report-header">
-        <h2>Dzień {{ day.day_index }} ({{ day.date }})</h2>
+        <h2>Dzień {{ day.day_index }} ({{ day.date.split('-')[2] }}.{{ day.date.split('-')[1] }}.{{ day.date.split('-')[0] }})</h2>
     </div>
 
     {% if day.timeline_chart or day.astro_timeline_chart %}

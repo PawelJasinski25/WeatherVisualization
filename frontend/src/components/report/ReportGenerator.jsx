@@ -22,6 +22,7 @@ const ReportGenerator = ({ tripId }) => {
     const [error, setError] = useState(null);
 
     const [formData, setFormData] = useState({
+        summaryTitle: 'PODSUMOWANIE TRASY',
         tripName: '',
         captain: { name: '', patent: '', phone: '', email: '' },
         yacht: { regNumber: '', name: '', length: '', homePort: '', enginePower: '' },
@@ -39,6 +40,21 @@ const ReportGenerator = ({ tripId }) => {
 
         opinions: []
     });
+
+    const formatDateForPicker = (dateStr) => {
+        if (!dateStr) return '';
+        if (dateStr.includes('-')) return dateStr;
+        const parts = dateStr.split('.');
+        if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        return dateStr;
+    };
+
+    const formatDateFromPicker = (dateStr) => {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
+        return dateStr;
+    };
 
     useEffect(() => {
         const fetchTripData = async () => {
@@ -394,6 +410,8 @@ const ReportGenerator = ({ tripId }) => {
                                     handleFieldChange={handleFieldChange}
                                     handleNestedChange={handleNestedChange}
                                     handleCrewChange={handleCrewChange}
+                                    formatDateForPicker={formatDateForPicker}
+                                    formatDateFromPicker={formatDateFromPicker}
                                 />
                             )}
 
@@ -405,10 +423,18 @@ const ReportGenerator = ({ tripId }) => {
                                     handleOpinionChange={(field, value) => handleOpinionChange(op.id, field, value)}
                                     handleRemove={() => handleRemoveOpinion(op.id)}
                                     handleNestedChange={handleNestedChange}
+                                    formatDateForPicker={formatDateForPicker}
+                                    formatDateFromPicker={formatDateFromPicker}
                                 />
                             ))}
 
-                            <ReportPreview />
+                            <ReportPreview
+                                formData={formData}
+                                handleFieldChange={handleFieldChange}
+                                handleNestedChange={handleNestedChange}
+                                formatDateForPicker={formatDateForPicker}
+                                formatDateFromPicker={formatDateFromPicker}
+                            />
                         </div>
                     )}
                 </div>

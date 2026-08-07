@@ -28,7 +28,7 @@ const CheckboxOption = ({ label, checked, onClick }) => {
     );
 };
 
-const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemove, handleNestedChange }) => {
+const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemove, handleNestedChange, formatDateForPicker, formatDateFromPicker }) => {
     const portsRef = useRef(null);
     const remarksRef = useRef(null);
     const locationDateRef = useRef(null);
@@ -69,20 +69,6 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
         handleOpinionChange(field, opinion[field] === value ? '' : value);
     };
 
-    const formatDateForPicker = (dateStr) => {
-        if (!dateStr) return '';
-        if (dateStr.includes('-')) return dateStr;
-        const parts = dateStr.split('.');
-        if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
-        return dateStr;
-    };
-
-    const formatDateFromPicker = (dateStr) => {
-        if (!dateStr) return '';
-        const parts = dateStr.split('-');
-        if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
-        return dateStr;
-    };
 
     return (
         <div className="a4-paper mb-20">
@@ -109,19 +95,29 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                     value={opinion.title !== undefined ? opinion.title : "OPINIA Z REJSU"}
                     onChange={(e) => handleOpinionChange('title', e.target.value)}
                 />
-                <div className="cruise-dates-container">
+                <div className="summary-dates-container" style={{ justifyContent: 'center' }}>
                     <input
-                        className="interactive-input inline-input"
-                        value={formData.cruise.startDate}
-                        onChange={(e) => handleNestedChange('cruise', 'startDate', e.target.value)}
-                        placeholder="Od"
+                        type="date"
+                        className="interactive-input date-input inline-input"
+                        value={formatDateForPicker(formData.cruise.startDate)}
+                        onChange={(e) => {
+                            const val = formatDateFromPicker(e.target.value);
+                            handleNestedChange('cruise', 'startDate', val);
+                            handleNestedChange('cruise', 'embarkDate', val);
+                        }}
+                        onClick={(e) => e.target.showPicker && e.target.showPicker()}
                     />
-                    <span> - </span>
+                    <span className="date-separator">-</span>
                     <input
-                        className="interactive-input inline-input"
-                        value={formData.cruise.endDate}
-                        onChange={(e) => handleNestedChange('cruise', 'endDate', e.target.value)}
-                        placeholder="Do"
+                        type="date"
+                        className="interactive-input date-input inline-input"
+                        value={formatDateForPicker(formData.cruise.endDate)}
+                        onChange={(e) => {
+                            const val = formatDateFromPicker(e.target.value);
+                            handleNestedChange('cruise', 'endDate', val);
+                            handleNestedChange('cruise', 'disembarkDate', val);
+                        }}
+                        onClick={(e) => e.target.showPicker && e.target.showPicker()}
                     />
                 </div>
             </div>

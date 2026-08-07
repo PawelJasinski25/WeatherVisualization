@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import HoursCalculatorModal from "./HoursCalculatorModal.jsx";
 import { Calculator } from 'lucide-react';
 
-const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handleCrewChange }) => {
+const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handleCrewChange, formatDateForPicker, formatDateFromPicker }) => {
     const textareaRef = useRef(null);
     const [isCalcOpen, setIsCalcOpen] = useState(false);
 
@@ -21,21 +21,6 @@ const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handl
         handleNestedChange('hours', 'tidal', calculatedData.tidal);
         handleNestedChange('hours', 'stopped', calculatedData.stopped);
         handleNestedChange('hours', 'dailyLogs', calculatedData.dailyLogs);
-    };
-
-    const formatDateForPicker = (dateStr) => {
-        if (!dateStr) return '';
-        if (dateStr.includes('-')) return dateStr;
-        const parts = dateStr.split('.');
-        if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
-        return dateStr;
-    };
-
-    const formatDateFromPicker = (dateStr) => {
-        if (!dateStr) return '';
-        const parts = dateStr.split('-');
-        if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
-        return dateStr;
     };
 
     return (
@@ -58,19 +43,29 @@ const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handl
                     onChange={(e) => handleFieldChange('tripName', e.target.value)}
                     placeholder="Nazwa rejsu..."
                 />
-                <div className="cruise-dates-container">
+                <div className="summary-dates-container" style={{ justifyContent: 'center' }}>
                     <input
-                        className="interactive-input inline-input"
-                        value={formData.cruise.startDate}
-                        onChange={(e) => handleNestedChange('cruise', 'startDate', e.target.value)}
-                        placeholder="Od"
+                        type="date"
+                        className="interactive-input date-input inline-input"
+                        value={formatDateForPicker(formData.cruise.startDate)}
+                        onChange={(e) => {
+                            const val = formatDateFromPicker(e.target.value);
+                            handleNestedChange('cruise', 'startDate', val);
+                            handleNestedChange('cruise', 'embarkDate', val);
+                        }}
+                        onClick={(e) => e.target.showPicker && e.target.showPicker()}
                     />
-                    <span> - </span>
+                    <span className="date-separator">-</span>
                     <input
-                        className="interactive-input inline-input"
-                        value={formData.cruise.endDate}
-                        onChange={(e) => handleNestedChange('cruise', 'endDate', e.target.value)}
-                        placeholder="Do"
+                        type="date"
+                        className="interactive-input date-input inline-input"
+                        value={formatDateForPicker(formData.cruise.endDate)}
+                        onChange={(e) => {
+                            const val = formatDateFromPicker(e.target.value);
+                            handleNestedChange('cruise', 'endDate', val);
+                            handleNestedChange('cruise', 'disembarkDate', val);
+                        }}
+                        onClick={(e) => e.target.showPicker && e.target.showPicker()}
                     />
                 </div>
             </div>

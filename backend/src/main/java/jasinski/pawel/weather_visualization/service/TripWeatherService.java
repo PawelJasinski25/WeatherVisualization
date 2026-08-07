@@ -32,7 +32,8 @@ public class TripWeatherService {
             double longitude = pt.getLongitude();
 
             // Tworzymy siatkę ~11km (zaokrąglanie do 1 miejsca po przecinku)
-            String dateStr = pt.getTime().toString().substring(0, 10);
+            Instant roundedTime = pt.getTime().plus(30, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.HOURS);
+            String dateStr = roundedTime.toString().substring(0, 10);
             double gridLat = Math.round(latitude * 10.0) / 10.0;
             double gridLon = Math.round(longitude * 10.0) / 10.0;
 
@@ -69,8 +70,8 @@ public class TripWeatherService {
         Map<String, Weather> savedWeatherEntitiesCache = new HashMap<>();
 
         for (TrackPoint pt : allTrackPoints) {
-            String dateStr = pt.getTime().toString().substring(0, 10);
             Instant roundedTime = pt.getTime().plus(30, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.HOURS);
+            String dateStr = roundedTime.toString().substring(0, 10);
             String targetHourStr = roundedTime.toString().substring(0, 13) + ":00";
 
             double gridLat = Math.round(pt.getLatitude() * 10.0) / 10.0;

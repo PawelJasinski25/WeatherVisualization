@@ -320,7 +320,18 @@ def generate_charts_zip(report_data: dict) -> bytes:
 
         for idx, day in enumerate(daily_summaries):
             day_index = idx + 1
-            folder = f"Dzień_{day_index:02d}_{day.get('date', 'BrakDaty')}"
+
+            raw_date = day.get('date', '')
+            if raw_date and '-' in raw_date:
+                parts = raw_date.split('-')
+                if len(parts) == 3:
+                    formatted_date = f"{parts[2]}.{parts[1]}.{parts[0]}"
+                else:
+                    formatted_date = raw_date
+            else:
+                formatted_date = raw_date or 'BrakDaty'
+
+            folder = f"Dzień_{day_index:02d}_{formatted_date}"
 
             events = day.get('timelineEvents', [])
             points = day.get('points', [])

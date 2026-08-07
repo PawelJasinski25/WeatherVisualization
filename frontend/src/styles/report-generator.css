@@ -112,9 +112,9 @@
 }
 
 .inline-input {
-    width: auto;
-    max-width: 100px;
-    text-align: center;
+    width: 80px;
+    max-width: 80px;
+    text-align: left;
     display: inline-block;
     font-weight: normal;
 }
@@ -327,4 +327,35 @@
     border-radius: 50%;
     display: inline-block;
 }
+
+/* --- STYLE DLA NAGŁÓWKA PODSUMOWANIA TRASY --- */
+.summary-header-wrapper {
+    text-align: left;
+}
+
+.summary-title-input {
+    font-size: 1.5rem;
+    text-align: left;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.summary-dates-container {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+.date-separator {
+    display: inline-block;
+    width: 24px;
+    text-align: center;
+    color: #475569;
+}
+
+.summary-mock-info {
+    color: #7b8a9c;
+}
+
+
+
 
