@@ -23,23 +23,36 @@ public class TripWeatherService {
         this.openMeteoService = openMeteoService;
     }
 
+    private String getRoundedDateStr(Instant time) {
+        Instant roundedTime = time.plus(30, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.HOURS);
+        return roundedTime.toString().substring(0, 10);
+    }
 
-    public Map<String, GridReq> buildGridRequests(List<TrackPoint> optimizedPoints) {
+    private String getDailyGridCacheKey(String dateStr, double lat, double lon) {
+        double gridLat = Math.round(lat * 10.0) / 10.0;
+        double gridLon = Math.round(lon * 10.0) / 10.0;
+        return dateStr + "_" + gridLat + "_" + gridLon;
+    }
+
+    public Map<String, List<TrackPoint>> groupTrackPointsByGrid(List<TrackPoint> points) {
+        Map<String, List<TrackPoint>> grouped = new HashMap<>();
+        for (TrackPoint pt : points) {
+            String dateStr = getRoundedDateStr(pt.getTime());
+            String cacheKey = getDailyGridCacheKey(dateStr, pt.getLatitude(), pt.getLongitude());
+            grouped.computeIfAbsent(cacheKey, k -> new ArrayList<>()).add(pt);
+        }
+        return grouped;
+    }
+
+    public Map<String, GridReq> buildGridRequests(Map<String, List<TrackPoint>> groupedPoints) {
         Map<String, GridReq> uniqueGridRequests = new HashMap<>();
 
-        for (TrackPoint pt : optimizedPoints) {
-            double latitude = pt.getLatitude();
-            double longitude = pt.getLongitude();
+        for (Map.Entry<String, List<TrackPoint>> entry : groupedPoints.entrySet()) {
+            String cacheKey = entry.getKey();
+            TrackPoint samplePt = entry.getValue().get(0);
+            String dateStr = getRoundedDateStr(samplePt.getTime());
 
-            // Tworzymy siatkę ~11km (zaokrąglanie do 1 miejsca po przecinku)
-            Instant roundedTime = pt.getTime().plus(30, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.HOURS);
-            String dateStr = roundedTime.toString().substring(0, 10);
-            double gridLat = Math.round(latitude * 10.0) / 10.0;
-            double gridLon = Math.round(longitude * 10.0) / 10.0;
-
-            // Klucz to data i zaokrąglone współrzędne
-            String cacheKey = dateStr + "_" + gridLat + "_" + gridLon;
-            uniqueGridRequests.putIfAbsent(cacheKey, new GridReq(dateStr, latitude, longitude, cacheKey));
+            uniqueGridRequests.put(cacheKey, new GridReq(dateStr, samplePt.getLatitude(), samplePt.getLongitude(), cacheKey));
         }
         return uniqueGridRequests;
     }
@@ -66,39 +79,36 @@ public class TripWeatherService {
         }
     }
 
-    public void mapWeatherToTrackPoints(Trip savedTrip, List<TrackPoint> allTrackPoints, Map<String, OpenMeteoService.OpenMeteoResponse> dailyWeatherCache, List<Weather> weathersToSave) {
+    public void mapWeatherToTrackPoints(Trip savedTrip, Map<String, List<TrackPoint>> groupedPoints, Map<String, OpenMeteoService.OpenMeteoResponse> dailyWeatherCache, List<Weather> weathersToSave) {
         Map<String, Weather> savedWeatherEntitiesCache = new HashMap<>();
 
-        for (TrackPoint pt : allTrackPoints) {
-            Instant roundedTime = pt.getTime().plus(30, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.HOURS);
-            String dateStr = roundedTime.toString().substring(0, 10);
-            String targetHourStr = roundedTime.toString().substring(0, 13) + ":00";
+        groupedPoints.forEach((gridKey, pointsInGrid) -> {
+            OpenMeteoService.OpenMeteoResponse res = dailyWeatherCache.get(gridKey);
 
-            double gridLat = Math.round(pt.getLatitude() * 10.0) / 10.0;
-            double gridLon = Math.round(pt.getLongitude() * 10.0) / 10.0;
+            if (res != null) {
+                for (TrackPoint pt : pointsInGrid) {
+                    boolean isWater = waterDetectionService.isWater(pt.getLatitude(), pt.getLongitude());
 
-            boolean isWater = waterDetectionService.isWater(pt.getLatitude(), pt.getLongitude());
+                    Instant roundedTime = pt.getTime().plus(30, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.HOURS);
+                    String targetHourStr = roundedTime.toString().substring(0, 13) + ":00";
 
-            String dayCacheKey = dateStr + "_" + gridLat + "_" + gridLon;
-            String hourCacheKey = targetHourStr + "_" + gridLat + "_" + gridLon + (isWater ? "_WATER" : "_LAND");
+                    String hourCacheKey = targetHourStr + gridKey.substring(10) + (isWater ? "_WATER" : "_LAND");
 
-            Weather w = savedWeatherEntitiesCache.get(hourCacheKey);
-
-            if (w == null) {
-                OpenMeteoService.OpenMeteoResponse res = dailyWeatherCache.get(dayCacheKey);
-                if (res != null) {
-                    w = openMeteoService.buildWeatherEntity(savedTrip, pt.getLatitude(), pt.getLongitude(), pt.getTime(), res);
-                    if (w != null) {
-                        if (!isWater) {
-                            stripMarineDataFromWeather(w);
+                    Weather w = savedWeatherEntitiesCache.get(hourCacheKey);
+                    if (w == null) {
+                        w = openMeteoService.buildWeatherEntity(savedTrip, pt.getLatitude(), pt.getLongitude(), pt.getTime(), res);
+                        if (w != null) {
+                            if (!isWater) {
+                                stripMarineDataFromWeather(w);
+                            }
+                            weathersToSave.add(w);
+                            savedWeatherEntitiesCache.put(hourCacheKey, w);
                         }
-                        weathersToSave.add(w);
-                        savedWeatherEntitiesCache.put(hourCacheKey, w);
                     }
+                    pt.setWeather(w);
                 }
             }
-            pt.setWeather(w);
-        }
+        });
     }
 
     public void stripMarineDataFromWeather(Weather w) {

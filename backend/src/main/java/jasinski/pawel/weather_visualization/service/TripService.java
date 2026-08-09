@@ -88,8 +88,8 @@ public class TripService {
 
             System.out.println("Zredukowano punkty do " + allTrackPoints.size());
 
-            // Budowa siatki zapytań o pogodę
-            Map<String, GridReq> uniqueGridRequests = tripWeatherService.buildGridRequests(allTrackPoints);
+            Map<String, List<TrackPoint>> groupedPoints = tripWeatherService.groupTrackPointsByGrid(allTrackPoints);
+            Map<String, GridReq> uniqueGridRequests = tripWeatherService.buildGridRequests(groupedPoints);
 
             int totalLocations = uniqueGridRequests.size();
             int marineLocations = (int) uniqueGridRequests.values().stream()
@@ -102,7 +102,7 @@ public class TripService {
             tripWeatherService.fetchWeatherDataFromApi(uniqueGridRequests, dailyWeatherCache);
 
             List<Weather> weathersToSave = new ArrayList<>();
-            tripWeatherService.mapWeatherToTrackPoints(savedTrip, allTrackPoints, dailyWeatherCache, weathersToSave);
+            tripWeatherService.mapWeatherToTrackPoints(savedTrip, groupedPoints, dailyWeatherCache, weathersToSave);
 
             tripWeatherService.fillMarineWeatherGaps(allTrackPoints, weathersToSave);
 

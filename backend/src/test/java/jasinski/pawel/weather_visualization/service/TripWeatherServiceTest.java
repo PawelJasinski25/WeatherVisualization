@@ -44,7 +44,8 @@ class TripWeatherServiceTest {
         TrackPoint p2 = createPoint(52.2111, 21.0456, "2023-05-10T11:00:00Z");
         TrackPoint p3 = createPoint(50.0647, 19.9450, "2023-05-10T12:00:00Z");
 
-        Map<String, GridReq> gridRequests = tripWeatherService.buildGridRequests(List.of(p1, p2, p3));
+        Map<String, List<TrackPoint>> grouped = tripWeatherService.groupTrackPointsByGrid(List.of(p1, p2, p3));
+        Map<String, GridReq> gridRequests = tripWeatherService.buildGridRequests(grouped);
 
         assertThat(gridRequests).hasSize(2);
         assertThat(gridRequests).containsKey("2023-05-10_52.2_21.0");
@@ -52,8 +53,14 @@ class TripWeatherServiceTest {
     }
 
     @Test
+    void groupTrackPointsByGrid_shouldReturnEmptyMap_whenListIsEmpty() {
+        Map<String, List<TrackPoint>> result = tripWeatherService.groupTrackPointsByGrid(List.of());
+        assertThat(result).isEmpty();
+    }
+
+    @Test
     void buildGridRequests_shouldReturnEmptyMap_whenListIsEmpty() {
-        Map<String, GridReq> result = tripWeatherService.buildGridRequests(List.of());
+        Map<String, GridReq> result = tripWeatherService.buildGridRequests(Map.of());
         assertThat(result).isEmpty();
     }
 
@@ -128,7 +135,8 @@ class TripWeatherServiceTest {
         when(openMeteoService.buildWeatherEntity(eq(trip), eq(52.2), eq(21.0), eq(pt.getTime()), eq(mockResponse)))
                 .thenReturn(mockedWeather);
 
-        tripWeatherService.mapWeatherToTrackPoints(trip, List.of(pt), cache, weathersToSave);
+        Map<String, List<TrackPoint>> grouped = tripWeatherService.groupTrackPointsByGrid(List.of(pt));
+        tripWeatherService.mapWeatherToTrackPoints(trip, grouped, cache, weathersToSave);
 
         assertThat(pt.getWeather()).isNotNull();
         assertThat(pt.getWeather().getTemp()).isEqualTo(15.0);
@@ -154,7 +162,8 @@ class TripWeatherServiceTest {
         when(openMeteoService.buildWeatherEntity(eq(trip), eq(54.4), eq(18.5), eq(pt.getTime()), eq(mockResponse)))
                 .thenReturn(mockedWeather);
 
-        tripWeatherService.mapWeatherToTrackPoints(trip, List.of(pt), cache, weathersToSave);
+        Map<String, List<TrackPoint>> grouped = tripWeatherService.groupTrackPointsByGrid(List.of(pt));
+        tripWeatherService.mapWeatherToTrackPoints(trip, grouped, cache, weathersToSave);
 
         assertThat(pt.getWeather()).isNotNull();
         assertThat(pt.getWeather().getTemp()).isEqualTo(15.0);
@@ -170,9 +179,8 @@ class TripWeatherServiceTest {
 
         Map<String, OpenMeteoService.OpenMeteoResponse> cache = new HashMap<>();
 
-        when(waterDetectionService.isWater(52.2, 21.0)).thenReturn(false);
-
-        tripWeatherService.mapWeatherToTrackPoints(trip, List.of(pt), cache, weathersToSave);
+        Map<String, List<TrackPoint>> grouped = tripWeatherService.groupTrackPointsByGrid(List.of(pt));
+        tripWeatherService.mapWeatherToTrackPoints(trip, grouped, cache, weathersToSave);
 
         assertThat(pt.getWeather()).isNull();
         assertThat(weathersToSave).isEmpty();
