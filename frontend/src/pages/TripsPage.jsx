@@ -6,6 +6,7 @@ import FileUploadModal from '../components/FileUploadModal.jsx';
 import TripMergeModal from '../components/TripMergeModal.jsx';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.jsx';
 import { Pencil, Trash2, Check, Link,  X, Download } from 'lucide-react';
+import { useUnits } from '../contexts/UnitContext.jsx';
 
 import "../styles/trips.css";
 import ErrorModal from "../components/ErrorModal.jsx";
@@ -21,8 +22,12 @@ const TripsPage = () => {
     const [filterStartDate, setFilterStartDate] = useState('');
     const [filterEndDate, setFilterEndDate] = useState('');
 
+
     const [errorModalOpen, setErrorModalOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+
+    const { units } = useUnits();
+    const tz = units?.timezone || 'UTC';
 
     useEffect(() => {
         fetchTrips();
@@ -50,19 +55,13 @@ const TripsPage = () => {
             if (!trip.startTime) return true;
 
             const tripStart = new Date(trip.startTime).getTime();
+            const tripDateStr = tripStart.toLocaleString('sv-SE', { timeZone: tz }).slice(0, 10);
 
-            if (filterStartDate) {
-                const filterStart = new Date(filterStartDate).getTime();
-                if (tripStart < filterStart) return false;
-            }
-
-            if (filterEndDate) {
-                const filterEnd = new Date(filterEndDate);
-                filterEnd.setHours(23, 59, 59, 999);
-                if (tripStart > filterEnd.getTime()) return false;
-            }
+            if (filterStartDate && tripDateStr < filterStartDate) return false;
+            if (filterEndDate && tripDateStr > filterEndDate) return false;
 
             return true;
+
         });
 
         // Sortujemy malejąco
@@ -71,7 +70,7 @@ const TripsPage = () => {
             const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
             return timeB - timeA;
         });
-    }, [trips, filterStartDate, filterEndDate]);
+    }, [trips, filterStartDate, filterEndDate, tz]);
 
     const openDeleteModal = (trip, e) => {
         e.stopPropagation();
@@ -114,8 +113,12 @@ const TripsPage = () => {
 
     const formatTripDates = (start, end) => {
         if (!start && !end) return '';
-        const sDate = start ? new Date(start).toLocaleDateString('pl-PL') : '';
-        const eDate = end ? new Date(end).toLocaleDateString('pl-PL') : '';
+
+        const options = { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: tz };
+        const formatter = new Intl.DateTimeFormat('pl-PL', options);
+
+        const sDate = start ? formatter.format(new Date(start)) : '';
+        const eDate = end ? formatter.format(new Date(end)) : '';
 
         if (sDate && eDate && sDate !== eDate) {
             return `${sDate} - ${eDate}`;

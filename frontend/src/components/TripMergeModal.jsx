@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../api/axios.js';
 import '../styles/modal.css';
 import {AlertCircle, Loader2} from "lucide-react";
+import { useUnits } from '../contexts/UnitContext.jsx';
 
 const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => {
     const [selectedIds, setSelectedIds] = useState([]);
@@ -11,18 +12,50 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
     const [filterStartDate, setFilterStartDate] = useState('');
     const [filterEndDate, setFilterEndDate] = useState('');
     const [error, setError] = useState('');
+    const { units } = useUnits();
+    const tz = units?.timezone || 'UTC';
 
-    const formatToInputDateTime = (dateStr) => {
+    const formatToInputDateTime = useCallback((dateStr) => {
         if (!dateStr) return '';
         try {
             const d = new Date(dateStr);
             if (!isNaN(d.getTime())) {
-                const tzOffset = d.getTimezoneOffset() * 60000;
-                return new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+                const formatter = new Intl.DateTimeFormat('en-GB', {
+                    timeZone: tz,
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit',
+                    hour12: false
+                });
+                const parts = formatter.formatToParts(d);
+                const p = {};
+                parts.forEach(({ type, value }) => { p[type] = value; });
+
+                let hour = p.hour;
+                if (hour === '24') hour = '00';
+
+                return `${p.year}-${p.month}-${p.day}T${hour}:${p.minute}`;
             }
         } catch (e) { console.error(e); }
         return '';
-    };
+    }, [tz]);
+
+    const getLocalYMD = useCallback((dateStr) => {
+        if (!dateStr) return '';
+        try {
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+                const formatter = new Intl.DateTimeFormat('en-GB', {
+                    timeZone: tz,
+                    year: 'numeric', month: '2-digit', day: '2-digit'
+                });
+                const parts = formatter.formatToParts(d);
+                const p = {};
+                parts.forEach(({ type, value }) => { p[type] = value; });
+                return `${p.year}-${p.month}-${p.day}`;
+            }
+        } catch (e) {}
+        return '';
+    }, [tz]);
 
     useEffect(() => {
         if (isOpen && availableTrips) {
@@ -44,7 +77,7 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
             });
             setTimeWindows(initialWindows);
         }
-    }, [isOpen, availableTrips]);
+    }, [isOpen, availableTrips, formatToInputDateTime]);
 
 
     const filteredAndSortedTrips = useMemo(() => {
@@ -53,18 +86,10 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
         const filtered = availableTrips.filter(trip => {
             if (!trip.startTime) return false;
 
-            const tripStart = new Date(trip.startTime).getTime();
+            const tripDateStr = getLocalYMD(trip.startTime);
 
-            if (filterStartDate) {
-                const filterStart = new Date(filterStartDate).getTime();
-                if (tripStart < filterStart) return false;
-            }
-
-            if (filterEndDate) {
-                const filterEnd = new Date(filterEndDate);
-                filterEnd.setHours(23, 59, 59, 999);
-                if (tripStart > filterEnd.getTime()) return false;
-            }
+            if (filterStartDate && tripDateStr < filterStartDate) return false;
+            if (filterEndDate && tripDateStr > filterEndDate) return false;
 
             return true;
         });
@@ -74,7 +99,7 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
             const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
             return timeA - timeB;
         });
-    }, [availableTrips, filterStartDate, filterEndDate]);
+    }, [availableTrips, filterStartDate, filterEndDate, getLocalYMD]);
 
     if (!isOpen) return null;
 
@@ -131,11 +156,27 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
 
         setIsProcessing(true);
 
-        const segments = selectedIds.map(id => ({
-            tripId: id,
-            trimStartTime: new Date(timeWindows[id].start).toISOString(),
-            trimEndTime: new Date(timeWindows[id].end).toISOString()
-        }));
+        const segments = selectedIds.map(id => {
+            const trip = availableTrips.find(t => t.id === id);
+            const tw = timeWindows[id];
+
+            const originalStartInputMs = new Date(tw.minOriginal + 'Z').getTime();
+            const currentStartInputMs = new Date(tw.start + 'Z').getTime();
+            const diffStart = currentStartInputMs - originalStartInputMs;
+
+            const originalEndInputMs = new Date(tw.maxOriginal + 'Z').getTime();
+            const currentEndInputMs = new Date(tw.end + 'Z').getTime();
+            const diffEnd = currentEndInputMs - originalEndInputMs;
+
+            const originalUtcStart = new Date(trip.startTime).getTime();
+            const originalUtcEnd = new Date(trip.endTime).getTime();
+
+            return {
+                tripId: id,
+                trimStartTime: new Date(originalUtcStart + diffStart).toISOString(),
+                trimEndTime: new Date(originalUtcEnd + diffEnd).toISOString()
+            };
+        });
 
         try {
             await api.post('/trips/merge', { newTripName: newTripName.trim(), segments });
