@@ -32,13 +32,14 @@ class TripMapServiceTest {
     private TripMapService tripMapService;
 
     private final GeometryFactory factory = new GeometryFactory();
+    private final String defaultTimezone = "UTC";
 
 
     @Test
     void getTripMapData_shouldReturnEmptyResponse_whenNoPointsInDatabase() {
         when(trackPointRepository.findByTripIdOrderByTimeAsc(100L)).thenReturn(List.of());
 
-        MapDataResponse response = tripMapService.getTripMapData(100L);
+        MapDataResponse response = tripMapService.getTripMapData(100L, defaultTimezone);
 
         assertThat(response.route()).isEmpty();
         assertThat(response.astronomyMarkers()).isEmpty();
@@ -56,7 +57,7 @@ class TripMapServiceTest {
 
         when(trackPointRepository.findByTripIdOrderByTimeAsc(100L)).thenReturn(List.of(p1, p2, p3, p4, p5));
 
-        MapDataResponse response = tripMapService.getTripMapData(100L);
+        MapDataResponse response = tripMapService.getTripMapData(100L,defaultTimezone);
 
         assertThat(response.route()).hasSize(4);
         assertThat(response.route().get(0).timeMs()).isEqualTo(Instant.parse("2023-05-10T10:00:00Z").toEpochMilli());
@@ -77,7 +78,7 @@ class TripMapServiceTest {
 
         when(trackPointRepository.findByTripIdOrderByTimeAsc(100L)).thenReturn(hugePointList);
 
-        MapDataResponse response = tripMapService.getTripMapData(100L);
+        MapDataResponse response = tripMapService.getTripMapData(100L, defaultTimezone);
 
         assertThat(response.route().size()).isBetween(2450, 2550);
     }
@@ -94,7 +95,7 @@ class TripMapServiceTest {
         TrackPoint p1 = createPoint(52.2, 21.0, "2023-05-10T12:00:00Z", 1, weather);
         when(trackPointRepository.findByTripIdOrderByTimeAsc(100L)).thenReturn(List.of(p1));
 
-        MapDataResponse response = tripMapService.getTripMapData(100L);
+        MapDataResponse response = tripMapService.getTripMapData(100L, defaultTimezone);
 
         assertThat(response.route()).hasSize(1);
         TrackPointDto dto = response.route().get(0);
@@ -120,7 +121,7 @@ class TripMapServiceTest {
 
         when(trackPointRepository.findByTripIdOrderByTimeAsc(100L)).thenReturn(List.of(morning, noon, evening));
 
-        MapDataResponse response = tripMapService.getTripMapData(100L);
+        MapDataResponse response = tripMapService.getTripMapData(100L, defaultTimezone);
 
         List<AstronomyMarkerDto> markers = response.astronomyMarkers();
 

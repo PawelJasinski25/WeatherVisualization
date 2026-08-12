@@ -21,7 +21,6 @@ import java.util.*;
 @Service
 public class TripMapService {
 
-    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Europe/Warsaw");
     private static final DateTimeFormatter MARKER_FMT = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm");
     private static final double MIN_DISTANCE_METERS = 15.0;
     private static final long MIN_TIME_SECONDS = 15;
@@ -32,7 +31,8 @@ public class TripMapService {
         this.trackPointRepository = trackPointRepository;
     }
 
-    public MapDataResponse getTripMapData(Long tripId) {
+    public MapDataResponse getTripMapData(Long tripId, String timezoneParam) {
+        ZoneId zoneId = ZoneId.of(timezoneParam != null ? timezoneParam : "UTC");
         List<TrackPoint> rawPoints = trackPointRepository.findByTripIdOrderByTimeAsc(tripId);
         if (rawPoints.isEmpty()) return new MapDataResponse(List.of(), List.of(), Map.of());
 
@@ -41,8 +41,8 @@ public class TripMapService {
 
 
 
-        Map<LocalDate, List<TrackPoint>> pointsByDay = groupPointsByDay(points);
-        Map<LocalDate, List<TrackPoint>> rawPointsByDay = groupPointsByDay(rawPoints);
+        Map<LocalDate, List<TrackPoint>> pointsByDay = groupPointsByDay(points,zoneId);
+        Map<LocalDate, List<TrackPoint>> rawPointsByDay = groupPointsByDay(rawPoints,zoneId);
         List<TrackPointDto> route = new ArrayList<>();
         List<AstronomyMarkerDto> markers = new ArrayList<>();
 
@@ -57,7 +57,7 @@ public class TripMapService {
             List<TrackPoint> dayPoints = entry.getValue();
 
             List<TrackPoint> rawDayPoints = rawPointsByDay.get(currentDate);
-            AstronomyStats astro = AstronomyAnalyzer.calculateSun(rawDayPoints, rawPoints, null, DEFAULT_ZONE);
+            AstronomyStats astro = AstronomyAnalyzer.calculateSun(rawDayPoints, rawPoints, null, zoneId);
 
             if (firstDayAstro == null) {
                 firstDayAstro = astro;
@@ -65,17 +65,17 @@ public class TripMapService {
             }
 
             // Dodawanie znaczników zjawisk
-            addMarkerIfPresent(markers, "ŚWIT ASTRONOMICZNY", astro.astronomicalDawnPt(), astro.astronomicalDawn());
-            addMarkerIfPresent(markers, "ŚWIT NAUTYCZNY", astro.nauticalDawnPt(), astro.nauticalDawn());
-            addMarkerIfPresent(markers, "ŚWIT CYWILNY", astro.civilDawnPt(), astro.civilDawn());
-            addMarkerIfPresent(markers, "WSCHÓD", astro.sunrisePt(), astro.sunrise());
-            addMarkerIfPresent(markers, "KULMINACJA SŁOŃCA", astro.noonPt(), astro.solarNoon());
-            addMarkerIfPresent(markers, "ZACHÓD", astro.sunsetPt(), astro.sunset());
-            addMarkerIfPresent(markers, "ZMIERZCH CYWILNY", astro.civilDuskPt(), astro.civilDusk());
-            addMarkerIfPresent(markers, "ZMIERZCH NAUTYCZNY", astro.nauticalDuskPt(), astro.nauticalDusk());
-            addMarkerIfPresent(markers, "ZMIERZCH ASTRONOMICZNY", astro.astronomicalDuskPt(), astro.astronomicalDusk());
-            addMarkerIfPresent(markers, "WSCHÓD KSIĘŻYCA", astro.moonRisePt(), astro.moonRise());
-            addMarkerIfPresent(markers, "ZACHÓD KSIĘŻYCA", astro.moonSetPt(), astro.moonSet());
+            addMarkerIfPresent(markers, "ŚWIT ASTRONOMICZNY", astro.astronomicalDawnPt(), astro.astronomicalDawn(),zoneId);
+            addMarkerIfPresent(markers, "ŚWIT NAUTYCZNY", astro.nauticalDawnPt(), astro.nauticalDawn(),zoneId);
+            addMarkerIfPresent(markers, "ŚWIT CYWILNY", astro.civilDawnPt(), astro.civilDawn(),zoneId);
+            addMarkerIfPresent(markers, "WSCHÓD", astro.sunrisePt(), astro.sunrise(),zoneId);
+            addMarkerIfPresent(markers, "KULMINACJA SŁOŃCA", astro.noonPt(), astro.solarNoon(),zoneId);
+            addMarkerIfPresent(markers, "ZACHÓD", astro.sunsetPt(), astro.sunset(),zoneId);
+            addMarkerIfPresent(markers, "ZMIERZCH CYWILNY", astro.civilDuskPt(), astro.civilDusk(),zoneId);
+            addMarkerIfPresent(markers, "ZMIERZCH NAUTYCZNY", astro.nauticalDuskPt(), astro.nauticalDusk(),zoneId);
+            addMarkerIfPresent(markers, "ZMIERZCH ASTRONOMICZNY", astro.astronomicalDuskPt(), astro.astronomicalDusk(),zoneId);
+            addMarkerIfPresent(markers, "WSCHÓD KSIĘŻYCA", astro.moonRisePt(), astro.moonRise(),zoneId);
+            addMarkerIfPresent(markers, "ZACHÓD KSIĘŻYCA", astro.moonSetPt(), astro.moonSet(),zoneId);
 
             injectAstroPoint(allEnrichedPoints, astro.astronomicalDawnPt());
             injectAstroPoint(allEnrichedPoints, astro.nauticalDawnPt());
@@ -135,18 +135,18 @@ public class TripMapService {
         return new MapDataResponse(route, markers, ranges);
     }
 
-    private Map<LocalDate, List<TrackPoint>> groupPointsByDay(List<TrackPoint> points) {
+    private Map<LocalDate, List<TrackPoint>> groupPointsByDay(List<TrackPoint> points, ZoneId zoneId) {
         Map<LocalDate, List<TrackPoint>> pointsByDay = new TreeMap<>();
         for (TrackPoint point : points) {
-            LocalDate date = LocalDate.ofInstant(point.getTime(), DEFAULT_ZONE);
+            LocalDate date = LocalDate.ofInstant(point.getTime(), zoneId);
             pointsByDay.computeIfAbsent(date, k -> new ArrayList<>()).add(point);
         }
         return pointsByDay;
     }
 
-    private void addMarkerIfPresent(List<AstronomyMarkerDto> markers, String label, TrackPoint pt, Instant exactTime) {
+    private void addMarkerIfPresent(List<AstronomyMarkerDto> markers, String label, TrackPoint pt, Instant exactTime, ZoneId zoneId) {
         if (pt != null && exactTime != null) {
-            String formattedTime = LocalDateTime.ofInstant(exactTime, DEFAULT_ZONE).format(MARKER_FMT);
+            String formattedTime = LocalDateTime.ofInstant(exactTime, zoneId).format(MARKER_FMT);
             markers.add(new AstronomyMarkerDto(label, pt.getLatitude(), pt.getLongitude(), formattedTime));
         }
     }

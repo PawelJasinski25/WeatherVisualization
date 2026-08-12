@@ -84,7 +84,14 @@ public class TripService {
 
             Trip savedTrip = tripPersistenceService.createAndSaveTripHeader(file.getOriginalFilename(), user, fileHash);
 
-            List<TrackPoint> allTrackPoints = gpxParserService.extractTrackPoints(tempFile, savedTrip);
+            List<TrackPoint> allTrackPoints = new ArrayList<>(gpxParserService.extractTrackPoints(tempFile, savedTrip));
+
+            allTrackPoints.sort(Comparator.comparing(TrackPoint::getTime));
+            if (!allTrackPoints.isEmpty()) {
+                savedTrip.setStartTime(allTrackPoints.get(0).getTime());
+                savedTrip.setEndTime(allTrackPoints.get(allTrackPoints.size() - 1).getTime());
+            }
+
 
             System.out.println("Zredukowano punkty do " + allTrackPoints.size());
 

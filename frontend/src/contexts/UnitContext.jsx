@@ -6,6 +6,7 @@ export const UnitProvider = ({ children }) => {
     const [units, setUnits] = useState(() => {
         const saved = localStorage.getItem('app_units');
         return saved ? JSON.parse(saved) : {
+            timezone: 'UTC',
             wind: 'kt',
             currents: 'kt',
             speed: 'km/h',
@@ -16,6 +17,10 @@ export const UnitProvider = ({ children }) => {
             rain: 'mm',
             snow: 'cm'
         };
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            return {...defaultUnits, ...parsed};
+        }
     });
 
     useEffect(() => {

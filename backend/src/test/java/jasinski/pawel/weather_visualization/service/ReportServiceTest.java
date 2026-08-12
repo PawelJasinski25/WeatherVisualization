@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import static org.mockito.Mockito.atLeastOnce;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +45,8 @@ class ReportServiceTest {
 
     private final GeometryFactory factory = new GeometryFactory();
     private final String userEmail = "test@example.com";
+    private final String defaultTimezone = "UTC";
+    private final ZoneId defaultZoneId = ZoneId.of(defaultTimezone);
     private TripResponseDto mockTripDto;
 
     @BeforeEach
@@ -61,7 +64,7 @@ class ReportServiceTest {
     void getTripReportData_shouldThrowException_whenUserLacksAccessToTrip() {
         when(tripService.getUserTrips(userEmail)).thenReturn(List.of());
 
-        assertThatThrownBy(() -> reportService.getTripReportData(100L, userEmail))
+        assertThatThrownBy(() -> reportService.getTripReportData(100L, userEmail, defaultTimezone))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
     }
@@ -77,7 +80,7 @@ class ReportServiceTest {
 
         when(trackPointRepository.findByTripIdOrderByTimeAsc(100L)).thenReturn(List.of(p1, p2, p3));
 
-        TripReportDataDto result = reportService.getTripReportData(100L, userEmail);
+        TripReportDataDto result = reportService.getTripReportData(100L, userEmail, defaultTimezone);
 
         assertThat(result.overallWeather().avgTemp()).isEqualTo(15.5);
     }
@@ -91,7 +94,7 @@ class ReportServiceTest {
 
         when(trackPointRepository.findByTripIdOrderByTimeAsc(100L)).thenReturn(List.of(p1, p2));
 
-        TripReportDataDto result = reportService.getTripReportData(100L, userEmail);
+        TripReportDataDto result = reportService.getTripReportData(100L, userEmail, defaultTimezone);
 
         assertThat(result.dailySummaries()).hasSize(2);
         assertThat(result.dailySummaries().get(0).date().toString()).isEqualTo("2023-05-10");
@@ -109,7 +112,7 @@ class ReportServiceTest {
 
         when(geoNamesService.getPlaceName(52.2, 21.0)).thenReturn("Warszawa");
 
-        TripReportDataDto result = reportService.getTripReportData(100L, userEmail);
+        TripReportDataDto result = reportService.getTripReportData(100L, userEmail, defaultTimezone);
 
         verify(geoNamesService, org.mockito.Mockito.times(3)).getPlaceName(52.2, 21.0);
         boolean containsWarsaw = result.dailySummaries().get(0).timelineEvents().stream()
@@ -125,9 +128,9 @@ class ReportServiceTest {
         TrackPoint p2 = createPoint(52.201, 21.001, "2023-05-10T10:01:00Z", 1, 16.0);
 
         when(trackPointRepository.findByTripIdOrderByTimeAsc(100L)).thenReturn(List.of(p1, p2));
-        TripAnalysisContext context = ReflectionTestUtils.invokeMethod(reportService, "analyzeTrip", 100L);
+        TripAnalysisContext context = ReflectionTestUtils.invokeMethod(reportService, "analyzeTrip", 100L, defaultZoneId);
 
-        String csvContent = reportService.generateSummaryCsv(context, Map.of());
+        String csvContent = reportService.generateSummaryCsv(context, Map.of(), defaultZoneId);
 
         assertThat(csvContent).contains("Data;Start;Koniec;Czas w ruchu;Czas na postoju");
         assertThat(csvContent).contains("Średnia temperatura (°C)");

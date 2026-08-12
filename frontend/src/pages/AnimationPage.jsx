@@ -10,6 +10,7 @@ import FileUploadModal from '../components/FileUploadModal.jsx';
 import "../styles/animation.css";
 import { useMetricConfig } from '../config/metricConfig';
 import { Loader2, PlayCircle, Play, Pause } from 'lucide-react';
+import { useUnits } from '../contexts/UnitContext';
 
 const OSM_STYLE = {
     version: 8,
@@ -34,29 +35,42 @@ const AnimationPage = () => {
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
     const mapRef = useRef(null);
+    const initialFitDone = useRef(false);
+    const lastTripId = useRef(null);
+    const { units } = useUnits();
+
+    useEffect(() => {
+        initialFitDone.current = false;
+        setCurrentIndex(0);
+        setIsPlaying(false);
+    }, [tripId]);
 
     // 1. Pobieranie danych
     useEffect(() => {
         if (tripId) {
-            setIsLoading(true);
-            api.get(`/trips/${tripId}/coordinates`).then(res => {
+            if (!initialFitDone.current) {
+                setIsLoading(true);
+            }
+            const tz = units.timezone || 'UTC'; // <--- DODANO STREFĘ
+            api.get(`/trips/${tripId}/coordinates?timezone=${encodeURIComponent(tz)}`).then(res => {
                 const points = res.data.route || [];
                 setTripData(points);
                 setIsLoading(false);
 
-                if (points.length > 0 && mapRef.current) {
+                if (points.length > 0 && mapRef.current && !initialFitDone.current) {
                     const lats = points.map(d => d.latitude);
                     const lngs = points.map(d => d.longitude);
                     mapRef.current.getMap().fitBounds(
                         [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
                         { padding: 40 }
                     );
+                    initialFitDone.current = true;
                 }
             }).catch(() => {
                 setIsLoading(false);
             });
         }
-    }, [tripId]);
+    }, [tripId, units.timezone]);
 
     // 2. Silnik Animacji
     useEffect(() => {
@@ -131,7 +145,7 @@ const AnimationPage = () => {
     const formatTime = (timeMs) => {
         if (!timeMs) return "--:--";
         const date = new Date(timeMs);
-        return date.toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
+        return date.toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit',timeZone: units.timezone || 'UTC' });
     };
 
     const currentPoint = tripData[currentIndex];

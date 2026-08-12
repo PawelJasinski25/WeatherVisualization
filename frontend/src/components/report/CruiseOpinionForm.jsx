@@ -231,7 +231,11 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                             type="date"
                             className="interactive-input date-input"
                             value={formatDateForPicker(formData.cruise.embarkDate)}
-                            onChange={(e) => handleNestedChange('cruise', 'embarkDate', formatDateFromPicker(e.target.value))}
+                            onChange={(e) => {
+                                const val = formatDateFromPicker(e.target.value);
+                                handleNestedChange('cruise', 'embarkDate', val);
+                                handleNestedChange('cruise', 'startDate', val);
+                            }}
                             onClick={(e) => e.target.showPicker && e.target.showPicker()}
                         />
                     </td>
@@ -251,7 +255,11 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                             type="date"
                             className="interactive-input date-input"
                             value={formatDateForPicker(formData.cruise.disembarkDate)}
-                            onChange={(e) => handleNestedChange('cruise', 'disembarkDate', formatDateFromPicker(e.target.value))}
+                            onChange={(e) => {
+                                const val = formatDateFromPicker(e.target.value);
+                                handleNestedChange('cruise', 'disembarkDate', val);
+                                handleNestedChange('cruise', 'endDate', val);
+                            }}
                             onClick={(e) => e.target.showPicker && e.target.showPicker()}
                         />
                     </td>

@@ -49,10 +49,10 @@ public class TripWeatherService {
 
         for (Map.Entry<String, List<TrackPoint>> entry : groupedPoints.entrySet()) {
             String cacheKey = entry.getKey();
-            TrackPoint samplePt = entry.getValue().get(0);
-            String dateStr = getRoundedDateStr(samplePt.getTime());
+            TrackPoint representativePoint = entry.getValue().getFirst();
+            String dateStr = getRoundedDateStr(representativePoint.getTime());
 
-            uniqueGridRequests.put(cacheKey, new GridReq(dateStr, samplePt.getLatitude(), samplePt.getLongitude(), cacheKey));
+            uniqueGridRequests.put(cacheKey, new GridReq(dateStr, representativePoint.getLatitude(), representativePoint.getLongitude(), cacheKey));
         }
         return uniqueGridRequests;
     }
@@ -127,7 +127,7 @@ public class TripWeatherService {
     public void fillMarineWeatherGaps(List<TrackPoint> allTrackPoints, List<Weather> weathersToSave) {
         Set<Weather> artificiallyPatched = new HashSet<>();
         int MAX_INDEX_LOOKAROUND = 600;
-        long MAX_TIME_GAP_SECONDS = 20 * 60;
+        long MAX_TIME_GAP_SECONDS = 30 * 60;
         double MAX_DISTANCE_METERS = 2500.0;
 
         for (int i = 0; i < allTrackPoints.size(); i++) {

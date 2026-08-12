@@ -9,15 +9,17 @@ except ImportError:
     import pytz
     ZoneInfo = pytz.timezone
 
-def parse_dt(time_val):
+def parse_dt(time_val, tz_str="UTC"):
     if not time_val: return None
+    tz = ZoneInfo(tz_str)
+
     if isinstance(time_val, (int, float)):
         try:
             val_float = float(time_val)
             if val_float > 1e11:
                 val_float /= 1000.0
             dt = datetime.fromtimestamp(val_float, tz=timezone.utc)
-            return dt.astimezone(ZoneInfo("Europe/Warsaw"))
+            return dt.astimezone(tz)
         except Exception:
             pass
     time_str = str(time_val).strip()
@@ -27,23 +29,23 @@ def parse_dt(time_val):
         dt = datetime.fromisoformat(clean_str)
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
-        return dt.astimezone(ZoneInfo("Europe/Warsaw"))
+        return dt.astimezone(tz)
     except ValueError:
         try:
             if 'T' in time_str:
                 core_time = time_str[:19]
                 dt = datetime.strptime(core_time, "%Y-%m-%dT%H:%M:%S")
                 dt = dt.replace(tzinfo=timezone.utc)
-                return dt.astimezone(ZoneInfo("Europe/Warsaw"))
+                return dt.astimezone(tz)
         except Exception:
             pass
     return None
 
-def format_time(time_val):
+def format_time(time_val, tz_str="UTC"):
     if not time_val: return '--:--'
     time_str = str(time_val).strip()
     if re.match(r"^\d{2}:\d{2}(:\d{2})?$", time_str): return time_str[:5]
-    dt = parse_dt(time_val)
+    dt = parse_dt(time_val, tz_str)
     if dt: return dt.strftime("%H:%M")
     if 'T' in time_str: return time_str.split('T')[1][:5]
     return time_str[:5]
@@ -66,9 +68,9 @@ def format_val(val, unit='', decimals=1):
     except ValueError:
         return '--'
 
-def get_duration_seconds(start_str, end_str):
-    dt1 = parse_dt(start_str)
-    dt2 = parse_dt(end_str)
+def get_duration_seconds(start_str, end_str, tz_str="UTC"):
+    dt1 = parse_dt(start_str, tz_str)
+    dt2 = parse_dt(end_str, tz_str)
     if dt1 and dt2: return int(abs((dt2 - dt1).total_seconds()))
     return None
 

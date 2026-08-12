@@ -64,7 +64,8 @@ public class GpxParserService {
                         }
                     }
                 }
-            } else if (!isSelfClosing) {
+            }
+            else if (!isSelfClosing) {
                 while (!openTags.isEmpty()) {
                     String currentOpenTag = openTags.peek();
 

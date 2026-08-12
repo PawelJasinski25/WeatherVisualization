@@ -6,8 +6,10 @@ const SettingsModal = ({ isOpen, onClose }) => {
     const { units, updateUnit } = useUnits();
 
     if (!isOpen) return null;
+    const timezones = ['UTC', ...Intl.supportedValuesOf('timeZone').filter(tz => tz !== 'UTC')];
 
     const rows = [
+        { name: 'timezone', label: 'Strefa czasowa', options: timezones },
         { name: 'wind', label: 'Prędkość wiatru', options: ['km/h', 'm/s', 'mph', 'kt', 'bft'] },
         { name: 'temp', label: 'Temperatura', options: ['°C', '°F'] },
         { name: 'pressure', label: 'Ciśnienie', options: ['hPa', 'inHg', 'mmHg'] },

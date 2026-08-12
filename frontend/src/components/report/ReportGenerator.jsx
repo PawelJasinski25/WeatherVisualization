@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../../api/axios';
 import CruiseCardForm from './CruiseCardForm';
 import CruiseOpinionForm from './CruiseOpinionForm';
@@ -20,6 +20,7 @@ const ReportGenerator = ({ tripId }) => {
     const [isFetchingData, setIsFetchingData] = useState(true);
     const { units } = useUnits();
     const [error, setError] = useState(null);
+    const lastFetchRef = useRef({ tripId: null, tz: null });
 
     const [formData, setFormData] = useState({
         summaryTitle: 'PODSUMOWANIE TRASY',
@@ -68,10 +69,16 @@ const ReportGenerator = ({ tripId }) => {
                         if (!isoString) return '';
                         const d = new Date(isoString);
                         if (isNaN(d.getTime())) return '';
-                        const day = String(d.getDate()).padStart(2, '0');
-                        const month = String(d.getMonth() + 1).padStart(2, '0');
-                        const year = d.getFullYear();
-                        return `${day}.${month}.${year}`;
+
+                        try {
+                            const options = { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: units.timezone || 'UTC' };
+                            return new Intl.DateTimeFormat('pl-PL', options).format(d);
+                        } catch (e) {
+                            const day = String(d.getDate()).padStart(2, '0');
+                            const month = String(d.getMonth() + 1).padStart(2, '0');
+                            const year = d.getFullYear();
+                            return `${day}.${month}.${year}`;
+                        }
                     };
 
                     const sDate = formatDate(currentTrip.startTime || currentTrip.startDate);
@@ -79,8 +86,9 @@ const ReportGenerator = ({ tripId }) => {
                     const tName = currentTrip.name || '';
 
                     let reportData = null;
+                    const tz = units.timezone || 'UTC';
                     try {
-                        const reportResponse = await api.get(`/trips/${tripId}/report-data`);
+                        const reportResponse = await api.get(`/trips/${tripId}/report-data?timezone=${encodeURIComponent(tz)}`);
                         reportData = reportResponse.data;
                     } catch (err) {
                         console.error("Nie udało się pobrać szczegółowych danych raportu", err);
@@ -141,28 +149,31 @@ const ReportGenerator = ({ tripId }) => {
                     const endDateStr = eDate || '';
                     const combinedLocationDate = [endPortStr, endDateStr].filter(Boolean).join(', ');
 
+                    const isNewFetch = lastFetchRef.current.tripId !== tripId || lastFetchRef.current.tz !== tz;
+                    lastFetchRef.current = { tripId, tz };
+
                     setFormData(prev => ({
                         ...prev,
-                        tripName: tName,
+                        tripName: prev.tripName || tName,
                         cruise: {
                             ...prev.cruise,
                             startDate: sDate,
                             endDate: eDate,
-                            embarkDate: sDate,
-                            disembarkDate: eDate,
-                            visitedPorts: visitedPorts,
+                            embarkDate: isNewFetch ? sDate : (prev.cruise.embarkDate || sDate),
+                            disembarkDate: isNewFetch ? eDate : (prev.cruise.disembarkDate || eDate),
+                            visitedPorts: isNewFetch ? visitedPorts : (prev.cruise.visitedPorts || visitedPorts),
                             daysCount: daysCount,
-                            embarkPort: reportData.startPort || '',
-                            disembarkPort: reportData.endPort || '',
+                            embarkPort: isNewFetch ? (reportData?.startPort || '') : (prev.cruise.embarkPort || reportData?.startPort || ''),
+                            disembarkPort: isNewFetch ? (reportData?.endPort || '') : (prev.cruise.disembarkPort || reportData?.endPort || ''),
                             dailySummaries: reportData?.dailySummaries || []
                         },
                         distance: {
                             ...prev.distance,
-                            nauticalMiles: totalDistanceNM
+                            nauticalMiles: prev.distance.nauticalMiles || totalDistanceNM
                         },
                         hours: {
                             ...prev.hours,
-                            stopped: stoppedHours
+                            stopped: prev.hours.stopped || stoppedHours
                         },
                     }));
                 }
@@ -179,7 +190,7 @@ const ReportGenerator = ({ tripId }) => {
         } else {
             setIsFetchingData(false);
         }
-    }, [tripId]);
+    }, [tripId, units.timezone]);
 
     const handleNestedChange = (section, field, value) => {
         let processedValue = value;

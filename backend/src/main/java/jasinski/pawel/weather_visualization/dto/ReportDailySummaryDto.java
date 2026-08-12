@@ -1,5 +1,6 @@
 package jasinski.pawel.weather_visualization.dto;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -21,10 +22,9 @@ public record ReportDailySummaryDto(
 
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
-    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Europe/Warsaw");
 
 
-    public static ReportDailySummaryDto from(DailySummary summary, List<EnrichedSegment> reducedSegments) {
+    public static ReportDailySummaryDto from(DailySummary summary, List<EnrichedSegment> reducedSegments, ZoneId zoneId) {
         if (summary == null)
             return null;
 
@@ -47,38 +47,42 @@ public record ReportDailySummaryDto(
                 summary.overallWeatherStats(),
                 summary.movingWeatherStats(),
                 summary.speedStats(),
-                buildObservedAstroEvents(summary.astroStats()),
+                buildObservedAstroEvents(summary.astroStats(), zoneId),
                 summary.timelineEvents()
         );
     }
 
-    private static Map<String, String> buildObservedAstroEvents(AstronomyStats astro) {
+    private static String formatTime(Instant instant, ZoneId zoneId) {
+        return DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(instant.atZone(zoneId));
+    }
+
+    private static Map<String, String> buildObservedAstroEvents(AstronomyStats astro, ZoneId zoneId) {
         if (astro == null) return null;
 
         Map<String, String> events = new LinkedHashMap<>();
 
-        if (astro.astronomicalDawnPt()!= null && astro.astronomicalDawn() != null)
-            events.put("Świt astronomiczny", astro.astronomicalDawn().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+        if (astro.astronomicalDawnPt() != null && astro.astronomicalDawn() != null)
+            events.put("Świt astronomiczny", formatTime(astro.astronomicalDawn(), zoneId));
         if (astro.nauticalDawnPt() != null && astro.nauticalDawn() != null)
-            events.put("Świt nautyczny", astro.nauticalDawn().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+            events.put("Świt nautyczny", formatTime(astro.nauticalDawn(), zoneId));
         if (astro.civilDawnPt() != null && astro.civilDawn() != null)
-            events.put("Świt cywilny", astro.civilDawn().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+            events.put("Świt cywilny", formatTime(astro.civilDawn(), zoneId));
         if (astro.sunrisePt() != null && astro.sunrise() != null)
-            events.put("Wschód Słońca", astro.sunrise().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+            events.put("Wschód Słońca", formatTime(astro.sunrise(), zoneId));
         if (astro.noonPt() != null && astro.solarNoon() != null)
-            events.put("Kulminacja Słońca", astro.solarNoon().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+            events.put("Kulminacja Słońca", formatTime(astro.solarNoon(), zoneId));
         if (astro.sunsetPt() != null && astro.sunset() != null)
-            events.put("Zachód Słońca", astro.sunset().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+            events.put("Zachód Słońca", formatTime(astro.sunset(), zoneId));
         if (astro.civilDuskPt() != null && astro.civilDusk() != null)
-            events.put("Zmierzch cywilny", astro.civilDusk().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
-        if (astro.nauticalDuskPt()!= null &&astro.nauticalDusk() != null)
-            events.put("Zmierzch nautyczny", astro.nauticalDusk().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
-        if (astro.astronomicalDuskPt()!=null && astro.astronomicalDusk() != null)
-            events.put("Zmierzch astronomiczny", astro.astronomicalDusk().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+            events.put("Zmierzch cywilny", formatTime(astro.civilDusk(), zoneId));
+        if (astro.nauticalDuskPt() != null && astro.nauticalDusk() != null)
+            events.put("Zmierzch nautyczny", formatTime(astro.nauticalDusk(), zoneId));
+        if (astro.astronomicalDuskPt() != null && astro.astronomicalDusk() != null)
+            events.put("Zmierzch astronomiczny", formatTime(astro.astronomicalDusk(), zoneId));
         if (astro.moonRisePt() != null && astro.moonRise() != null)
-            events.put("Wschód Księżyca", astro.moonRise().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+            events.put("Wschód Księżyca", formatTime(astro.moonRise(), zoneId));
         if (astro.moonSetPt() != null && astro.moonSet() != null)
-            events.put("Zachód Księżyca", astro.moonSet().atZone(DEFAULT_ZONE).toLocalDateTime().toString());
+            events.put("Zachód Księżyca", formatTime(astro.moonSet(), zoneId));
 
         return events.isEmpty() ? null : events;
     }

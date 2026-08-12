@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw
 
 from utils import parse_dt, format_place, get_font
 
-def create_astro_timeline_chart(astro_events, base_date_str, min_sec=0, max_sec=86400, events=None, scale=1):
+def create_astro_timeline_chart(astro_events, base_date_str, min_sec=0, max_sec=86400, events=None, scale=1, tz_str="UTC"):
     if not astro_events or not isinstance(astro_events, dict):
         return None
 
@@ -34,17 +34,13 @@ def create_astro_timeline_chart(astro_events, base_date_str, min_sec=0, max_sec=
 
     for name, iso_str in astro_events.items():
         if not iso_str: continue
-        try:
-            safe_iso = iso_str if len(iso_str) >= 19 else iso_str + ":00"
-            event_dt = datetime.datetime.strptime(safe_iso[:19], "%Y-%m-%dT%H:%M:%S")
-
+        event_dt = parse_dt(iso_str, tz_str)
+        if event_dt:
             sec = event_dt.hour * 3600 + event_dt.minute * 60 + event_dt.second
             time_str = event_dt.strftime("%H:%M")
 
             name_clean = str(name).strip()
             parsed_events.append({"name": name_clean, "sec": sec, "time_str": time_str})
-        except Exception as e:
-            pass
 
     if not parsed_events: return None
     parsed_events.sort(key=lambda x: x['sec'])
@@ -54,8 +50,8 @@ def create_astro_timeline_chart(astro_events, base_date_str, min_sec=0, max_sec=
         for ev in events:
             ev_type = str(ev.get('type', '')).upper()
             if "BRAK" in ev_type:
-                dt_s = parse_dt(ev.get('start'))
-                dt_e = parse_dt(ev.get('end'))
+                dt_s = parse_dt(ev.get('start'), tz_str)
+                dt_e = parse_dt(ev.get('end'), tz_str)
                 if dt_s and dt_e:
                     s_sec = dt_s.hour * 3600 + dt_s.minute * 60 + dt_s.second
                     e_sec = dt_e.hour * 3600 + dt_e.minute * 60 + dt_e.second
@@ -257,7 +253,7 @@ def create_astro_timeline_chart(astro_events, base_date_str, min_sec=0, max_sec=
     return base64.b64encode(buf.getvalue()).decode('utf-8')
 
 
-def create_timeline_chart(date_str, events, min_sec=0, max_sec=86400, scale=1):
+def create_timeline_chart(date_str, events, min_sec=0, max_sec=86400, scale=1, tz_str="UTC"):
     if not events: return None
 
     WIDTH = 1400
@@ -279,8 +275,8 @@ def create_timeline_chart(date_str, events, min_sec=0, max_sec=86400, scale=1):
     valid_events = []
 
     for ev in events:
-        dt_start = parse_dt(ev.get('start'))
-        dt_end = parse_dt(ev.get('end'))
+        dt_start = parse_dt(ev.get('start'), tz_str)
+        dt_end = parse_dt(ev.get('end'), tz_str)
         if not dt_start or not dt_end: continue
 
         start_sec = dt_start.hour * 3600 + dt_start.minute * 60 + dt_start.second

@@ -32,8 +32,8 @@ public class TripController {
     }
 
     @GetMapping("/{id}/coordinates")
-    public ResponseEntity<MapDataResponse> getTripCoordinates(@PathVariable Long id) {
-        MapDataResponse response = tripMapService.getTripMapData(id);
+    public ResponseEntity<MapDataResponse> getTripCoordinates(@PathVariable Long id, @RequestParam(value = "timezone", required = false, defaultValue = "UTC") String timezone) {
+        MapDataResponse response = tripMapService.getTripMapData(id, timezone);
         return ResponseEntity.ok(response);
     }
 
@@ -69,10 +69,11 @@ public class TripController {
     }
 
     @GetMapping("/{id}/report-data")
-    public ResponseEntity<TripReportDataDto> getReportData(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<TripReportDataDto> getReportData(@PathVariable Long id, @RequestParam(value = "timezone", required = false, defaultValue = "UTC") String timezone,
+            Authentication authentication) {
 
         String email = authentication.getName();
-        TripReportDataDto reportData = reportService.getTripReportData(id, email);
+        TripReportDataDto reportData = reportService.getTripReportData(id, email, timezone);
 
         return ResponseEntity.ok(reportData);
     }

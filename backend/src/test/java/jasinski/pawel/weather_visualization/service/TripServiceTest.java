@@ -120,7 +120,8 @@ class TripServiceTest {
         newTrip.setName("Nowa trasa GPX");
 
         when(tripPersistenceService.createAndSaveTripHeader(any(), any(), any())).thenReturn(newTrip);
-        when(gpxParserService.extractTrackPoints(any(Path.class), eq(newTrip))).thenReturn(List.of(new TrackPoint()));
+        when(gpxParserService.extractTrackPoints(any(Path.class), eq(newTrip)))
+                .thenReturn(new java.util.ArrayList<>(List.of(new TrackPoint())));
 
         UploadTripResponseDto response = tripService.processGpxFile(mockFile, "email@example.com");
 

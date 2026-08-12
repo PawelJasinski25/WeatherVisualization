@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
 import '../../styles/modal.css';
+import { useUnits } from '../../contexts/UnitContext';
 
 const HoursCalculatorModal = ({ isOpen, onClose, initialLogs, onSave, cruiseDates, dailySummaries }) => {
     const [logs, setLogs] = useState([]);
     const [showStopsAndGaps, setShowStopsAndGaps] = useState(false);
+    const { units } = useUnits();
+    const tz = units.timezone || 'UTC';
 
     const parseDate = (dateStr) => {
         if (!dateStr) return null;
@@ -79,16 +82,21 @@ const HoursCalculatorModal = ({ isOpen, onClose, initialLogs, onSave, cruiseDate
             loadedLogs = [...initialLogs];
         } else if (dailySummaries && dailySummaries.length > 0) {
             dailySummaries.forEach(day => {
-                const dateString = new Date(day.date).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                let dateString = day.date;
+                if (day.date && day.date.includes('-')) {
+                    const [y, m, d] = day.date.split('-');
+                    dateString = `${d}.${m}.${y}`;
+                }
                 const events = day.timelineEvents || [];
 
                 if (events.length > 0) {
                     events.forEach((event) => {
-                        const startD = new Date(event.start);
-                        const endD = new Date(event.end);
+                        const formatter = new Intl.DateTimeFormat('pl-PL', {
+                            hour: '2-digit', minute: '2-digit', timeZone: tz
+                        });
 
-                        const sTime = `${String(startD.getHours()).padStart(2, '0')}:${String(startD.getMinutes()).padStart(2, '0')}`;
-                        const eTime = `${String(endD.getHours()).padStart(2, '0')}:${String(endD.getMinutes()).padStart(2, '0')}`;
+                        const sTime = formatter.format(new Date(event.start));
+                        const eTime = formatter.format(new Date(event.end));
 
                         const total = calculateHours(sTime, eTime);
 

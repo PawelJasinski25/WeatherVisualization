@@ -13,13 +13,14 @@ from utils import parse_dt, convert_raw
 def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=None, figsize=(11, 7.4)):
     if not points: return None
 
+    tz_str = prefs.get('timezone', 'UTC')
     is_daily_sync = (min_sec is not None and max_sec is not None)
 
     # filtrowanie po dacie
     if is_daily_sync:
         first_dt = None
         for p in points:
-            dt = parse_dt(p.get('time') or p.get('timeMs'))
+            dt = parse_dt(p.get('time') or p.get('timeMs'), tz_str)
             if dt:
                 first_dt = dt.date()
                 break
@@ -27,7 +28,7 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
         if first_dt:
             filtered = []
             for p in points:
-                dt = parse_dt(p.get('time') or p.get('timeMs'))
+                dt = parse_dt(p.get('time') or p.get('timeMs'), tz_str)
                 if dt and dt.date() == first_dt:
                     filtered.append(p)
             points = filtered
@@ -35,7 +36,7 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
     raw_data = []
 
     for i, p in enumerate(points):
-        dt = parse_dt(p.get('time') or p.get('timeMs'))
+        dt = parse_dt(p.get('time') or p.get('timeMs'), tz_str)
         s = None
         if is_daily_sync and dt:
             s = dt.hour * 3600 + dt.minute * 60 + dt.second

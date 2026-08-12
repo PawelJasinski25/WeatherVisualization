@@ -33,7 +33,6 @@ public class ReportService {
     private final TripService tripService;
     private final RestTemplate restTemplate;
     private final WaterDetectionService waterDetectionService;
-    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Europe/Warsaw");
 
     @Autowired
     public ReportService(TrackPointRepository trackPointRepository, GeoNamesService geoNamesService, TripService tripService, RestTemplate restTemplate, WaterDetectionService waterDetectionService){
@@ -44,25 +43,25 @@ public class ReportService {
         this.waterDetectionService = waterDetectionService;
     }
 
-    private TripAnalysisContext analyzeTrip(Long tripId) {
+    private TripAnalysisContext analyzeTrip(Long tripId, ZoneId zoneId) {
         List<TrackPoint> allPoints = trackPointRepository.findByTripIdOrderByTimeAsc(tripId);
         if (allPoints.isEmpty()) {
             return new TripAnalysisContext(new ArrayList<>(), new TreeMap<>(), new ArrayList<>());
         }
 
-        Map<LocalDate, DayData> dailyMovements = MovementAnalyzer.analyzeTripTimeline(allPoints, DEFAULT_ZONE);
-        List<EnrichedSegment> allSegments = createEnrichedSegments(allPoints, dailyMovements, DEFAULT_ZONE);
+        Map<LocalDate, DayData> dailyMovements = MovementAnalyzer.analyzeTripTimeline(allPoints, zoneId);
+        List<EnrichedSegment> allSegments = createEnrichedSegments(allPoints, dailyMovements, zoneId);
 
         return new TripAnalysisContext(allPoints, dailyMovements, allSegments);
     }
 
 
-    public List<DailySummary> generateDailySummaries(TripAnalysisContext context) {
+    public List<DailySummary> generateDailySummaries(TripAnalysisContext context, ZoneId zoneId) {
         if (context.points().isEmpty()) return new ArrayList<>();
 
         Map<LocalDate, List<TrackPoint>> pointsByDay = new TreeMap<>();
         for (TrackPoint point : context.points()) {
-            LocalDate date = LocalDate.ofInstant(point.getTime(), DEFAULT_ZONE);
+            LocalDate date = LocalDate.ofInstant(point.getTime(), zoneId);
             pointsByDay.computeIfAbsent(date, k -> new ArrayList<>()).add(point);
         }
 
@@ -99,15 +98,15 @@ public class ReportService {
             DayData nextMovData = context.dailyMovements().get(nextDay);
             if (nextMovData != null && nextMovData.events != null) {
                 for (TimelineEvent ev : nextMovData.events) {
-                    if (ev.start().atZone(DEFAULT_ZONE).getHour() <= 5) {
+                    if (ev.start().atZone(zoneId).getHour() <= 5) {
                         eventsForAstro.add(ev);
                     }
                 }
             }
-            AstronomyStats astro = AstronomyAnalyzer.calculateSun(pointsInDay, context.points(), eventsForAstro, DEFAULT_ZONE);
+            AstronomyStats astro = AstronomyAnalyzer.calculateSun(pointsInDay, context.points(), eventsForAstro, zoneId);
 
             List<EnrichedSegment> dailySegments = context.segments().stream()
-                    .filter(s -> LocalDate.ofInstant(s.p1().getTime(), DEFAULT_ZONE).equals(day))
+                    .filter(s -> LocalDate.ofInstant(s.p1().getTime(), zoneId).equals(day))
                     .toList();
 
             List<EnrichedSegment> dailyMovingSegments = dailySegments.stream()
@@ -124,16 +123,17 @@ public class ReportService {
         return summaries;
     }
 
-    @Cacheable(value = "reportData", key = "#tripId")
-    public TripReportDataDto getTripReportData(Long tripId, String email) {
+    @Cacheable(value = "reportData", key = "#tripId + '_' + #timezone")
+    public TripReportDataDto getTripReportData(Long tripId, String email, String timezone) {
+        ZoneId zoneId = ZoneId.of(timezone);
 
         TripResponseDto trip = tripService.getUserTrips(email).stream()
                 .filter(t -> t.id().equals(tripId))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień"));
 
-        TripAnalysisContext context = analyzeTrip(tripId);
-        List<DailySummary> dailySummaries = generateDailySummaries(context);
+        TripAnalysisContext context = analyzeTrip(tripId,zoneId);
+        List<DailySummary> dailySummaries = generateDailySummaries(context,zoneId);
 
         String startPort = "";
         String endPort = "";
@@ -170,7 +170,7 @@ public class ReportService {
                 .map(summary -> {
                     List<EnrichedSegment> reducedSegments = reduceSegmentsForChart(summary.segments(), 300);
 
-                    return ReportDailySummaryDto.from(summary, reducedSegments);
+                    return ReportDailySummaryDto.from(summary, reducedSegments,zoneId);
                 })
                 .toList();
 
@@ -271,18 +271,20 @@ public class ReportService {
 
     public ReportResource getCsvReportResource(Long tripId, String email, Map<String, String> prefs) {
         if(prefs == null) prefs = new HashMap<>();
+        String timeZoneStr = prefs.getOrDefault("timezone", "UTC");
+        ZoneId zoneId = ZoneId.of(timeZoneStr);
         TripResponseDto trip = tripService.getUserTrips(email).stream()
                 .filter(t -> t.id().equals(tripId))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień"));
 
-        TripAnalysisContext context = analyzeTrip(tripId);
+        TripAnalysisContext context = analyzeTrip(tripId,zoneId);
 
-        String mainCsvContent = generateSummaryCsv(context, prefs);
-        String apiCsvContent = generateApiUsageCsv(context, prefs);
-        String detailedPointsCsvContent = generateDetailedPointsCsv(context, prefs);
+        String mainCsvContent = generateSummaryCsv(context, prefs,zoneId);
+        String apiCsvContent = generateApiUsageCsv(context, prefs,zoneId);
+        String detailedPointsCsvContent = generateDetailedPointsCsv(context, prefs,zoneId);
 
-        TripReportDataDto data = getTripReportData(tripId, email);
+        TripReportDataDto data = getTripReportData(tripId, email,timeZoneStr);
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> payload = mapper.convertValue(data, new TypeReference<Map<String, Object>>() {});
 
@@ -340,8 +342,8 @@ public class ReportService {
         return new ReportResource(byteArrayOutputStream.toByteArray(), fileName);
     }
 
-    public String generateSummaryCsv(TripAnalysisContext context, Map<String, String> prefs) {
-        List<DailySummary> summaries = generateDailySummaries(context);
+    public String generateSummaryCsv(TripAnalysisContext context, Map<String, String> prefs, ZoneId zoneId) {
+        List<DailySummary> summaries = generateDailySummaries(context, zoneId);
         StringBuilder csv = new StringBuilder();
 
         int maxEvents = 0;
@@ -388,7 +390,7 @@ public class ReportService {
         }
         csv.append("\n");
 
-        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss").withZone(DEFAULT_ZONE);
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss").withZone(zoneId);
 
         for (DailySummary summary : summaries) {
             appendCsv(csv, summary.date());
@@ -457,15 +459,15 @@ public class ReportService {
             appendCsv(csv, formatUnit(oWs.avgSeaTemperature(), tempUnit, "temp")); appendCsv(csv, formatUnit(mWs.avgSeaTemperature(), tempUnit, "temp"));
 
             AstronomyStats astro = summary.astroStats();
-            appendAstroTime(csv, astro.astronomicalDawn(), astro.astronomicalDawnPt());
-            appendAstroTime(csv, astro.nauticalDawn(), astro.nauticalDawnPt());
-            appendAstroTime(csv, astro.civilDawn(), astro.civilDawnPt());
-            appendAstroTime(csv, astro.sunrise(), astro.sunrisePt());
-            appendAstroTime(csv, astro.solarNoon(), astro.noonPt());
-            appendAstroTime(csv, astro.sunset(), astro.sunsetPt());
-            appendAstroTime(csv, astro.civilDusk(), astro.civilDuskPt());
-            appendAstroTime(csv, astro.nauticalDusk(), astro.nauticalDuskPt());
-            appendAstroTime(csv, astro.astronomicalDusk(), astro.astronomicalDuskPt());
+            appendAstroTime(csv, astro.astronomicalDawn(), astro.astronomicalDawnPt(),zoneId);
+            appendAstroTime(csv, astro.nauticalDawn(), astro.nauticalDawnPt(),zoneId);
+            appendAstroTime(csv, astro.civilDawn(), astro.civilDawnPt(),zoneId);
+            appendAstroTime(csv, astro.sunrise(), astro.sunrisePt(),zoneId);
+            appendAstroTime(csv, astro.solarNoon(), astro.noonPt(),zoneId);
+            appendAstroTime(csv, astro.sunset(), astro.sunsetPt(),zoneId);
+            appendAstroTime(csv, astro.civilDusk(), astro.civilDuskPt(),zoneId);
+            appendAstroTime(csv, astro.nauticalDusk(), astro.nauticalDuskPt(),zoneId);
+            appendAstroTime(csv, astro.astronomicalDusk(), astro.astronomicalDuskPt(),zoneId);
 
             for (int i = 0; i < maxEvents; i++) {
                 if (summary.timelineEvents() != null && i < summary.timelineEvents().size()) {
@@ -490,13 +492,13 @@ public class ReportService {
         return csv.toString();
     }
 
-    public String generateApiUsageCsv(TripAnalysisContext context, Map<String, String> prefs) {
+    public String generateApiUsageCsv(TripAnalysisContext context, Map<String, String> prefs, ZoneId zoneId) {
         StringBuilder csv = new StringBuilder();
-        DateTimeFormatter fullTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(DEFAULT_ZONE);
+        DateTimeFormatter fullTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(zoneId);
 
         class ApiUsageStats {
-            java.time.Instant firstPointTime;
-            java.time.Instant lastPointTime;
+            Instant firstPointTime;
+            Instant lastPointTime;
             double gridLat;
             double gridLon;
             double origLat;
@@ -619,9 +621,9 @@ public class ReportService {
         return csv.toString();
     }
 
-    public String generateDetailedPointsCsv(TripAnalysisContext context, Map<String, String> prefs) {
+    public String generateDetailedPointsCsv(TripAnalysisContext context, Map<String, String> prefs, ZoneId zoneId) {
         StringBuilder csv = new StringBuilder();
-        DateTimeFormatter fullTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(DEFAULT_ZONE);
+        DateTimeFormatter fullTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(zoneId);
 
         String tempUnit = prefs.getOrDefault("temp", "°C");
         String windUnit = prefs.getOrDefault("wind", "km/h");
@@ -661,7 +663,7 @@ public class ReportService {
 
             String movementStatus = "POSTÓJ";
             if (pt.getTime() != null) {
-                LocalDate localDate = LocalDate.ofInstant(pt.getTime(), DEFAULT_ZONE);
+                LocalDate localDate = LocalDate.ofInstant(pt.getTime(), zoneId);
                 DayData dayData = context.dailyMovements().get(localDate);
                 if (dayData != null && dayData.events != null) {
                     for (TimelineEvent ev : dayData.events) {
@@ -797,7 +799,17 @@ public class ReportService {
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień"));
 
-        TripReportDataDto data = getTripReportData(tripId, email);
+        String timeZoneStr = "UTC";
+        if (formData != null && formData.containsKey("preferences")) {
+            Map<String, Object> prefs = (Map<String, Object>) formData.get("preferences");
+            if (prefs != null && prefs.containsKey("timezone")) {
+                timeZoneStr = (String) prefs.get("timezone");
+            }
+        } else if (formData != null && formData.containsKey("timezone")) {
+            timeZoneStr = (String) formData.get("timezone");
+        }
+
+        TripReportDataDto data = getTripReportData(tripId, email,timeZoneStr);
 
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> payload = mapper.convertValue(data, new TypeReference<Map<String, Object>>() {});
@@ -829,12 +841,12 @@ public class ReportService {
         return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 
-    private void appendAstroTime(StringBuilder csv, Instant time, TrackPoint point) {
+    private void appendAstroTime(StringBuilder csv, Instant time, TrackPoint point, ZoneId zoneId){
         if (time == null || point == null) {
             appendCsv(csv, "--:--");
         } else {
             DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm:ss");
-            appendCsv(csv, fmt.format(time.atZone(DEFAULT_ZONE)));
+            appendCsv(csv, fmt.format(time.atZone(zoneId)));
         }
     }
 

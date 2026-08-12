@@ -9,6 +9,7 @@ import { getEventDotColor } from "../config/mapColors.js";
 import MapLegend from "./MapLegend.jsx";
 import MetricMarker from "./MetricMarker.jsx";
 import AstroPopup from "./AstroPopup.jsx";
+import { useUnits } from '../contexts/UnitContext';
 import "../styles/map-elements.css";
 
 const OSM_STYLE = {
@@ -23,16 +24,20 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
     const mapRef = useRef(null);
     const [astroMarkers, setAstroMarkers] = useState([]);
     const [selectedAstroMarker, setSelectedAstroMarker] = useState(null);
+    const initialFitDone = useRef(false);
     const [tripRanges, setTripRanges] = useState({});
+    const { units } = useUnits();
 
     const activeMetrics = selectedPrimary.filter(Boolean);
+    useEffect(() => { initialFitDone.current = false; }, [tripId]);
 
     useEffect(() => {
         if (tripId) {
             setSelectedAstroMarker(null);
 
 
-            api.get(`/trips/${tripId}/coordinates`).then(res => {
+            const timezone = units.timezone || 'UTC';
+            api.get(`/trips/${tripId}/coordinates?timezone=${encodeURIComponent(timezone)}`).then(res => {
                 const points = res.data.route || [];
                 const markers = res.data.astronomyMarkers || [];
 
@@ -40,7 +45,7 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
                 setAstroMarkers(markers);
                 setTripRanges(res.data.ranges || {});
 
-                if (points && points.length > 0 && mapRef.current) {
+                if (points && points.length > 0 && mapRef.current && !initialFitDone.current) {
                     const lats = points.map(d => d.latitude);
                     const lngs = points.map(d => d.longitude);
 
@@ -50,12 +55,13 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
                                 [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
                                 { padding: 40 }
                             );
+                            initialFitDone.current = true;
                         }
                     }, 100);
                 }
             }).catch(err => console.error("Błąd pobierania trasy:", err));
         }
-    }, [tripId]);
+    }, [tripId, units.timezone])
 
     const segmentsData = useMemo(() => generateSegmentsData(tripData, activeMetrics), [tripData, activeMetrics]);
 
