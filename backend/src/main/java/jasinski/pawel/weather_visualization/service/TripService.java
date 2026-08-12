@@ -1,9 +1,6 @@
 package jasinski.pawel.weather_visualization.service;
 
-import jasinski.pawel.weather_visualization.dto.GridReq;
-import jasinski.pawel.weather_visualization.dto.TripMergeRequestDto;
-import jasinski.pawel.weather_visualization.dto.TripResponseDto;
-import jasinski.pawel.weather_visualization.dto.UploadTripResponseDto;
+import jasinski.pawel.weather_visualization.dto.*;
 import jasinski.pawel.weather_visualization.entity.TrackPoint;
 import jasinski.pawel.weather_visualization.entity.Trip;
 import jasinski.pawel.weather_visualization.entity.User;
@@ -84,7 +81,7 @@ public class TripService {
 
             Trip savedTrip = tripPersistenceService.createAndSaveTripHeader(file.getOriginalFilename(), user, fileHash);
 
-            List<TrackPoint> allTrackPoints = new ArrayList<>(gpxParserService.extractTrackPoints(tempFile, savedTrip));
+            List<TrackPoint> allTrackPoints = gpxParserService.extractTrackPoints(tempFile, savedTrip);
 
             allTrackPoints.sort(Comparator.comparing(TrackPoint::getTime));
             if (!allTrackPoints.isEmpty()) {
@@ -169,7 +166,7 @@ public class TripService {
         newTrip.setFileHash("merged_" + System.currentTimeMillis());
         Trip savedTrip = tripRepository.save(newTrip);
 
-        List<TrackPoint> allPointsToClone = new ArrayList<>();
+        List<MergeCandidateSegment> candidateSegments = new ArrayList<>();
 
         for (TripMergeRequestDto.TripMergeSegment segDto : request.segments()) {
             Trip originalTrip = tripRepository.findById(segDto.tripId())
@@ -185,24 +182,72 @@ public class TripService {
             Instant trimStart = Instant.parse(segDto.trimStartTime());
             Instant trimEnd = Instant.parse(segDto.trimEndTime());
 
+            List<TrackPoint> trimmedPoints = new ArrayList<>();
             for (TrackPoint originalPt : originalPoints) {
-                if (originalPt.getTime().isBefore(trimStart) || originalPt.getTime().isAfter(trimEnd)) {
-                    continue;
+                if (!originalPt.getTime().isBefore(trimStart) && !originalPt.getTime().isAfter(trimEnd)) {
+                    trimmedPoints.add(originalPt);
                 }
-                allPointsToClone.add(originalPt);
+            }
+
+            if (!trimmedPoints.isEmpty()) {
+                candidateSegments.add(new MergeCandidateSegment(trimmedPoints));
+            }
+        }
+
+        candidateSegments.sort((s1, s2) -> Integer.compare(s2.points().size(), s1.points().size()));
+
+        List<TrackPoint> allPointsToClone = new ArrayList<>();
+        List<MergedTimeCoverage> coveredTimeRanges = new ArrayList<>();
+
+        long MAX_GAP_TO_KEEP_BLOCK_OPEN = 15 * 60;
+
+        for (MergeCandidateSegment candidate : candidateSegments) {
+            Instant blockStart = null;
+            Instant blockEnd = null;
+
+            for (TrackPoint pt : candidate.points()) {
+                boolean isTimeOverlapping = false;
+
+                for (MergedTimeCoverage coverage : coveredTimeRanges) {
+                    if (!pt.getTime().isBefore(coverage.startTime()) && !pt.getTime().isAfter(coverage.endTime())) {
+                        isTimeOverlapping = true;
+                        break;
+                    }
+                }
+
+                if (!isTimeOverlapping) {
+                    allPointsToClone.add(pt);
+
+                    if (blockStart == null) {
+                        blockStart = pt.getTime();
+                        blockEnd = pt.getTime();
+                    } else {
+                        long gap = Duration.between(blockEnd, pt.getTime()).getSeconds();
+
+                        if (gap <= MAX_GAP_TO_KEEP_BLOCK_OPEN) {
+                            blockEnd = pt.getTime();
+                        } else {
+                            coveredTimeRanges.add(new MergedTimeCoverage(blockStart, blockEnd));
+                            blockStart = pt.getTime();
+                            blockEnd = pt.getTime();
+                        }
+                    }
+                }
+            }
+
+            if (blockStart != null && blockEnd != null) {
+                coveredTimeRanges.add(new MergedTimeCoverage(blockStart, blockEnd));
             }
         }
 
         if (allPointsToClone.isEmpty()) {
-            throw new IllegalStateException("Po przycięciu nie pozostał żaden punkt.");
+            throw new IllegalStateException("Po przycięciu i usunięciu nakładających się obszarów nie pozostał żaden punkt.");
         }
 
         allPointsToClone.sort(Comparator.comparing(TrackPoint::getTime));
 
-        //redukcja punktów
         List<TrackPoint> reducedPoints = new ArrayList<>();
         Instant lastAcceptedTime = null;
-
         long MIN_INTERVAL_SECONDS = 60;
 
         for (TrackPoint pt : allPointsToClone) {
@@ -213,13 +258,10 @@ public class TripService {
             }
 
             long gap = Duration.between(lastAcceptedTime, pt.getTime()).getSeconds();
-
-            if (gap < MIN_INTERVAL_SECONDS) {
-                continue;
+            if (gap >= MIN_INTERVAL_SECONDS) {
+                reducedPoints.add(pt);
+                lastAcceptedTime = pt.getTime();
             }
-
-            reducedPoints.add(pt);
-            lastAcceptedTime = pt.getTime();
         }
 
         Map<Long, Weather> clonedWeatherMap = new HashMap<>();
@@ -230,8 +272,8 @@ public class TripService {
         Long lastOriginalTripId = null;
         Integer lastOriginalSegmentId = null;
 
-        long MAX_TIME_GAP_SECONDS = 5 * 60;
-        double MAX_DISTANCE_METERS = 800.0;
+        long MAX_TIME_GAP_SECONDS = 45 * 60;
+        double MAX_DISTANCE_METERS = 2000.0;
 
         for (TrackPoint originalPt : reducedPoints) {
 
@@ -239,11 +281,12 @@ public class TripService {
                 boolean isNewTripFile = !originalPt.getTrip().getId().equals(lastOriginalTripId);
 
                 if (isNewTripFile) {
-                    long timeGap = java.time.Duration.between(lastProcessedPoint.getTime(), originalPt.getTime()).abs().getSeconds();
+                    long timeGap = Duration.between(lastProcessedPoint.getTime(), originalPt.getTime()).abs().getSeconds();
                     double distanceGap = GeoUtils.calculateDistance(
-                            lastProcessedPoint.getLatitude(), lastProcessedPoint.getLongitude(), originalPt.getLatitude(), originalPt.getLongitude());
+                            lastProcessedPoint.getLatitude(), lastProcessedPoint.getLongitude(),
+                            originalPt.getLatitude(), originalPt.getLongitude());
 
-                    if (timeGap > MAX_TIME_GAP_SECONDS || distanceGap > MAX_DISTANCE_METERS) {
+                    if (timeGap > MAX_TIME_GAP_SECONDS && distanceGap > MAX_DISTANCE_METERS) {
                         currentNewSegmentId++;
                     }
                 } else {
