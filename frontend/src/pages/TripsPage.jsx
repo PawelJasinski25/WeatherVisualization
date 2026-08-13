@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios.js';
 import Navbar from '../components/Navbar.jsx';
@@ -29,6 +29,24 @@ const TripsPage = () => {
     const { units } = useUnits();
     const tz = units?.timezone || 'UTC';
 
+    const getLocalYMD = useCallback((dateStr) => {
+        if (!dateStr) return '';
+        try {
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+                const formatter = new Intl.DateTimeFormat('en-GB', {
+                    timeZone: tz,
+                    year: 'numeric', month: '2-digit', day: '2-digit'
+                });
+                const parts = formatter.formatToParts(d);
+                const p = {};
+                parts.forEach(({ type, value }) => { p[type] = value; });
+                return `${p.year}-${p.month}-${p.day}`;
+            }
+        } catch (e) {}
+        return '';
+    }, [tz]);
+
     useEffect(() => {
         fetchTrips();
     }, []);
@@ -54,14 +72,12 @@ const TripsPage = () => {
         const filtered = trips.filter(trip => {
             if (!trip.startTime) return true;
 
-            const tripStart = new Date(trip.startTime).getTime();
-            const tripDateStr = tripStart.toLocaleString('sv-SE', { timeZone: tz }).slice(0, 10);
+            const tripDateStr = getLocalYMD(trip.startTime);
 
             if (filterStartDate && tripDateStr < filterStartDate) return false;
             if (filterEndDate && tripDateStr > filterEndDate) return false;
 
             return true;
-
         });
 
         // Sortujemy malejąco
@@ -70,7 +86,7 @@ const TripsPage = () => {
             const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
             return timeB - timeA;
         });
-    }, [trips, filterStartDate, filterEndDate, tz]);
+    }, [trips, filterStartDate, filterEndDate, getLocalYMD]);
 
     const openDeleteModal = (trip, e) => {
         e.stopPropagation();
@@ -171,6 +187,7 @@ const TripsPage = () => {
                     fetchTrips();
                     setIsMergeModalOpen(false);
                 }}
+                getLocalYMD={getLocalYMD}
             />
 
             <ConfirmDeleteModal
@@ -212,6 +229,7 @@ const TripsPage = () => {
                                     type="date"
                                     value={filterStartDate}
                                     onChange={(e) => setFilterStartDate(e.target.value)}
+                                    onClick={(e) => e.target.showPicker && e.target.showPicker()}
                                     className="merge-date-picker picker-enabled"
                                 />
                             </div>
@@ -221,6 +239,7 @@ const TripsPage = () => {
                                     type="date"
                                     value={filterEndDate}
                                     onChange={(e) => setFilterEndDate(e.target.value)}
+                                    onClick={(e) => e.target.showPicker && e.target.showPicker()}
                                     className="merge-date-picker picker-enabled"
                                 />
                             </div>

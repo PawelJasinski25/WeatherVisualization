@@ -354,6 +354,7 @@
     border: 1px solid #cbd5e1;
     background-color: #f1f5f9;
     color: #64748b;
+    cursor: pointer;
 }
 
 .merge-date-picker.picker-enabled {
@@ -438,7 +439,7 @@
     cursor: pointer;
     min-width: 5.5rem;
     flex: 1;
-    max-width: 18rem;
+    max-width: 21rem;
     text-align: center;
     outline: none;
     transition: border-color 0.2s ease, background-color 0.2s ease;

@@ -6,14 +6,14 @@ const AstronomyLegend = ({ config }) => {
     const blockHeight = 26;
 
     const events = [
-        { label: "Świt Astronomiczny", offset: 1},
-        { label: "Świt Nautyczny", offset: 2},
-        { label: "Świt Cywilny", offset: 3 },
+        { label: "Świt astronomiczny", offset: 1},
+        { label: "Świt nautyczny", offset: 2},
+        { label: "Świt cywilny", offset: 3 },
         { label: "Wschód Słońca", offset: 4 },
         { label: "Zachód Słońca", offset: 5 },
-        { label: "Zmierzch Cywilny", offset: 6 },
-        { label: "Zmierzch Nautyczny", offset: 7 },
-        { label: "Zmierzch Astronomiczny", offset: 8},
+        { label: "Zmierzch cywilny", offset: 6 },
+        { label: "Zmierzch nautyczny", offset: 7 },
+        { label: "Zmierzch astronomiczny", offset: 8},
     ];
 
     const pointEvents = [

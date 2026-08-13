@@ -4,7 +4,7 @@ import '../styles/modal.css';
 import {AlertCircle, Loader2} from "lucide-react";
 import { useUnits } from '../contexts/UnitContext.jsx';
 
-const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => {
+const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips, getLocalYMD }) => {
     const [selectedIds, setSelectedIds] = useState([]);
     const [timeWindows, setTimeWindows] = useState({});
     const [newTripName, setNewTripName] = useState('');
@@ -36,24 +36,6 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
                 return `${p.year}-${p.month}-${p.day}T${hour}:${p.minute}`;
             }
         } catch (e) { console.error(e); }
-        return '';
-    }, [tz]);
-
-    const getLocalYMD = useCallback((dateStr) => {
-        if (!dateStr) return '';
-        try {
-            const d = new Date(dateStr);
-            if (!isNaN(d.getTime())) {
-                const formatter = new Intl.DateTimeFormat('en-GB', {
-                    timeZone: tz,
-                    year: 'numeric', month: '2-digit', day: '2-digit'
-                });
-                const parts = formatter.formatToParts(d);
-                const p = {};
-                parts.forEach(({ type, value }) => { p[type] = value; });
-                return `${p.year}-${p.month}-${p.day}`;
-            }
-        } catch (e) {}
         return '';
     }, [tz]);
 
@@ -211,6 +193,7 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
                                         type="date"
                                         value={filterStartDate}
                                         onChange={(e) => setFilterStartDate(e.target.value)}
+                                        onClick={(e) => e.target.showPicker && e.target.showPicker()}
                                         className="merge-date-picker picker-enabled"
                                     />
                                 </div>
@@ -220,6 +203,7 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips }) => 
                                         type="date"
                                         value={filterEndDate}
                                         onChange={(e) => setFilterEndDate(e.target.value)}
+                                        onClick={(e) => e.target.showPicker && e.target.showPicker()}
                                         className="merge-date-picker picker-enabled"
                                     />
                                 </div>
