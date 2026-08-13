@@ -83,7 +83,7 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
         <div className="trip-map-wrapper">
             <Map
                 ref={mapRef}
-                initialViewState={{ longitude: 20, latitude: 55, zoom: 6 }}
+                initialViewState={{ longitude: 20, latitude: 55, zoom: 3 }}
                 mapStyle={OSM_STYLE}
                 style={{ width: "100%", height: "100%" }}
                 onMove={(e) => setCurrentZoom(e.viewState.zoom)}

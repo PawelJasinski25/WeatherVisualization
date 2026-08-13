@@ -168,6 +168,10 @@ const MapLegend = ({ metricId, minVal, maxVal }) => {
         return <AstronomyLegend config={config} />;
     }
 
+    if (minVal === null || minVal === undefined || maxVal === null || maxVal === undefined) {
+        return null;
+    }
+
     return <DefaultLegend metricId={metricId} config={config} minVal={minVal} maxVal={maxVal} />;
 
 };

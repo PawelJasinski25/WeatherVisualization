@@ -190,7 +190,7 @@ const AnimationPage = () => {
                         }}
                     >
                         <div className="anim-map-box">
-                            <Map ref={mapRef} initialViewState={{ longitude: 20, latitude: 55, zoom: 5 }} mapStyle={OSM_STYLE} style={{ width: "100%", height: "100%" }}>
+                            <Map ref={mapRef} initialViewState={{ longitude: 20, latitude: 55, zoom: 3 }} mapStyle={OSM_STYLE} style={{ width: "100%", height: "100%" }}>
                                 {routeGeoJSON && (
                                     <Source id="route" type="geojson" data={routeGeoJSON}>
                                         <Layer id="route-line" type="line" paint={{ "line-color": "#2563eb", "line-width": 4 }} />
