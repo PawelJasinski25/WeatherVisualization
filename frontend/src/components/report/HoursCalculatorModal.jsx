@@ -236,14 +236,16 @@ const HoursCalculatorModal = ({ isOpen, onClose, initialLogs, onSave, cruiseDate
     };
 
     const handleSave = () => {
-        let sumTotal = 0, sumSails = 0, sumEngine = 0, sumTidal = 0, sumStopped = 0;
+        let sumTotal = 0, sumSails = 0, sumEngine = 0, sumTidal = 0, sumStopped = 0, sumGap = 0;
 
         logs.forEach(l => {
             const t = parseFloat(String(l.total).replace(',', '.')) || 0;
 
             if (l.type === 'POSTÓJ') {
                 sumStopped += t;
-            } else if (l.type !== 'BRAK DANYCH') {
+            } else if (l.type === 'BRAK DANYCH') {
+                sumGap += t;
+            } else {
                 sumTotal += t;
                 sumSails += parseFloat(String(l.sails).replace(',', '.')) || 0;
                 sumEngine += parseFloat(String(l.engine).replace(',', '.')) || 0;
@@ -257,6 +259,7 @@ const HoursCalculatorModal = ({ isOpen, onClose, initialLogs, onSave, cruiseDate
             engine: sumEngine > 0 ? sumEngine.toFixed(1).replace('.', ',') : '',
             tidal: sumTidal > 0 ? sumTidal.toFixed(1).replace('.', ',') : '',
             stopped: sumStopped > 0 ? sumStopped.toFixed(1).replace('.', ',') : '',
+            gap: sumGap > 0 ? sumGap.toFixed(1).replace('.', ',') : '',
             dailyLogs: logs
         });
         onClose();

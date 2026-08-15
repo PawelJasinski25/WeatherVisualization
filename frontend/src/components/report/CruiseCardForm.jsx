@@ -20,6 +20,7 @@ const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handl
         handleNestedChange('hours', 'engine', calculatedData.engine);
         handleNestedChange('hours', 'tidal', calculatedData.tidal);
         handleNestedChange('hours', 'stopped', calculatedData.stopped);
+        handleNestedChange('hours', 'gap', calculatedData.gap);
         handleNestedChange('hours', 'dailyLogs', calculatedData.dailyLogs);
     };
 

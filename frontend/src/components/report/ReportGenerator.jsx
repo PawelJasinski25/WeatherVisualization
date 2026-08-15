@@ -99,7 +99,7 @@ const ReportGenerator = ({ tripId }) => {
                     let totalDistanceNM = '';
                     let stoppedHours = '';
                     let movingHours = '';
-                    let totalHoursRaw = '';
+                    let gapHours = '';
 
                     if (reportData) {
                         daysCount = reportData.dailySummaries ? reportData.dailySummaries.length.toString() : '';
@@ -118,6 +118,8 @@ const ReportGenerator = ({ tripId }) => {
 
                         if (reportData.overallMovement) {
                             stoppedHours = formatTime(reportData.overallMovement.stoppedSeconds);
+                            movingHours = formatTime(reportData.overallMovement.movingSeconds);
+                            gapHours = formatTime(reportData.overallMovement.gapSeconds);
                         }
 
                         const portsSet = new Set();
@@ -173,7 +175,9 @@ const ReportGenerator = ({ tripId }) => {
                         },
                         hours: {
                             ...prev.hours,
-                            stopped: prev.hours.stopped || stoppedHours
+                            total: prev.hours.total || movingHours,
+                            stopped: prev.hours.stopped || stoppedHours,
+                            gap: prev.hours.gap || gapHours
                         },
                     }));
                 }
