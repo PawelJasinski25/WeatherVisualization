@@ -46,18 +46,35 @@ def create_astro_timeline_chart(astro_events, base_date_str, min_sec=0, max_sec=
     parsed_events.sort(key=lambda x: x['sec'])
 
     gap_intervals = []
+    trip_start_sec = 86400
+    trip_end_sec = 0
+
     if events:
         for ev in events:
+            dt_s = parse_dt(ev.get('start'), tz_str)
+            dt_e = parse_dt(ev.get('end'), tz_str)
+
+            s_sec, e_sec = None, None
+            if dt_s:
+                s_sec = dt_s.hour * 3600 + dt_s.minute * 60 + dt_s.second
+            if dt_e:
+                e_sec = dt_e.hour * 3600 + dt_e.minute * 60 + dt_e.second
+                if s_sec is not None and e_sec <= s_sec:
+                    e_sec = 86400
+
             ev_type = str(ev.get('type', '')).upper()
             if "BRAK" in ev_type:
-                dt_s = parse_dt(ev.get('start'), tz_str)
-                dt_e = parse_dt(ev.get('end'), tz_str)
-                if dt_s and dt_e:
-                    s_sec = dt_s.hour * 3600 + dt_s.minute * 60 + dt_s.second
-                    e_sec = dt_e.hour * 3600 + dt_e.minute * 60 + dt_e.second
-                    if e_sec <= s_sec:
-                        e_sec = 86400
+                if s_sec is not None and e_sec is not None:
                     gap_intervals.append((s_sec, e_sec))
+
+            if s_sec is not None:
+                trip_start_sec = min(trip_start_sec, s_sec)
+            if e_sec is not None:
+                trip_end_sec = max(trip_end_sec, e_sec)
+
+    if trip_start_sec >= trip_end_sec:
+        trip_start_sec = min_sec
+        trip_end_sec = max_sec
 
     color_map = {
         "Świt astronomiczny": (26, 54, 150), "Świt nautyczny": (66, 170, 245), "Świt cywilny": (245, 80, 180),
@@ -69,7 +86,6 @@ def create_astro_timeline_chart(astro_events, base_date_str, min_sec=0, max_sec=
 
     def get_band_color(sec):
 
-        #brak danych
         gap_end = None
         for (gs, ge) in gap_intervals:
             if gs <= sec <= ge:
@@ -144,12 +160,22 @@ def create_astro_timeline_chart(astro_events, base_date_str, min_sec=0, max_sec=
         else:
             return (8, 12, 25)
 
+    draw.line([(MARGIN_SIDE, AXIS_Y), (WIDTH - MARGIN_SIDE, AXIS_Y)], fill="lightgray", width=4)
+
     for x in range(MARGIN_SIDE, WIDTH - MARGIN_SIDE + 1):
         sec = min_sec + ((x - MARGIN_SIDE) / float(PLOT_WIDTH)) * range_sec
-        c = get_band_color(sec)
-        draw.line([(x, AXIS_Y - 6), (x, AXIS_Y + 6)], fill=c, width=1)
+        if trip_start_sec <= sec <= trip_end_sec:
+            c = get_band_color(sec)
+            draw.line([(x, AXIS_Y - 6), (x, AXIS_Y + 6)], fill=c, width=1)
 
-    draw.rectangle([(MARGIN_SIDE, AXIS_Y - 6), (WIDTH - MARGIN_SIDE, AXIS_Y + 6)], outline="#94a3b8", width=2)
+    x_start = MARGIN_SIDE + int(((trip_start_sec - min_sec) / range_sec) * PLOT_WIDTH)
+    x_end = MARGIN_SIDE + int(((trip_end_sec - min_sec) / range_sec) * PLOT_WIDTH)
+
+    x_start = max(MARGIN_SIDE, min(WIDTH - MARGIN_SIDE, x_start))
+    x_end = max(MARGIN_SIDE, min(WIDTH - MARGIN_SIDE, x_end))
+
+    if x_end > x_start:
+        draw.rectangle([(x_start, AXIS_Y - 6), (x_end, AXIS_Y + 6)], outline="#94a3b8", width=2)
 
     time_labels = []
 
@@ -349,6 +375,13 @@ def create_timeline_chart(date_str, events, min_sec=0, max_sec=86400, scale=1, t
                 w2 = draw.textlength(lbl['place_str'], font=font_place)
                 lbl['w'] = max(w1, w2)
                 lbl['x'] = lbl['center_x'] - lbl['w'] / 2
+
+    if bot_labels:
+        tw = draw.textlength("00:00", font=font_time)
+        if bot_labels[0]['time_str'] != "00:00":
+            bot_labels.insert(0, {'x': MARGIN_SIDE - tw / 2, 'w': tw, 'anchor_x': MARGIN_SIDE, 'time_str': "00:00"})
+        if bot_labels[-1]['time_str'] != "24:00":
+            bot_labels.append({'x': (WIDTH - MARGIN_SIDE) - tw / 2, 'w': tw, 'anchor_x': WIDTH - MARGIN_SIDE, 'time_str': "24:00"})
 
     def resolve_collisions(items, margin_left, margin_right, gap=15):
         if not items: return items

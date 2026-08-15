@@ -41,6 +41,8 @@ env.filters['format_time'] = format_time
 env.filters['get_duration'] = get_duration_seconds
 env.filters['format_place'] = format_place
 
+day_min_sec, day_max_sec = 0, 86400
+
 def enrich_with_min_max(stats_dict, points):
     if not isinstance(stats_dict, dict):
         return
@@ -92,39 +94,6 @@ def enrich_with_min_max(stats_dict, points):
             stats_dict[f'max{k}'] = current_maxes[k]
             stats_dict[f'min{k}'] = current_mins[k]
 
-def get_day_time_bounds(events, astro_events, base_date_str, tz_str="UTC"):
-    min_sec = 86400
-    max_sec = 0
-    has_data = False
-
-    for ev in events:
-        dt_start = parse_dt(ev.get('start'), tz_str)
-        dt_end = parse_dt(ev.get('end'), tz_str)
-        s = min_sec
-        if dt_start:
-            s = dt_start.hour * 3600 + dt_start.minute * 60 + dt_start.second
-            min_sec = min(min_sec, s)
-            has_data = True
-        if dt_end:
-            e = dt_end.hour * 3600 + dt_end.minute * 60 + dt_end.second
-            if e <= s: e = 86400
-            max_sec = max(max_sec, e)
-            has_data = True
-
-    if astro_events and isinstance(astro_events, dict):
-        for name, iso_str in astro_events.items():
-            if iso_str:
-                event_dt = parse_dt(iso_str, tz_str)
-                if event_dt:
-                    s = event_dt.hour * 3600 + event_dt.minute * 60 + event_dt.second
-                    min_sec = min(min_sec, s)
-                    max_sec = max(max_sec, s)
-                    has_data = True
-
-    if not has_data:
-        return 0, 86400
-
-    return max(0, min_sec), min(86400, max_sec)
 
 def reduce_points_for_overall_chart(points, target_count=300):
     if not points or len(points) <= target_count:
@@ -244,7 +213,6 @@ def generate_report_pdf(report_data: dict) -> bytes:
                 meteo_points = points if points else []
                 rose_points = points[::max(1, len(points) // 24)] if points else []
 
-                day_min_sec, day_max_sec = get_day_time_bounds(events, day.get('observedAstroEvents'), day.get('date'), tz_str)
 
                 map_future = executor.submit(create_route_map, map_points, 600, 300)
                 timeline_future = executor.submit(create_timeline_chart, day.get('date'), events, day_min_sec, day_max_sec, scale=1, tz_str=tz_str) if events else None
@@ -355,13 +323,11 @@ def generate_charts_zip(report_data: dict) -> bytes:
             points = day.get('points', [])
             if not points: continue
 
-            day_min, day_max = get_day_time_bounds(events, day.get('observedAstroEvents'), day.get('date'), tz_str)
-
             futures[f"{folder}/meteogram.png"] = executor.submit(
-                create_meteogram_chart, points, prefs, day_min, day_max, events, figsize=(22, 14.8))
+                create_meteogram_chart, points, prefs, day_min_sec, day_max_sec, events, figsize=(22, 14.8))
 
             futures[f"{folder}/wykres_astronomiczny.png"] = executor.submit(
-                create_astro_timeline_chart, day.get('observedAstroEvents'), day.get('date'), day_min, day_max, events, scale=3, tz_str=tz_str)
+                create_astro_timeline_chart, day.get('observedAstroEvents'), day.get('date'), day_min_sec, day_max_sec, events, scale=3, tz_str=tz_str)
 
             futures[f"{folder}/mapa_trasy.png"] = executor.submit(
                 create_route_map, points, 1800, 900)
@@ -373,7 +339,7 @@ def generate_charts_zip(report_data: dict) -> bytes:
                 create_polar_rose, points, 'waveDir', 'waveHeight', 'Róża falowania', prefs, figsize=(7.8, 7.8))
 
             futures[f"{folder}/wykres_ruchu_i_postojów.png"] = executor.submit(
-                create_timeline_chart, day.get('date'), events, day_min, day_max, scale=3, tz_str=tz_str)
+                create_timeline_chart, day.get('date'), events, day_min_sec, day_max_sec, scale=3, tz_str=tz_str)
 
     zip_buf = io.BytesIO()
     with zipfile.ZipFile(zip_buf, 'w', zipfile.ZIP_DEFLATED) as zf:
