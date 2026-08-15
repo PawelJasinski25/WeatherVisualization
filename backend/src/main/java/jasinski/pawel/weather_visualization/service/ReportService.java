@@ -132,9 +132,13 @@ public class ReportService {
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień"));
 
-        TripAnalysisContext context = analyzeTrip(tripId,zoneId);
-        List<DailySummary> dailySummaries = generateDailySummaries(context,zoneId);
+        TripAnalysisContext context = analyzeTrip(tripId, zoneId);
+        List<DailySummary> dailySummaries = generateDailySummaries(context, zoneId);
 
+        return buildReportDataDto(trip, context, dailySummaries, zoneId);
+    }
+
+    private TripReportDataDto buildReportDataDto(TripResponseDto trip, TripAnalysisContext context, List<DailySummary> dailySummaries, ZoneId zoneId) {
         String startPort = "";
         String endPort = "";
         List<TrackPoint> points = context.points();
@@ -169,8 +173,7 @@ public class ReportService {
         List<ReportDailySummaryDto> reportDailySummaries = dailySummaries.stream()
                 .map(summary -> {
                     List<EnrichedSegment> reducedSegments = reduceSegmentsForChart(summary.segments(), 300);
-
-                    return ReportDailySummaryDto.from(summary, reducedSegments,zoneId);
+                    return ReportDailySummaryDto.from(summary, reducedSegments, zoneId);
                 })
                 .toList();
 
@@ -279,12 +282,14 @@ public class ReportService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień"));
 
         TripAnalysisContext context = analyzeTrip(tripId,zoneId);
+        List<DailySummary> summaries = generateDailySummaries(context, zoneId);
 
-        String mainCsvContent = generateSummaryCsv(context, prefs,zoneId);
-        String apiCsvContent = generateApiUsageCsv(context, prefs,zoneId);
-        String detailedPointsCsvContent = generateDetailedPointsCsv(context, prefs,zoneId);
+        String mainCsvContent = generateSummaryCsv(context, summaries, prefs, zoneId);
+        String apiCsvContent = generateApiUsageCsv(context, prefs, zoneId);
+        String detailedPointsCsvContent = generateDetailedPointsCsv(context, summaries, prefs, zoneId);
 
-        TripReportDataDto data = getTripReportData(tripId, email,timeZoneStr);
+        TripReportDataDto data = buildReportDataDto(trip, context, summaries, zoneId);
+
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> payload = mapper.convertValue(data, new TypeReference<Map<String, Object>>() {});
 
@@ -300,23 +305,29 @@ public class ReportService {
 
         byte[] bom = new byte[] { (byte)0xEF, (byte)0xBB, (byte)0xBF };
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
+        String safeTripName = trip.name().replaceAll("(?i)\\.gpx$", "").replaceAll("[\\\\/:*?\"<>|\\s]", "_");
+        String rawDate = prefs.getOrDefault("startDate", LocalDate.ofInstant(trip.startTime(), zoneId).toString());
+        String startDateStr = rawDate.replaceAll("[\\\\/:*?\"<>|\\s]", "_");
+        String filePrefix = safeTripName + "_" + startDateStr + "_";
+
         try (ZipOutputStream zipOutputStream = new ZipOutputStream(byteArrayOutputStream)) {
 
 
             // Główne podsumowanie trasy
-            zipOutputStream.putNextEntry(new ZipEntry("podsumowanie_trasy.csv"));
+            zipOutputStream.putNextEntry(new ZipEntry(filePrefix + "podsumowanie_trasy.csv"));
             zipOutputStream.write(bom);
             zipOutputStream.write(mainCsvContent.getBytes(StandardCharsets.UTF_8));
             zipOutputStream.closeEntry();
 
             // Punkty z bazy i zapytania
-            zipOutputStream.putNextEntry(new ZipEntry("punkty.csv"));
+            zipOutputStream.putNextEntry(new ZipEntry(filePrefix + "punkty.csv"));
             zipOutputStream.write(bom);
             zipOutputStream.write(apiCsvContent.getBytes(StandardCharsets.UTF_8));
             zipOutputStream.closeEntry();
 
             // Szczegóły punktów (jeden punkt - jeden wiersz)
-            zipOutputStream.putNextEntry(new ZipEntry("szczegolowe_punkty.csv"));
+            zipOutputStream.putNextEntry(new ZipEntry(filePrefix + "szczegolowe_punkty.csv"));
             zipOutputStream.write(bom);
             zipOutputStream.write(detailedPointsCsvContent.getBytes(StandardCharsets.UTF_8));
             zipOutputStream.closeEntry();
@@ -342,8 +353,7 @@ public class ReportService {
         return new ReportResource(byteArrayOutputStream.toByteArray(), fileName);
     }
 
-    public String generateSummaryCsv(TripAnalysisContext context, Map<String, String> prefs, ZoneId zoneId) {
-        List<DailySummary> summaries = generateDailySummaries(context, zoneId);
+    public String generateSummaryCsv(TripAnalysisContext context, List<DailySummary> summaries, Map<String, String> prefs, ZoneId zoneId) {
         StringBuilder csv = new StringBuilder();
 
         int maxEvents = 0;
@@ -621,7 +631,8 @@ public class ReportService {
         return csv.toString();
     }
 
-    public String generateDetailedPointsCsv(TripAnalysisContext context, Map<String, String> prefs, ZoneId zoneId) {
+    public String generateDetailedPointsCsv(TripAnalysisContext context, List<DailySummary> summaries, Map<String, String> prefs, ZoneId zoneId) {
+
         StringBuilder csv = new StringBuilder();
         DateTimeFormatter fullTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(zoneId);
 
@@ -635,13 +646,18 @@ public class ReportService {
         String distanceUnit = prefs.getOrDefault("distance", "NM");
         String speedUnit = prefs.getOrDefault("speed", "kt");
 
-        csv.append("ID punktu;Czas punktu;Szerokość punktu;Długość punktu;Stan ruchu;Szerokość zaokr. o 0,1°;Długość zaokr. o 0,1°;Czy współrzędne z zapytania API;Odchylenie od współrzędnych z zapytania (km);Czas z zapytania API;Różnica od czasu z zapytania API (min);Akwen morski;");
+        csv.append("ID punktu;Czas punktu;Szerokość punktu;Długość punktu;Stan ruchu;Miejsce postoju;Szerokość zaokr. o 0,1°;Długość zaokr. o 0,1°;Czy współrzędne z zapytania API;Odchylenie od współrzędnych z zapytania (km);Czas z zapytania API;Różnica od czasu z zapytania API (min);Akwen morski;");
         csv.append("Czas od poprzedniego punktu (min);Odległość od poprzedniego punktu (").append(distanceUnit).append(");Kurs (°);Prędkość z GPX (").append(speedUnit).append(");Prędkość wyliczona (").append(speedUnit).append(");");
         csv.append("Temperatura (").append(tempUnit).append(");Prędkość wiatru (").append(windUnit).append(");Kierunek wiatru (°);Punkt rosy (").append(tempUnit).append(");Porywy wiatru (").append(windUnit).append(");Opady deszczu (").append(rainUnit).append(");Opady śniegu (").append(snowUnit).append(");Wilgotność (%);Ciśnienie (").append(pressureUnit).append(");Zachmurzenie ogólne (%);Chmury niskie (%);Chmury średnie (%);Chmury wysokie (%);Wysokość fali (").append(waveUnit).append(");Okres fali (s);Kierunek fali (°);Wysokość fal wiatrowych (").append(waveUnit).append(");Okres fal wiatrowych (s);Wysokość martwej fali (").append(waveUnit).append(");Okres martwej fali (s);Prędkość prądów (").append(currentsUnit).append(");Kierunek prądów (°);Temperatura morza (").append(tempUnit).append(");Kod pogody\n");
 
         Map<String, TrackPoint> gridRepresentatives = new HashMap<>();
         List<TrackPoint> points = context.points();
         int pointSeq = 1;
+
+        Map<LocalDate, List<TimelineEvent>> eventsByDay = new HashMap<>();
+        for (DailySummary ds : summaries) {
+            eventsByDay.put(ds.date(), ds.timelineEvents() != null ? ds.timelineEvents() : new ArrayList<>());
+        }
 
         for (int i = 0; i < points.size(); i++) {
             TrackPoint pt = points.get(i);
@@ -662,14 +678,20 @@ public class ReportService {
             double offsetKm = GeoUtils.calculateDistance(pt.getLatitude(), pt.getLongitude(), rep.getLatitude(), rep.getLongitude()) / 1000.0;
 
             String movementStatus = "POSTÓJ";
+            String placeName = "--";
             if (pt.getTime() != null) {
                 LocalDate localDate = LocalDate.ofInstant(pt.getTime(), zoneId);
-                DayData dayData = context.dailyMovements().get(localDate);
-                if (dayData != null && dayData.events != null) {
-                    for (TimelineEvent ev : dayData.events) {
+                List<TimelineEvent> dailyEvents = eventsByDay.get(localDate);
+                if (dailyEvents != null) {
+                    for (TimelineEvent ev : dailyEvents) {
                         if (!pt.getTime().isBefore(ev.start()) && !pt.getTime().isAfter(ev.end())) {
                             if (!"BRAK DANYCH".equals(ev.type())) {
                                 movementStatus = ev.type();
+
+                                // Jeśli jesteśmy na postoju, bierzemy gotową nazwę!
+                                if ("POSTÓJ".equals(movementStatus) && ev.placeName() != null && !ev.placeName().isEmpty()) {
+                                    placeName = ev.placeName();
+                                }
                                 break;
                             }
                         }
@@ -738,6 +760,7 @@ public class ReportService {
             appendCsv(csv, String.format(Locale.US, "%.6f", pt.getLatitude()));
             appendCsv(csv, String.format(Locale.US, "%.6f", pt.getLongitude()));
             appendCsv(csv, movementStatus);
+            appendCsv(csv, placeName);
             appendCsv(csv, String.format(Locale.US, "%.1f", gridLat));
             appendCsv(csv, String.format(Locale.US, "%.1f", gridLon));
             appendCsv(csv, isRep ? "TAK" : "NIE");

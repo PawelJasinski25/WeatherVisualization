@@ -386,7 +386,8 @@ const ReportGenerator = ({ tripId }) => {
             const response = await api.get(`/trips/${tripId}/report/csv`, {
                 responseType: 'blob',
                 params: { t: new Date().getTime(),
-                    ...units}
+                    ...units,
+                    startDate: formData.cruise.startDate}
             });
 
             const blob = new Blob([response.data], { type: 'application/zip' });

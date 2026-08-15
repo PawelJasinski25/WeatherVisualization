@@ -1,9 +1,6 @@
 package jasinski.pawel.weather_visualization.service;
 
-import jasinski.pawel.weather_visualization.dto.ReportResource;
-import jasinski.pawel.weather_visualization.dto.TripAnalysisContext;
-import jasinski.pawel.weather_visualization.dto.TripReportDataDto;
-import jasinski.pawel.weather_visualization.dto.TripResponseDto;
+import jasinski.pawel.weather_visualization.dto.*;
 import jasinski.pawel.weather_visualization.entity.TrackPoint;
 import jasinski.pawel.weather_visualization.entity.Weather;
 import jasinski.pawel.weather_visualization.repository.TrackPointRepository;
@@ -129,8 +126,9 @@ class ReportServiceTest {
 
         when(trackPointRepository.findByTripIdOrderByTimeAsc(100L)).thenReturn(List.of(p1, p2));
         TripAnalysisContext context = ReflectionTestUtils.invokeMethod(reportService, "analyzeTrip", 100L, defaultZoneId);
+        List<DailySummary> summaries = reportService.generateDailySummaries(context, defaultZoneId);
 
-        String csvContent = reportService.generateSummaryCsv(context, Map.of(), defaultZoneId);
+        String csvContent = reportService.generateSummaryCsv(context, summaries, Map.of(), defaultZoneId);
 
         assertThat(csvContent).contains("Data;Start;Koniec;Czas w ruchu;Czas na postoju");
         assertThat(csvContent).contains("Średnia temperatura (°C)");
