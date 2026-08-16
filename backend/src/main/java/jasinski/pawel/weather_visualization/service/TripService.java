@@ -248,7 +248,7 @@ public class TripService {
 
         List<TrackPoint> reducedPoints = new ArrayList<>();
         Instant lastAcceptedTime = null;
-        long MIN_INTERVAL_SECONDS = 60;
+        long MIN_INTERVAL_SECONDS = 1;
 
         for (TrackPoint pt : allPointsToClone) {
             if (lastAcceptedTime == null) {

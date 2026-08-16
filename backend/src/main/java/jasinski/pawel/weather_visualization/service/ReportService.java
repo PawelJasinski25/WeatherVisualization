@@ -50,9 +50,10 @@ public class ReportService {
         }
 
         Map<LocalDate, DayData> dailyMovements = MovementAnalyzer.analyzeTripTimeline(allPoints, zoneId);
-        List<EnrichedSegment> allSegments = createEnrichedSegments(allPoints, dailyMovements, zoneId);
+        List<EnrichedSegment> rawSegments = createEnrichedSegments(allPoints, dailyMovements, zoneId);
+        List<EnrichedSegment> cleanSegments = removeAnomalies(rawSegments);
 
-        return new TripAnalysisContext(allPoints, dailyMovements, allSegments);
+        return new TripAnalysisContext(allPoints, dailyMovements, cleanSegments);
     }
 
 
@@ -270,6 +271,39 @@ public class ReportService {
 
         }
         return segments;
+    }
+
+    private List<EnrichedSegment> removeAnomalies(List<EnrichedSegment> rawSegments) {
+        if (rawSegments == null || rawSegments.size() < 3) {
+            return rawSegments;
+        }
+
+        List<EnrichedSegment> cleanSegments = new ArrayList<>(rawSegments.size());
+
+        List<Double> speeds = new ArrayList<>(rawSegments.size());
+        List<Double> durations = new ArrayList<>(rawSegments.size());
+
+        for (EnrichedSegment seg : rawSegments) {
+            speeds.add(seg.rawSpeedKmh());
+            durations.add(seg.durationSeconds());
+        }
+
+        for (int i = 0; i < rawSegments.size(); i++) {
+            EnrichedSegment seg = rawSegments.get(i);
+
+            if (seg.isMoving() && SpeedAnalyzer.isAnomaly(speeds, durations, i)) {
+                Double fallbackSpeed = (i > 0 && speeds.get(i - 1) != null) ? speeds.get(i - 1) : 0.0;
+                Double correctedDist = (fallbackSpeed / 3.6) * seg.durationSeconds();
+                speeds.set(i, fallbackSpeed);
+
+                cleanSegments.add(new EnrichedSegment(
+                        seg.p1(), seg.p2(), correctedDist, seg.durationSeconds(), fallbackSpeed, seg.isMoving()
+                ));
+            } else {
+                cleanSegments.add(seg);
+            }
+        }
+        return cleanSegments;
     }
 
     public ReportResource getCsvReportResource(Long tripId, String email, Map<String, String> prefs) {
