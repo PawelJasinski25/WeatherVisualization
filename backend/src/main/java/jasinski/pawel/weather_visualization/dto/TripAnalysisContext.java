@@ -7,6 +7,7 @@ import java.util.Map;
 
 public record TripAnalysisContext(
         List<TrackPoint> points,
+        List<TrackPoint> rawPoints,
         Map<LocalDate, DayData> dailyMovements,
         List<EnrichedSegment> segments
 ) {}

@@ -15,26 +15,27 @@ class GeoUtilsTest {
 
 
     @Test
-    void calculateDistance_shouldReturnZero_forSameCoordinates() {
+    void calculateDistance_shouldReturnZero_whenCoordinatesAreIdentical() {
+
         assertThat(GeoUtils.calculateDistance(52.2297, 21.0122, 52.2297, 21.0122)).isEqualTo(0.0);
     }
 
     @Test
-    void calculateDistance_shouldCalculateCorrectly_alongEquator() {
+    void calculateDistance_shouldCalculateCorrectly_whenMovingAlongEquator() {
 
         double distance = GeoUtils.calculateDistance(0.0, 0.0, 0.0, 1.0);
         assertThat(distance).isCloseTo(111194.9, within(1.0));
     }
 
     @Test
-    void calculateDistance_shouldCalculateCorrectly_alongMeridian() {
+    void calculateDistance_shouldCalculateCorrectly_whenMovingAlongMeridian() {
 
         double distance = GeoUtils.calculateDistance(10.0, 20.0, 11.0, 20.0);
         assertThat(distance).isCloseTo(111194.9, within(1.0));
     }
 
     @Test
-    void calculateDistance_shouldCalculateCorrectly_betweenRealCities() {
+    void calculateDistance_shouldCalculateCorrectly_whenUsingRealCityCoordinates() {
         double warsaw_lat = 52.2297;
         double warsaw_lon = 21.0122;
 

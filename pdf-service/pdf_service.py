@@ -43,58 +43,6 @@ env.filters['format_place'] = format_place
 
 day_min_sec, day_max_sec = 0, 86400
 
-def enrich_with_min_max(stats_dict, points):
-    if not isinstance(stats_dict, dict):
-        return
-
-    keys_map = {
-        'Temp': ['temp', 'temperature'], 'DewPoint': ['dewPoint'],
-        'Humidity': ['humidity'], 'Pressure': ['pressure'],
-        'WindSpeed': ['windSpeed'], 'WindGusts': ['gusts', 'windGusts'],
-        'CloudCover': ['cloudCover'], 'SeaTemperature': ['seaTemp', 'seaTemperature'],
-        'WaveHeight': ['waveHeight'], 'SwellWaveHeight': ['swellWaveH', 'swellWaveHeight'],
-        'OceanCurrentVelocity': ['oceanCurrentVel', 'currentVelocity'], 'Rain': ['rain'],
-        'Snowfall': ['snowfall', 'snow'], 'WavePeriod': ['wavePeriod'],
-        'SwellWavePeriod': ['swellWavePeriod', 'swellWaveP']
-    }
-
-    for k in keys_map:
-        if f'max{k}' not in stats_dict:
-            stats_dict[f'max{k}'] = None
-        if f'min{k}' not in stats_dict:
-            stats_dict[f'min{k}'] = None
-
-    if not points:
-        return
-
-    current_maxes = {k: -float('inf') for k in keys_map}
-    current_mins = {k: float('inf') for k in keys_map}
-    has_valid = {k: False for k in keys_map}
-
-    for p in points:
-        for target_key, search_keys in keys_map.items():
-            for sk in search_keys:
-                val = p.get(sk)
-                if val is not None and str(val).lower() != 'nan':
-                    try:
-                        v_float = float(val)
-                        if target_key == 'OceanCurrentVelocity':
-                            v_float = v_float / 3.6
-                        if v_float > current_maxes[target_key]:
-                            current_maxes[target_key] = v_float
-                        if v_float < current_mins[target_key]:
-                            current_mins[target_key] = v_float
-                        has_valid[target_key] = True
-                    except ValueError:
-                        pass
-                    break
-
-    for k in keys_map:
-        if has_valid[k]:
-            stats_dict[f'max{k}'] = current_maxes[k]
-            stats_dict[f'min{k}'] = current_mins[k]
-
-
 def reduce_points_for_overall_chart(points, target_count=300):
     if not points or len(points) <= target_count:
         return points
@@ -228,7 +176,6 @@ def generate_report_pdf(report_data: dict) -> bytes:
                 day['timeline_chart'] = timeline_future.result() if timeline_future else None
                 day['astro_timeline_chart'] = astro_future.result()
 
-                enrich_with_min_max(day.get('overallWeatherStats'), points)
                 display_summaries.append(day)
 
         if current_gap:
@@ -240,15 +187,12 @@ def generate_report_pdf(report_data: dict) -> bytes:
 
         report_data['display_summaries'] = display_summaries
 
-        enrich_with_min_max(report_data.get('overallWeather'), all_trip_points)
-
-
         overall_map_future = executor.submit(create_route_map, all_trip_points, 800, 555)
 
         report_data['overall_wind_rose'] = create_polar_rose(all_trip_points, 'windDir', 'windSpeed', 'Róża wiatrów', prefs)
         report_data['overall_wave_rose'] = create_polar_rose(all_trip_points, 'waveDir', 'waveHeight', 'Róża falowania', prefs)
 
-        overall_meteo_points = reduce_points_for_overall_chart(all_trip_points, target_count=80)
+        overall_meteo_points = reduce_points_for_overall_chart(all_trip_points, target_count=150)
 
         if len(overall_meteo_points) > 1:
             try:

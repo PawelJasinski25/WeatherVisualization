@@ -68,7 +68,7 @@ class ReportServiceTest {
 
 
     @Test
-    void getTripReportData_shouldAnalyzePointsAndCalculateAveragesCorrectly() {
+    void getTripReportData_shouldCalculateAverages_whenDataIsAvailable() {
         when(tripService.getUserTrips(userEmail)).thenReturn(List.of(mockTripDto));
 
         TrackPoint p1 = createPoint(52.2, 21.0, "2023-05-10T10:00:00Z", 1, 15.0);
@@ -83,7 +83,7 @@ class ReportServiceTest {
     }
 
     @Test
-    void getTripReportData_shouldGroupMultipleDaysCorrectly() {
+    void getTripReportData_shouldGroupMultipleDays_whenPointsSpanMultipleDays() {
         when(tripService.getUserTrips(userEmail)).thenReturn(List.of(mockTripDto));
 
         TrackPoint p1 = createPoint(52.2, 21.0, "2023-05-10T10:00:00Z", 1, 15.0);
@@ -99,7 +99,7 @@ class ReportServiceTest {
     }
 
     @Test
-    void getTripReportData_shouldUseGeoNamesService_forStoppedEvents() {
+    void getTripReportData_shouldUseGeoNamesService_whenStoppedEventsOccur() {
         when(tripService.getUserTrips(userEmail)).thenReturn(List.of(mockTripDto));
 
         TrackPoint p1 = createPoint(52.2, 21.0, "2023-05-10T10:00:00Z", 1, 15.0);
@@ -119,7 +119,7 @@ class ReportServiceTest {
 
 
     @Test
-    void generateCsv_shouldContainHeadersAndTripData() {
+    void generateSummaryCsv_shouldContainHeaders_whenSummariesAreProvided() {
 
         TrackPoint p1 = createPoint(52.2, 21.0, "2023-05-10T10:00:00Z", 1, 15.0);
         TrackPoint p2 = createPoint(52.201, 21.001, "2023-05-10T10:01:00Z", 1, 16.0);
@@ -136,7 +136,7 @@ class ReportServiceTest {
     }
 
     @Test
-    void getCsvReportResource_shouldFormatFileNameProperly() {
+    void getCsvReportResource_shouldFormatFileName_whenTripExists() {
         TripResponseDto tripWithoutGpx = new TripResponseDto(
                 100L, "Trasa rowerowa", "hash123", Instant.now(), Instant.now()
         );
@@ -151,7 +151,7 @@ class ReportServiceTest {
 
 
     @Test
-    void generatePdfReport_shouldCallPythonServiceAndReturnBytes() {
+    void generatePdfReport_shouldReturnBytes_whenPythonServiceResponds() {
         when(tripService.getUserTrips(userEmail)).thenReturn(List.of(mockTripDto));
         when(trackPointRepository.findByTripIdOrderByTimeAsc(100L)).thenReturn(List.of());
 

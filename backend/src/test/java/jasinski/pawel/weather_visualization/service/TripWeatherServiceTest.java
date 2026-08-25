@@ -39,7 +39,7 @@ class TripWeatherServiceTest {
 
 
     @Test
-    void buildGridRequests_shouldCreateUniqueRequestsForSameGridCell() {
+    void buildGridRequests_shouldCreateUniqueRequests_whenPointsAreInSameCell() {
         TrackPoint p1 = createPoint(52.2345, 21.0123, "2023-05-10T10:00:00Z");
         TrackPoint p2 = createPoint(52.2111, 21.0456, "2023-05-10T11:00:00Z");
         TrackPoint p3 = createPoint(50.0647, 19.9450, "2023-05-10T12:00:00Z");
@@ -66,7 +66,7 @@ class TripWeatherServiceTest {
 
 
     @Test
-    void stripMarineDataFromWeather_shouldSetAllMarineFieldsToNull() {
+    void stripMarineDataFromWeather_shouldSetMarineFieldsToNull_whenCalled() {
         Weather weather = new Weather();
         weather.setTemp(20.0);
         weather.setWaveHeight(2.5);
@@ -98,7 +98,7 @@ class TripWeatherServiceTest {
 
 
     @Test
-    void fetchWeatherDataFromApi_shouldGroupRequestsByDateAndCallApi() {
+    void fetchWeatherDataFromApi_shouldGroupRequests_whenMultipleDatesAreProvided() {
         GridReq req1 = new GridReq("2023-05-10", 52.2, 21.0, "2023-05-10_52.2_21.0");
         GridReq req2 = new GridReq("2023-05-11", 50.1, 19.9, "2023-05-11_50.1_19.9");
 
@@ -119,7 +119,7 @@ class TripWeatherServiceTest {
     }
 
     @Test
-    void mapWeatherToTrackPoints_shouldRemoveMarineDataForLandPoints() {
+    void mapWeatherToTrackPoints_shouldRemoveMarineData_whenPointIsOnLand() {
         TrackPoint pt = createPoint(52.2, 21.0, "2023-05-10T10:00:00Z");
         Trip trip = new Trip();
         List<Weather> weathersToSave = new ArrayList<>();
@@ -146,7 +146,7 @@ class TripWeatherServiceTest {
     }
 
     @Test
-    void mapWeatherToTrackPoints_shouldKeepMarineDataForWaterPoints() {
+    void mapWeatherToTrackPoints_shouldKeepMarineData_whenPointIsOnWater() {
         TrackPoint pt = createPoint(54.4, 18.5, "2023-05-10T10:00:00Z");
         Trip trip = new Trip();
         List<Weather> weathersToSave = new ArrayList<>();

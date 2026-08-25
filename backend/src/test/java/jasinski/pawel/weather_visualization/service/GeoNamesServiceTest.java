@@ -23,7 +23,7 @@ class GeoNamesServiceTest {
     private GeoNamesService geoNamesService;
 
     @Test
-    void getPlaceName_shouldReturnPlace_andNotCallOceanApi() {
+    void getPlaceName_shouldReturnPlaceName_whenLandApiReturnsData() {
 
         GeoNamesService.GeoNamesResponse mockPlaceResponse = new GeoNamesService.GeoNamesResponse(
                 List.of(new GeoNamesService.GeoName("Warszawa", "Polska"))

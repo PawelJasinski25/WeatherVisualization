@@ -35,7 +35,7 @@ class TripPersistenceServiceTest {
 
 
     @Test
-    void createAndSaveTripHeader_shouldCreateCorrectTripAndSaveIt() {
+    void createAndSaveTripHeader_shouldSaveTrip_whenValidDataIsProvided() {
         User user = new User();
         user.setEmail("email@example.com");
 
@@ -50,7 +50,7 @@ class TripPersistenceServiceTest {
 
 
     @Test
-    void saveAllDataToDatabase_shouldSaveAllCollectionsAndSetTripTimes() {
+    void saveAllDataToDatabase_shouldSaveCollections_whenPointsAreProvided() {
         Trip trip = new Trip();
 
         TrackPoint p1 = new TrackPoint();
@@ -91,7 +91,7 @@ class TripPersistenceServiceTest {
     }
 
     @Test
-    void saveAllDataToDatabase_shouldRelyOnListOrderForStartAndEndTimes() {
+    void saveAllDataToDatabase_shouldSetTimesBasedOnListOrder_whenPointsAreUnsorted() {
         Trip trip = new Trip();
 
         TrackPoint firstInList = new TrackPoint();

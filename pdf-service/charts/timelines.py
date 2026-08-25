@@ -1,11 +1,7 @@
 import io
 import base64
-from PIL import Image, ImageDraw
-
 from utils import parse_dt, format_place, get_font
 import datetime
-import io
-import base64
 import re
 from PIL import Image, ImageDraw
 

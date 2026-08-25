@@ -50,6 +50,47 @@ public class SpeedAnalyzer {
         return new SpeedStats(finalMaxSpeed, avgSpeed, distanceKm);
     }
 
+    public static List<TrackPoint> removeSpeedAnomalies(List<TrackPoint> rawPoints) {
+        if (rawPoints == null || rawPoints.size() < 3) {
+            return rawPoints;
+        }
+
+        List<TrackPoint> cleanedPoints = new ArrayList<>(rawPoints.size());
+        for (TrackPoint p : rawPoints) {
+            cleanedPoints.add(new TrackPoint(p));
+        }
+
+        List<Double> speeds = new ArrayList<>(cleanedPoints.size());
+        List<Double> durations = new ArrayList<>(cleanedPoints.size());
+
+        for (int i = 0; i < cleanedPoints.size() - 1; i++) {
+            TrackPoint p1 = cleanedPoints.get(i);
+            TrackPoint p2 = cleanedPoints.get(i + 1);
+
+            double dur = Math.abs(Duration.between(p1.getTime(), p2.getTime()).toMillis()) / 1000.0;
+            double dist = GeoUtils.calculateDistance(p1.getLatitude(), p1.getLongitude(), p2.getLatitude(), p2.getLongitude());
+
+            double speed = 0.0;
+            if (dur > 0) {
+                speed = (p2.getSpeed() != null && p2.getSpeed() > 0.0) ? p2.getSpeed() : (dist / dur) * 3.6;
+            }
+            speeds.add(speed);
+            durations.add(dur);
+        }
+
+        for (int i = 0; i < speeds.size(); i++) {
+            if (isAnomaly(speeds, durations, i)) {
+                Double fallbackSpeed = (i > 0 && speeds.get(i - 1) != null) ? speeds.get(i - 1) : 0.0;
+                speeds.set(i, fallbackSpeed);
+                cleanedPoints.get(i + 1).setSpeed(fallbackSpeed);
+            } else {
+                cleanedPoints.get(i + 1).setSpeed(speeds.get(i));
+            }
+        }
+
+        return cleanedPoints;
+    }
+
 
     public static boolean isAnomaly(List<Double> speeds, List<Double> durations, int index) {
         if (speeds == null || durations == null || index < 0 || index >= speeds.size()) {

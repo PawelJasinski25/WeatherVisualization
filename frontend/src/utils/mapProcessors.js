@@ -2,7 +2,8 @@
 import { metricConfig } from '../config/metricConfig';
 import { getProjectedDistance, getDistanceFromLatLonInKm, getProjectedCoords, unprojectMercator, getBearing, interpolateColor } from './geoUtils';
 
-const GAP_THRESHOLD_KM = 150.0;
+const MIN_GAP_DISTANCE_KM = 2.0;
+const MIN_GAP_DURATION_MS = 45 * 60 * 1000;
 
 export const generateSegmentsData = (tripData, activeMetrics) => {
     if (!tripData || !tripData.length) return [];
@@ -38,9 +39,13 @@ export const generateSegmentsData = (tripData, activeMetrics) => {
         for (let i = 1; i < seg.length; i++) {
             const d = getProjectedDistance(seg[i-1].latitude, seg[i-1].longitude, seg[i].latitude, seg[i].longitude);
             const dKm = getDistanceFromLatLonInKm(seg[i-1].latitude, seg[i-1].longitude, seg[i].latitude, seg[i].longitude);
+            let tDiffMs = 0;
+            if (seg[i].timeMs && seg[i-1].timeMs) {
+                tDiffMs = Math.abs(seg[i].timeMs - seg[i-1].timeMs);
+            }
             totalDist += d;
             dists.push(totalDist)
-            isGap.push(dKm > GAP_THRESHOLD_KM);
+            isGap.push(dKm >= MIN_GAP_DISTANCE_KM && tDiffMs >= MIN_GAP_DURATION_MS);
         }
 
         activeMetrics.forEach((metricKey, index) => {
@@ -172,11 +177,11 @@ export const generateSampledPoints = (tripData) => {
         }
     });
 
-    let baseInterval = 10;
-    if (totalTripDistance < 10) baseInterval = 0.5;
-    else if (totalTripDistance < 30) baseInterval = 1.5;
-    else if (totalTripDistance < 100) baseInterval = 4;
-    else if (totalTripDistance < 300) baseInterval = 8;
+    let baseInterval = 5;
+    if (totalTripDistance < 10) baseInterval = 0.25;
+    else if (totalTripDistance < 30) baseInterval = 0.8;
+    else if (totalTripDistance < 100) baseInterval = 2.0;
+    else if (totalTripDistance < 300) baseInterval = 4.0;
 
     const INTERVAL_KM = baseInterval;
     const candidatePoints = [];
@@ -200,7 +205,12 @@ export const generateSampledPoints = (tripData) => {
             const lng = segment[i].longitude;
             const segmentDist = getDistanceFromLatLonInKm(lastLat, lastLng, lat, lng);
 
-            if (segmentDist > GAP_THRESHOLD_KM) {
+            let tDiffMs = 0;
+            if (segment[i].timeMs && segment[i-1].timeMs) {
+                tDiffMs = Math.abs(segment[i].timeMs - segment[i-1].timeMs);
+            }
+
+            if (segmentDist >= MIN_GAP_DISTANCE_KM && tDiffMs >= MIN_GAP_DURATION_MS) {
                 accumulatedDist = 0;
                 const currentBearing = getBearing(lastLat, lastLng, lat, lng);
                 candidatePoints.push({ ...segment[i], lat: lat, lng: lng, routeBearing: currentBearing });
@@ -227,7 +237,6 @@ export const generateSampledPoints = (tripData) => {
     else if (totalTripDistance < 100) clearanceFactor = 1500;
 
     const zoomLevels = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
-
     for (const z of zoomLevels) {
         const MIN_CLEARANCE_KM = clearanceFactor / Math.pow(2, z);
         const selectedAtThisZoom = candidatePoints.filter(p => p.minZoom <= z);
@@ -237,12 +246,12 @@ export const generateSampledPoints = (tripData) => {
 
             let hasCollision = false;
             for (const selected of selectedAtThisZoom) {
-                if (getDistanceFromLatLonInKm(candidate.lat, candidate.lng, selected.lat, selected.lng) < MIN_CLEARANCE_KM) {
+                if (getDistanceFromLatLonInKm(candidate.lat, candidate.lng, selected.lat, selected.lng)
+                    < MIN_CLEARANCE_KM) {
                     hasCollision = true;
                     break;
                 }
             }
-
             if (!hasCollision) {
                 candidate.minZoom = z;
                 selectedAtThisZoom.push(candidate);

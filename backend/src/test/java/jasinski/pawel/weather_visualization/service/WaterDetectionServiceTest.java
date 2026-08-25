@@ -49,7 +49,7 @@ class WaterDetectionServiceTest {
     }
 
     @Test
-    void isWater_shouldHandleLatitudeLongitudeCorrectly() {
+    void isWater_shouldHandleCoordinates_whenPointIsInsidePolygon() {
         setupMockGeometry();
 
         boolean result = waterDetectionService.isWater(2.0, 2.0);

@@ -44,16 +44,16 @@ public class ReportService {
     }
 
     private TripAnalysisContext analyzeTrip(Long tripId, ZoneId zoneId) {
-        List<TrackPoint> allPoints = trackPointRepository.findByTripIdOrderByTimeAsc(tripId);
-        if (allPoints.isEmpty()) {
-            return new TripAnalysisContext(new ArrayList<>(), new TreeMap<>(), new ArrayList<>());
+        List<TrackPoint> rawPoints = trackPointRepository.findByTripIdOrderByTimeAsc(tripId);
+        if (rawPoints.isEmpty()) {
+            return new TripAnalysisContext(new ArrayList<>(), new ArrayList<>(), new TreeMap<>(), new ArrayList<>());
         }
 
-        Map<LocalDate, DayData> dailyMovements = MovementAnalyzer.analyzeTripTimeline(allPoints, zoneId);
-        List<EnrichedSegment> rawSegments = createEnrichedSegments(allPoints, dailyMovements, zoneId);
-        List<EnrichedSegment> cleanSegments = removeAnomalies(rawSegments);
+        List<TrackPoint> cleanedPoints = SpeedAnalyzer.removeSpeedAnomalies(rawPoints);
+        Map<LocalDate, DayData> dailyMovements = MovementAnalyzer.analyzeTripTimeline(cleanedPoints, zoneId);
+        List<EnrichedSegment> segments = createEnrichedSegments(cleanedPoints, dailyMovements, zoneId);
 
-        return new TripAnalysisContext(allPoints, dailyMovements, cleanSegments);
+        return new TripAnalysisContext(cleanedPoints, rawPoints, dailyMovements, segments);
     }
 
 
@@ -104,7 +104,7 @@ public class ReportService {
                     }
                 }
             }
-            AstronomyStats astro = AstronomyAnalyzer.calculateSun(pointsInDay, context.points(), eventsForAstro, zoneId);
+            AstronomyStats astro = AstronomyAnalyzer.calculateAstronomy(pointsInDay, context.points(), eventsForAstro, zoneId);
 
             List<EnrichedSegment> dailySegments = context.segments().stream()
                     .filter(s -> LocalDate.ofInstant(s.p1().getTime(), zoneId).equals(day))
@@ -258,12 +258,8 @@ public class ReportService {
                 double dist = GeoUtils.calculateDistance(p1.getLatitude(), p1.getLongitude(), p2.getLatitude(), p2.getLongitude());
                 double speed = 0.0;
 
-                if (isMoving) {
-                    if (p2.getSpeed() != null && p2.getSpeed() > 0.0) {
-                        speed = p2.getSpeed();
-                    } else {
-                        speed = (dist / dur) * 3.6;
-                    }
+                if (isMoving && p2.getSpeed() != null) {
+                    speed = p2.getSpeed();
                 }
 
                 segments.add(new EnrichedSegment(p1, p2, dist, dur, speed, isMoving));
@@ -273,38 +269,6 @@ public class ReportService {
         return segments;
     }
 
-    private List<EnrichedSegment> removeAnomalies(List<EnrichedSegment> rawSegments) {
-        if (rawSegments == null || rawSegments.size() < 3) {
-            return rawSegments;
-        }
-
-        List<EnrichedSegment> cleanSegments = new ArrayList<>(rawSegments.size());
-
-        List<Double> speeds = new ArrayList<>(rawSegments.size());
-        List<Double> durations = new ArrayList<>(rawSegments.size());
-
-        for (EnrichedSegment seg : rawSegments) {
-            speeds.add(seg.rawSpeedKmh());
-            durations.add(seg.durationSeconds());
-        }
-
-        for (int i = 0; i < rawSegments.size(); i++) {
-            EnrichedSegment seg = rawSegments.get(i);
-
-            if (seg.isMoving() && SpeedAnalyzer.isAnomaly(speeds, durations, i)) {
-                Double fallbackSpeed = (i > 0 && speeds.get(i - 1) != null) ? speeds.get(i - 1) : 0.0;
-                Double correctedDist = (fallbackSpeed / 3.6) * seg.durationSeconds();
-                speeds.set(i, fallbackSpeed);
-
-                cleanSegments.add(new EnrichedSegment(
-                        seg.p1(), seg.p2(), correctedDist, seg.durationSeconds(), fallbackSpeed, seg.isMoving()
-                ));
-            } else {
-                cleanSegments.add(seg);
-            }
-        }
-        return cleanSegments;
-    }
 
     public ReportResource getCsvReportResource(Long tripId, String email, Map<String, String> prefs) {
         if(prefs == null) prefs = new HashMap<>();
@@ -409,7 +373,6 @@ public class ReportService {
         csv.append("Data;Start;Koniec;Czas w ruchu;Czas na postoju;Czas braku danych;")
                 .append("Średnia temperatura (").append(tempUnit).append(");Średnia temperatura w ruchu (").append(tempUnit).append(");")
                 .append("Średnia siła wiatru (").append(windUnit).append(");Średnia siła wiatru w ruchu (").append(windUnit).append(");")
-                .append("Średni kierunek wiatru (°);Średni kierunek wiatru w ruchu (°);")
                 .append("Średnie porywy wiatru (").append(windUnit).append(");Średnie porywy wiatru w ruchu (").append(windUnit).append(");")
                 .append("Średni punkt rosy (").append(tempUnit).append(");Średni punkt rosy w ruchu (").append(tempUnit).append(");")
                 .append("Suma opadów deszczu (").append(rainUnit).append(");Suma opadów deszczu w ruchu (").append(rainUnit).append(");")
@@ -417,10 +380,10 @@ public class ReportService {
                 .append("Średnia wilgotność (%);Średnia wilgotność w ruchu (%);")
                 .append("Średnie ciśnienie (").append(pressureUnit).append(");Średnie ciśnienie w ruchu (").append(pressureUnit).append(");")
                 .append("Średnie zachmurzenie (%);Średnie zachmurzenie w ruchu (%);Średnie chmury niskie (%);Średnie chmury niskie w ruchu (%);Średnie chmury średnie (%);Średnie chmury średnie w ruchu (%);Średnie chmury wysokie (%);Średnie chmury wysokie w ruchu (%);")
-                .append("Średnia wysokość fal (").append(waveUnit).append(");Średnia wysokość fal w ruchu (").append(waveUnit).append(");Średni okres fal (s);Średni okres fal w ruchu (s);Średni kierunek fal (°);Średni kierunek fal w ruchu (°);")
+                .append("Średnia wysokość fal (").append(waveUnit).append(");Średnia wysokość fal w ruchu (").append(waveUnit).append(");Średni okres fal (s);Średni okres fal w ruchu (s);")
                 .append("Średnia wysokość fal wiatrowych (").append(waveUnit).append(");Średnia wysokość fal wiatrowych w ruchu (").append(waveUnit).append(");Średni okres fal wiatrowych (s);Średni okres fal wiatrowych w ruchu (s);")
                 .append("Średnia wysokość martwej fali (").append(waveUnit).append(");Średnia wysokość martwej fali w ruchu (").append(waveUnit).append(");Średni okres martwej fali (s);Średni okres martwej fali w ruchu (s);")
-                .append("Średnia prędkość prądów (").append(currentsUnit).append(");Średnia prędkość prądów w ruchu (").append(currentsUnit).append(");Średni kierunek prądów (°);Średni kierunek prądów w ruchu (°);")
+                .append("Średnia prędkość prądów (").append(currentsUnit).append(");Średnia prędkość prądów w ruchu (").append(currentsUnit).append(");")
                 .append("Średnia temperatura morza (").append(tempUnit).append(");Średnia temperatura morza w ruchu (").append(tempUnit).append(");")
                 .append("Świt astronomiczny;Świt nautyczny;Świt cywilny;Wschód Słońca;Kulminacja Słońca;Zachód Słońca;")
                 .append("Zmierzch cywilny;Zmierzch nautyczny;Zmierzch astronomiczny;");
@@ -475,7 +438,6 @@ public class ReportService {
 
             appendCsv(csv, formatUnit(oWs.avgTemp(), tempUnit, "temp")); appendCsv(csv, formatUnit(mWs.avgTemp(), tempUnit, "temp"));
             appendCsv(csv, formatUnit(oWs.avgWindSpeed(), windUnit, "wind")); appendCsv(csv, formatUnit(mWs.avgWindSpeed(), windUnit, "wind"));
-            appendCsv(csv, oWs.avgWindDir()); appendCsv(csv, mWs.avgWindDir());
             appendCsv(csv, formatUnit(oWs.avgWindGusts(), windUnit, "wind")); appendCsv(csv, formatUnit(mWs.avgWindGusts(), windUnit, "wind"));
             appendCsv(csv, formatUnit(oWs.avgDewPoint(), tempUnit, "temp")); appendCsv(csv, formatUnit(mWs.avgDewPoint(), tempUnit, "temp"));
 
@@ -491,7 +453,6 @@ public class ReportService {
 
             appendCsv(csv, formatUnit(oWs.avgWaveHeight(), waveUnit, "wave")); appendCsv(csv, formatUnit(mWs.avgWaveHeight(), waveUnit, "wave"));
             appendCsv(csv, oWs.avgWavePeriod()); appendCsv(csv, mWs.avgWavePeriod());
-            appendCsv(csv, oWs.avgWaveDirection()); appendCsv(csv, mWs.avgWaveDirection());
 
             appendCsv(csv, formatUnit(oWs.avgWindWaveHeight(), waveUnit, "wave")); appendCsv(csv, formatUnit(mWs.avgWindWaveHeight(), waveUnit, "wave"));
             appendCsv(csv, oWs.avgWindWavePeriod()); appendCsv(csv, mWs.avgWindWavePeriod());
@@ -499,7 +460,6 @@ public class ReportService {
             appendCsv(csv, oWs.avgSwellWavePeriod()); appendCsv(csv, mWs.avgSwellWavePeriod());
 
             appendCsv(csv, formatUnit(oWs.avgOceanCurrentVelocity(), currentsUnit, "currents")); appendCsv(csv, formatUnit(mWs.avgOceanCurrentVelocity(), currentsUnit, "currents"));
-            appendCsv(csv, oWs.avgOceanCurrentDirection()); appendCsv(csv, mWs.avgOceanCurrentDirection());
             appendCsv(csv, formatUnit(oWs.avgSeaTemperature(), tempUnit, "temp")); appendCsv(csv, formatUnit(mWs.avgSeaTemperature(), tempUnit, "temp"));
 
             AstronomyStats astro = summary.astroStats();
@@ -722,7 +682,6 @@ public class ReportService {
                             if (!"BRAK DANYCH".equals(ev.type())) {
                                 movementStatus = ev.type();
 
-                                // Jeśli jesteśmy na postoju, bierzemy gotową nazwę!
                                 if ("POSTÓJ".equals(movementStatus) && ev.placeName() != null && !ev.placeName().isEmpty()) {
                                     placeName = ev.placeName();
                                 }
@@ -748,9 +707,10 @@ public class ReportService {
             String distanceMmStr = "--";
             String courseDegStr = "--";
 
+            TrackPoint rawPt = context.rawPoints().get(i);
             String speedGpxStr = "--";
-            if(pt.getSpeed() != null) {
-                speedGpxStr = formatUnit(pt.getSpeed(), speedUnit, "speed");
+            if (rawPt.getSpeed() != null) {
+                speedGpxStr = formatUnit(rawPt.getSpeed(), speedUnit, "speed");
             }
 
             String speedCalcKnStr = "--";

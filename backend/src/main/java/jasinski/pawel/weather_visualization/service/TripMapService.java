@@ -8,7 +8,6 @@ import jasinski.pawel.weather_visualization.entity.TrackPoint;
 import jasinski.pawel.weather_visualization.entity.Weather;
 import jasinski.pawel.weather_visualization.repository.TrackPointRepository;
 import jasinski.pawel.weather_visualization.utils.AstronomyAnalyzer;
-import jasinski.pawel.weather_visualization.utils.GeoUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -22,8 +21,6 @@ import java.util.*;
 public class TripMapService {
 
     private static final DateTimeFormatter MARKER_FMT = DateTimeFormatter.ofPattern("dd.MM.yyyy, HH:mm");
-    private static final double MIN_DISTANCE_METERS = 15.0;
-    private static final long MIN_TIME_SECONDS = 15;
 
     private final TrackPointRepository trackPointRepository;
 
@@ -36,7 +33,7 @@ public class TripMapService {
         List<TrackPoint> rawPoints = trackPointRepository.findByTripIdOrderByTimeAsc(tripId);
         if (rawPoints.isEmpty()) return new MapDataResponse(List.of(), List.of(), Map.of());
 
-        List<TrackPoint> points = filterPointsForMap(rawPoints, MIN_DISTANCE_METERS, MIN_TIME_SECONDS);
+        List<TrackPoint> points = filterPointsForMap(rawPoints);
         System.out.println("Optymalizacja mapy: Zredukowano z " + rawPoints.size() + " do " + points.size() + " punktów.");
 
 
@@ -57,7 +54,7 @@ public class TripMapService {
             List<TrackPoint> dayPoints = entry.getValue();
 
             List<TrackPoint> rawDayPoints = rawPointsByDay.get(currentDate);
-            AstronomyStats astro = AstronomyAnalyzer.calculateSun(rawDayPoints, rawPoints, null, zoneId);
+            AstronomyStats astro = AstronomyAnalyzer.calculateAstronomy(rawDayPoints, rawPoints, null, zoneId);
 
             if (firstDayAstro == null) {
                 firstDayAstro = astro;
@@ -221,69 +218,44 @@ public class TripMapService {
         );
     }
 
-    private List<TrackPoint> filterPointsForMap(List<TrackPoint> originalPoints, double minDistanceMeters, long minTimeSeconds) {
+    private List<TrackPoint> filterPointsForMap(List<TrackPoint> originalPoints) {
         if (originalPoints == null || originalPoints.isEmpty()) {
             return originalPoints;
         }
 
+        int MAX_POINTS_FOR_MAP = 6000;
+        if (originalPoints.size() <= MAX_POINTS_FOR_MAP) {
+            return originalPoints;
+        }
+
+        List<TrackPoint> filteredPoints = new ArrayList<>(MAX_POINTS_FOR_MAP);
         Map<Integer, List<TrackPoint>> segments = new LinkedHashMap<>();
         for (TrackPoint pt : originalPoints) {
             int segId = pt.getSegmentId() != null ? pt.getSegmentId() : 0;
             segments.computeIfAbsent(segId, k -> new ArrayList<>()).add(pt);
         }
 
-        List<TrackPoint> phase1Filtered = new ArrayList<>();
-
         for (List<TrackPoint> segPoints : segments.values()) {
-            if (segPoints.isEmpty()) continue;
-
-            TrackPoint lastKeptPoint = segPoints.get(0);
-            phase1Filtered.add(lastKeptPoint);
-
-            for (int i = 1; i < segPoints.size(); i++) {
-                TrackPoint currentPoint = segPoints.get(i);
-                double distance = GeoUtils.calculateDistance(lastKeptPoint.getLatitude(), lastKeptPoint.getLongitude(), currentPoint.getLatitude(), currentPoint.getLongitude());
-                long timeGap = java.time.Duration.between(lastKeptPoint.getTime(), currentPoint.getTime()).abs().getSeconds();
-
-                if (distance >= minDistanceMeters || timeGap >= minTimeSeconds || i == segPoints.size() - 1) {
-                    phase1Filtered.add(currentPoint);
-                    lastKeptPoint = currentPoint;
-                }
-            }
-        }
-
-        int MAX_POINTS_FOR_MAP = 2500;
-        if (phase1Filtered.size() <= MAX_POINTS_FOR_MAP) {
-            return phase1Filtered;
-        }
-
-        List<TrackPoint> heavilyFiltered = new ArrayList<>(MAX_POINTS_FOR_MAP);
-        Map<Integer, List<TrackPoint>> filteredSegments = new LinkedHashMap<>();
-        for (TrackPoint pt : phase1Filtered) {
-            int segId = pt.getSegmentId() != null ? pt.getSegmentId() : 0;
-            filteredSegments.computeIfAbsent(segId, k -> new ArrayList<>()).add(pt);
-        }
-
-        for (List<TrackPoint> segPoints : filteredSegments.values()) {
             if (segPoints.size() < 2) {
+                filteredPoints.addAll(segPoints);
                 continue;
             }
 
-            int targetSize = (int) Math.round((double) segPoints.size() / phase1Filtered.size() * MAX_POINTS_FOR_MAP);
+            int targetSize = (int) Math.round((double) segPoints.size() / originalPoints.size() * MAX_POINTS_FOR_MAP);
             targetSize = Math.max(2, targetSize);
 
             if (segPoints.size() <= targetSize) {
-                heavilyFiltered.addAll(segPoints);
+                filteredPoints.addAll(segPoints);
             } else {
                 double step = (double) (segPoints.size() - 1) / (targetSize - 1);
                 for (int i = 0; i < targetSize; i++) {
                     int index = (int) Math.round(i * step);
                     index = Math.min(index, segPoints.size() - 1);
-                    heavilyFiltered.add(segPoints.get(index));
+                    filteredPoints.add(segPoints.get(index));
                 }
             }
         }
-        return heavilyFiltered;
+        return filteredPoints;
     }
 
     private void updateRanges(Map<String, double[]> ranges, String key, Number value) {

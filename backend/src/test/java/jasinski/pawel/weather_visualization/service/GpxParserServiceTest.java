@@ -30,7 +30,7 @@ class GpxParserServiceTest {
     }
 
     @Test
-    void parseAndFilterGpx_shouldExtractPoints_andApplyFilteringLogic() throws Exception {
+    void parseAndFilterGpx_shouldExtractPoints_whenGpxIsValid() throws Exception {
         String gpxXml = """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <gpx version="1.1">
@@ -54,7 +54,7 @@ class GpxParserServiceTest {
     }
 
     @Test
-    void parseAndFilterGpx_shouldExtractElevationAndSpeed() throws Exception {
+    void parseAndFilterGpx_shouldExtractElevationAndSpeed_whenTagsArePresent() throws Exception {
         String gpxXml = """
                 <gpx><trk><trkseg>
                    <trkpt lat="52.2" lon="21.0">
@@ -73,7 +73,7 @@ class GpxParserServiceTest {
     }
 
     @Test
-    void fixGpxData_shouldRepairUnclosedTags() {
+    void fixGpxData_shouldRepairUnclosedTags_whenInvalidTagsAreProvided() {
         String validToken = "<trkpt lat=\"1\" lon=\"2\">";
         String invalidToken = "</trkpt>";
 

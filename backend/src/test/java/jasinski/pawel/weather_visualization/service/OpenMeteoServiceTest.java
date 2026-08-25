@@ -45,7 +45,7 @@ class OpenMeteoServiceTest {
 
 
     @Test
-    void buildWeatherEntity_shouldMapAllWeatherFields() {
+    void buildWeatherEntity_shouldMapAllWeatherFields_whenResponseIsValid() {
         OpenMeteoService.OpenMeteoResponse response = new OpenMeteoService.OpenMeteoResponse();
         response.hourly = new OpenMeteoService.HourlyData();
 
@@ -100,7 +100,7 @@ class OpenMeteoServiceTest {
     }
 
     @Test
-    void fetchWeatherBatch_shouldSaveResponseIntoCache() {
+    void fetchWeatherBatch_shouldSaveResponseIntoCache_whenApiCallIsSuccessful() {
         OpenMeteoService.OpenMeteoResponse response = new OpenMeteoService.OpenMeteoResponse();
 
         when(waterDetectionService.isWater(anyDouble(), anyDouble())).thenReturn(false);

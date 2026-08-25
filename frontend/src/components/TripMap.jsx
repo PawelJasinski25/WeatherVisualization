@@ -34,8 +34,6 @@ const TripMap = ({ tripId, selectedPrimary = [], selectedSecondary = [], isPanel
     useEffect(() => {
         if (tripId) {
             setSelectedAstroMarker(null);
-
-
             const timezone = units.timezone || 'UTC';
             api.get(`/trips/${tripId}/coordinates?timezone=${encodeURIComponent(timezone)}`).then(res => {
                 const points = res.data.route || [];

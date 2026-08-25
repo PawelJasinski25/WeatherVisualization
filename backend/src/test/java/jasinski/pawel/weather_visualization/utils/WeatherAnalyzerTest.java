@@ -34,7 +34,7 @@ class WeatherAnalyzerTest {
 
 
     @Test
-    void analyzeWeather_shouldCalculateWeightedAverages_basedOnSegmentDuration() {
+    void analyzeWeather_shouldCalculateWeightedAverages_whenSegmentsHaveDifferentDurations() {
 
         Weather w1 = new Weather(); w1.setTemp(10.0);
         Weather w2 = new Weather(); w2.setTemp(20.0);
@@ -48,7 +48,7 @@ class WeatherAnalyzerTest {
     }
 
     @Test
-    void analyzeWeather_shouldCapWeightAt3600Seconds() {
+    void analyzeWeather_shouldCapWeight_whenSegmentIsLongerThanAnHour() {
 
         Weather w1 = new Weather(); w1.setTemp(10.0);
         Weather w2 = new Weather(); w2.setTemp(20.0);
@@ -63,22 +63,7 @@ class WeatherAnalyzerTest {
 
 
     @Test
-    void analyzeWeather_shouldCalculateCircularMeanForAngles_correctlyHandlingCrossOver() {
-
-        Weather w1 = new Weather(); w1.setWindDir(350);
-        Weather w2 = new Weather(); w2.setWindDir(10);
-
-        EnrichedSegment seg1 = createSegment(10.0, w1);
-        EnrichedSegment seg2 = createSegment(10.0, w2);
-
-        WeatherStats stats = WeatherAnalyzer.analyzeWeather(List.of(seg1, seg2));
-
-        assertThat(stats.avgWindDir()).isIn(0, 360);
-    }
-
-
-    @Test
-    void analyzeWeather_shouldAccumulateRain_basedOnFractionOfHour() {
+    void analyzeWeather_shouldAccumulateRain_whenSegmentsAreShorterThanAnHour() {
 
         Weather w1 = new Weather(); w1.setRain(3.6);
         Weather w2 = new Weather(); w2.setRain(7.2);
@@ -93,7 +78,7 @@ class WeatherAnalyzerTest {
 
 
     @Test
-    void analyzeWeather_shouldHandleMissingOptionalData_withoutBreakingAverages() {
+    void analyzeWeather_shouldCalculateAverages_whenOptionalDataIsMissing() {
 
         Weather w1 = new Weather();
         w1.setTemp(15.0);

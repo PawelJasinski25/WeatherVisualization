@@ -62,7 +62,7 @@ class TripServiceTest {
     }
 
     @Test
-    void getUserTrips_shouldReturnMappedDtoList() {
+    void getUserTrips_shouldReturnMappedDtoList_whenTripsExist() {
         when(tripRepository.findByUser_Email("email@example.com")).thenReturn(List.of(trip));
         List<TripResponseDto> result = tripService.getUserTrips("email@example.com");
         assertThat(result).hasSize(1);
@@ -94,7 +94,7 @@ class TripServiceTest {
     }
 
     @Test
-    void processGpxFile_shouldReturnExistingTrip_withoutProcessingAgain() throws Exception {
+    void processGpxFile_shouldReturnExistingTrip_whenTripIsDuplicate() throws Exception {
         MultipartFile mockFile = mock(MultipartFile.class);
         when(mockFile.getInputStream()).thenReturn(new ByteArrayInputStream("data".getBytes()));
         when(userRepository.findByEmail("email@example.com")).thenReturn(Optional.of(owner));
@@ -109,7 +109,7 @@ class TripServiceTest {
     }
 
     @Test
-    void processGpxFile_shouldCreateAndParseNewTrip() throws Exception {
+    void processGpxFile_shouldCreateNewTrip_whenTripIsNew() throws Exception {
         MultipartFile mockFile = mock(MultipartFile.class);
         when(mockFile.getInputStream()).thenReturn(new ByteArrayInputStream("data".getBytes()));
         when(userRepository.findByEmail("email@example.com")).thenReturn(Optional.of(owner));
@@ -145,7 +145,7 @@ class TripServiceTest {
     }
 
     @Test
-    void mergeTrips_shouldMergeAndSave_forValidRequest() {
+    void mergeTrips_shouldMergeAndSave_whenRequestIsValid() {
         TripMergeRequestDto.TripMergeSegment segment = new TripMergeRequestDto.TripMergeSegment(100L, "2023-01-01T10:00:00Z", "2023-01-01T11:00:00Z");
         TripMergeRequestDto request = new TripMergeRequestDto("Merged", List.of(segment));
 

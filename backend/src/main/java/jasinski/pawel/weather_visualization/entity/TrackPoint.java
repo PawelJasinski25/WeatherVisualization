@@ -11,6 +11,20 @@ import java.time.Instant;
         @Index(name = "idx_tp_weather_id", columnList = "weather_id")
 })
 public class TrackPoint {
+
+    public TrackPoint() {}
+
+    public TrackPoint(TrackPoint source) {
+        this.id = source.getId();
+        this.time = source.getTime();
+        this.speed = source.getSpeed();
+        this.latitude = source.getLatitude();
+        this.longitude = source.getLongitude();
+        this.trip = source.getTrip();
+        this.segmentId = source.getSegmentId();
+        this.weather = source.getWeather();
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "tp_seq_gen")
     @SequenceGenerator(
@@ -18,11 +32,10 @@ public class TrackPoint {
             sequenceName = "track_point_sequence",
             allocationSize = 50
     )
-    private Long id;
 
+    private Long id;
     private Instant time;
     private Double speed;
-
     private double latitude;
     private double longitude;
 

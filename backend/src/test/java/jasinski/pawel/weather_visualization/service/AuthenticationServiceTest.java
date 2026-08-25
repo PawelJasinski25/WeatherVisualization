@@ -33,7 +33,7 @@ class AuthenticationServiceTest {
     private AuthenticationService authenticationService;
 
     private AuthRequest authRequest;
-    private User mockUser;
+    private User user;
 
     @BeforeEach
     void setUp() {
@@ -42,9 +42,9 @@ class AuthenticationServiceTest {
         authRequest.setEmail("email@example.com");
         authRequest.setPassword("example password");
 
-        mockUser = new User();
-        mockUser.setEmail("email@example.com");
-        mockUser.setPassword("encoded password");
+        user = new User();
+        user.setEmail("email@example.com");
+        user.setPassword("encoded password");
     }
 
     @Test
@@ -78,9 +78,9 @@ class AuthenticationServiceTest {
 
     @Test
     void login_shouldReturnToken_whenCredentialsAreValid() {
-        when(userRepository.findByEmail(authRequest.getEmail())).thenReturn(Optional.of(mockUser));
-        when(passwordEncoder.matches(authRequest.getPassword(), mockUser.getPassword())).thenReturn(true);
-        when(jwtService.generateToken(mockUser.getEmail())).thenReturn("jwt token");
+        when(userRepository.findByEmail(authRequest.getEmail())).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(authRequest.getPassword(), user.getPassword())).thenReturn(true);
+        when(jwtService.generateToken(user.getEmail())).thenReturn("jwt token");
 
         AuthResponse response = authenticationService.login(authRequest);
 
@@ -91,8 +91,8 @@ class AuthenticationServiceTest {
 
     @Test
     void login_shouldThrowException_whenPasswordIsWrong() {
-        when(userRepository.findByEmail(authRequest.getEmail())).thenReturn(Optional.of(mockUser));
-        when(passwordEncoder.matches(authRequest.getPassword(), mockUser.getPassword())).thenReturn(false);
+        when(userRepository.findByEmail(authRequest.getEmail())).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(authRequest.getPassword(), user.getPassword())).thenReturn(false);
 
         assertThatThrownBy(() -> authenticationService.login(authRequest))
                 .isInstanceOf(ResponseStatusException.class)

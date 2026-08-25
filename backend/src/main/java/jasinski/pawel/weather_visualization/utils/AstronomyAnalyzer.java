@@ -17,7 +17,7 @@ public class AstronomyAnalyzer {
     public record EventPoint(Instant time, TrackPoint point) {}
     private static final long TOLERANCE_SECONDS = 30;
 
-    public static AstronomyStats calculateSun(List<TrackPoint> pointsOfDay, List<TrackPoint> allPoints, List<TimelineEvent> eventsOfDay, ZoneId zoneId) {
+    public static AstronomyStats calculateAstronomy(List<TrackPoint> pointsOfDay, List<TrackPoint> allPoints, List<TimelineEvent> eventsOfDay, ZoneId zoneId) {
         if (pointsOfDay == null || pointsOfDay.isEmpty()) {
             return new AstronomyStats(
                     null, null, null, null, null, null, null, null, null,
@@ -30,33 +30,22 @@ public class AstronomyAnalyzer {
         double lng = middlePoint.getLongitude();
         Instant baseTime = middlePoint.getTime();
 
-        //Liczenie czasu zjawisk
-        Instant exactAstroDawn = getRawEventTime(baseTime, lat, lng, zoneId, Twilight.ASTRONOMICAL, true);
-        Instant exactNautDawn  = getRawEventTime(baseTime, lat, lng, zoneId, Twilight.NAUTICAL, true);
-        Instant exactCivilDawn = getRawEventTime(baseTime, lat, lng, zoneId, Twilight.CIVIL, true);
-        Instant exactSunrise   = getRawEventTime(baseTime, lat, lng, zoneId, Twilight.VISUAL, true);
-        Instant exactNoon      = getNoonTime(baseTime, lat, lng, zoneId);
-        Instant exactSunset    = getRawEventTime(baseTime, lat, lng, zoneId, Twilight.VISUAL, false);
-        Instant exactCivilDusk = getRawEventTime(baseTime, lat, lng, zoneId, Twilight.CIVIL, false);
-        Instant exactNautDusk  = getRawEventTime(baseTime, lat, lng, zoneId, Twilight.NAUTICAL, false);
-        Instant exactAstroDusk = getRawEventTime(baseTime, lat, lng, zoneId, Twilight.ASTRONOMICAL, false);
-        Instant exactMoonRise = getRawMoonEventTime(baseTime, lat, lng, zoneId, true);
-        Instant exactMoonSet  = getRawMoonEventTime(baseTime, lat, lng, zoneId, false);
-
         List<TrackPoint> searchList = (allPoints != null && !allPoints.isEmpty()) ? allPoints : pointsOfDay;
 
-        //Znajdywanie punktów zaobserwowanych zjawisk
-        EventPoint aDawn = refineEventTime(searchList, eventsOfDay, exactAstroDawn, zoneId);
-        EventPoint nDawn = refineEventTime(searchList, eventsOfDay, exactNautDawn, zoneId);
-        EventPoint cDawn = refineEventTime(searchList, eventsOfDay, exactCivilDawn, zoneId);
-        EventPoint rise  = refineEventTime(searchList, eventsOfDay, exactSunrise, zoneId);
-        EventPoint noon  = refineEventTime(searchList, eventsOfDay, exactNoon, zoneId);
-        EventPoint set   = refineEventTime(searchList, eventsOfDay, exactSunset, zoneId);
-        EventPoint cDusk = refineEventTime(searchList, eventsOfDay, exactCivilDusk, zoneId);
-        EventPoint nDusk = refineEventTime(searchList, eventsOfDay, exactNautDusk, zoneId);
-        EventPoint aDusk = refineEventTime(searchList, eventsOfDay, exactAstroDusk, zoneId);
-        EventPoint moonRiseEp = refineEventTime(searchList, eventsOfDay, exactMoonRise, zoneId);
-        EventPoint moonSetEp  = refineEventTime(searchList, eventsOfDay, exactMoonSet, zoneId);
+        EventPoint aDawn = resolveSunEvent(baseTime, lat, lng, searchList, eventsOfDay, zoneId, Twilight.ASTRONOMICAL, true);
+        EventPoint nDawn = resolveSunEvent(baseTime, lat, lng, searchList, eventsOfDay, zoneId, Twilight.NAUTICAL, true);
+        EventPoint cDawn = resolveSunEvent(baseTime, lat, lng, searchList, eventsOfDay, zoneId, Twilight.CIVIL, true);
+        EventPoint rise  = resolveSunEvent(baseTime, lat, lng, searchList, eventsOfDay, zoneId, Twilight.VISUAL, true);
+
+        EventPoint noon  = resolveNoonEvent(baseTime, lat, lng, searchList, eventsOfDay, zoneId);
+
+        EventPoint set   = resolveSunEvent(baseTime, lat, lng, searchList, eventsOfDay, zoneId, Twilight.VISUAL, false);
+        EventPoint cDusk = resolveSunEvent(baseTime, lat, lng, searchList, eventsOfDay, zoneId, Twilight.CIVIL, false);
+        EventPoint nDusk = resolveSunEvent(baseTime, lat, lng, searchList, eventsOfDay, zoneId, Twilight.NAUTICAL, false);
+        EventPoint aDusk = resolveSunEvent(baseTime, lat, lng, searchList, eventsOfDay, zoneId, Twilight.ASTRONOMICAL, false);
+
+        EventPoint moonRiseEp = resolveMoonEvent(baseTime, lat, lng, searchList, eventsOfDay, zoneId, true);
+        EventPoint moonSetEp  = resolveMoonEvent(baseTime, lat, lng, searchList, eventsOfDay, zoneId, false);
 
         return new AstronomyStats(
                 aDawn.time(), nDawn.time(), cDawn.time(),
@@ -71,18 +60,67 @@ public class AstronomyAnalyzer {
         );
     }
 
-    private static EventPoint refineEventTime(List<TrackPoint> points, List<TimelineEvent> events, Instant exactEventTime, ZoneId zoneId){
-        if (exactEventTime == null || points == null || points.isEmpty()) return new EventPoint(null, null);
+
+    private static EventPoint resolveSunEvent(Instant baseTime, double baseLat, double baseLng, List<TrackPoint> points, List<TimelineEvent> events, ZoneId zoneId, Twilight twilight, boolean isRise) {
+        Instant approxTime = calculateSunEventTime(baseTime, baseLat, baseLng, zoneId, twilight, isRise);
+        if (approxTime == null)
+            return new EventPoint(null, null);
+
+        EventPoint approxEp = resolveObservedPoint(points, events, approxTime);
+        if (approxEp.point() == null)
+            return new EventPoint(approxTime, null);
+
+        Instant exactTime = calculateSunEventTime(baseTime, approxEp.point().getLatitude(), approxEp.point().getLongitude(), zoneId, twilight, isRise);
+        if (exactTime == null)
+            exactTime = approxTime;
+
+        return resolveObservedPoint(points, events, exactTime);
+    }
+
+    private static EventPoint resolveMoonEvent(Instant baseTime, double baseLat, double baseLng, List<TrackPoint> points, List<TimelineEvent> events, ZoneId zoneId, boolean isRise) {
+        Instant approxTime = calculateMoonEventTime(baseTime, baseLat, baseLng, zoneId, isRise);
+        if (approxTime == null)
+            return new EventPoint(null, null);
+
+        EventPoint approxEp = resolveObservedPoint(points, events, approxTime);
+        if (approxEp.point() == null)
+            return new EventPoint(approxTime, null);
+
+        Instant exactTime = calculateMoonEventTime(baseTime, approxEp.point().getLatitude(), approxEp.point().getLongitude(), zoneId, isRise);
+        if (exactTime == null)
+            exactTime = approxTime;
+
+        return resolveObservedPoint(points, events, exactTime);
+    }
+
+    private static EventPoint resolveNoonEvent(Instant baseTime, double baseLat, double baseLng, List<TrackPoint> points, List<TimelineEvent> events, ZoneId zoneId) {
+        Instant approxTime = calculateNoonTime(baseTime, baseLat, baseLng, zoneId);
+        if (approxTime == null)
+            return new EventPoint(null, null);
+
+        EventPoint approxEp = resolveObservedPoint(points, events, approxTime);
+        if (approxEp.point() == null)
+            return new EventPoint(approxTime, null);
+
+        Instant exactTime = calculateNoonTime(baseTime, approxEp.point().getLatitude(), approxEp.point().getLongitude(), zoneId);
+        if (exactTime == null)
+            exactTime = approxTime;
+
+        return resolveObservedPoint(points, events, exactTime);
+    }
+
+
+    private static EventPoint resolveObservedPoint(List<TrackPoint> points, List<TimelineEvent> events, Instant exactEventTime){
+        if (exactEventTime == null || points == null || points.isEmpty())
+            return new EventPoint(null, null);
 
         boolean isObserved = false;
 
         if (events != null && !events.isEmpty()) {
             for (TimelineEvent ev : events) {
-
                 if ("BRAK DANYCH".equals(ev.type())) {
                     continue;
                 }
-
                 Instant expandedStart = ev.start().minusSeconds(TOLERANCE_SECONDS);
                 Instant expandedEnd = ev.end().plusSeconds(TOLERANCE_SECONDS);
 
@@ -119,7 +157,6 @@ public class AstronomyAnalyzer {
 
         if (before != null && after != null) {
             if (!Objects.equals(before.getSegmentId(), after.getSegmentId())) {
-
                 double gapDist = jasinski.pawel.weather_visualization.utils.GeoUtils.calculateDistance(
                         before.getLatitude(), before.getLongitude(),
                         after.getLatitude(), after.getLongitude()
@@ -133,9 +170,7 @@ public class AstronomyAnalyzer {
 
             long totalDiff = after.getTime().toEpochMilli() - before.getTime().toEpochMilli();
             long targetDiff = exactEventTime.toEpochMilli() - before.getTime().toEpochMilli();
-
             double ratio = totalDiff == 0 ? 0 : (double) targetDiff / totalDiff;
-
             double interpLat = before.getLatitude() + (after.getLatitude() - before.getLatitude()) * ratio;
             double interpLng = before.getLongitude() + (after.getLongitude() - before.getLongitude()) * ratio;
 
@@ -143,7 +178,6 @@ public class AstronomyAnalyzer {
             exactPoint.setLatitude(interpLat);
             exactPoint.setLongitude(interpLng);
             exactPoint.setTime(exactEventTime);
-
             exactPoint.setSegmentId(before.getSegmentId());
             exactPoint.setWeather(before.getWeather());
 
@@ -164,9 +198,8 @@ public class AstronomyAnalyzer {
         return new EventPoint(exactEventTime, closestPoint);
     }
 
-    private static Instant getRawEventTime(Instant time, double lat, double lng, ZoneId zoneId, Twilight twilight, boolean isRise) {
+    private static Instant calculateSunEventTime(Instant time, double lat, double lng, ZoneId zoneId, Twilight twilight, boolean isRise) {
         LocalDate targetDate = time.atZone(zoneId).toLocalDate();
-
         ZonedDateTime searchStart = targetDate.atStartOfDay(zoneId);
 
         SunTimes times = SunTimes.compute()
@@ -179,17 +212,14 @@ public class AstronomyAnalyzer {
                 : (times.getSet() != null ? times.getSet().toInstant() : null);
 
         if (result != null && !isRise) {
-
             SunTimes noonTimes = SunTimes.compute().on(searchStart).at(lat, lng).execute();
             ZonedDateTime noonZdt = noonTimes.getNoon();
-
             if (noonZdt != null && result.isBefore(noonZdt.toInstant())) {
                 times = SunTimes.compute()
                         .on(noonZdt)
                         .at(lat, lng)
                         .twilight(twilight)
                         .execute();
-
                 result = times.getSet() != null ? times.getSet().toInstant() : null;
             }
         }
@@ -197,7 +227,6 @@ public class AstronomyAnalyzer {
         if (result != null) {
             LocalDate resultDate = result.atZone(zoneId).toLocalDate();
             long daysBetween = Math.abs(ChronoUnit.DAYS.between(targetDate, resultDate));
-
             if (daysBetween > 1) {
                 return null;
             }
@@ -205,9 +234,7 @@ public class AstronomyAnalyzer {
         return result;
     }
 
-
-
-    private static Instant getRawMoonEventTime(Instant time, double lat, double lng, ZoneId zoneId, boolean isRise) {
+    private static Instant calculateMoonEventTime(Instant time, double lat, double lng, ZoneId zoneId, boolean isRise) {
         LocalDate targetDate = time.atZone(zoneId).toLocalDate();
         MoonTimes times = MoonTimes.compute()
                 .on(targetDate.atStartOfDay(zoneId))
@@ -224,11 +251,10 @@ public class AstronomyAnalyzer {
                 return null;
             }
         }
-
         return result;
     }
 
-    private static Instant getNoonTime(Instant time, double lat, double lng, ZoneId zoneId) {
+    private static Instant calculateNoonTime(Instant time, double lat, double lng, ZoneId zoneId) {
         SunTimes times = SunTimes.compute()
                 .on(time.atZone(zoneId).toLocalDate().atStartOfDay(zoneId))
                 .at(lat, lng)

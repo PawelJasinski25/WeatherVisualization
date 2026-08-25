@@ -47,31 +47,24 @@ class TripMapServiceTest {
 
 
     @Test
-    void getTripMapData_shouldFilterPoints_basedOnDistanceAndTimeGap_Phase1() {
-
+    void getTripMapData_shouldReturnAllPoints_whenUnder6000Points() {
         TrackPoint p1 = createPoint(52.2, 21.0, "2023-05-10T10:00:00Z", 1, null);
         TrackPoint p2 = createPoint(52.2, 21.0, "2023-05-10T10:00:05Z", 1, null);
         TrackPoint p3 = createPoint(52.21, 21.0, "2023-05-10T10:00:10Z", 1, null);
-        TrackPoint p4 = createPoint(52.21, 21.0, "2023-05-10T10:00:30Z", 1, null);
-        TrackPoint p5 = createPoint(52.21, 21.0, "2023-05-10T10:00:32Z", 1, null);
 
-        when(trackPointRepository.findByTripIdOrderByTimeAsc(100L)).thenReturn(List.of(p1, p2, p3, p4, p5));
+        when(trackPointRepository.findByTripIdOrderByTimeAsc(100L)).thenReturn(List.of(p1, p2, p3));
 
-        MapDataResponse response = tripMapService.getTripMapData(100L,defaultTimezone);
+        MapDataResponse response = tripMapService.getTripMapData(100L, defaultTimezone);
 
-        assertThat(response.route()).hasSize(4);
-        assertThat(response.route().get(0).timeMs()).isEqualTo(Instant.parse("2023-05-10T10:00:00Z").toEpochMilli());
-        assertThat(response.route().get(1).timeMs()).isEqualTo(Instant.parse("2023-05-10T10:00:10Z").toEpochMilli());
-        assertThat(response.route().get(2).timeMs()).isEqualTo(Instant.parse("2023-05-10T10:00:30Z").toEpochMilli());
-        assertThat(response.route().get(3).timeMs()).isEqualTo(Instant.parse("2023-05-10T10:00:32Z").toEpochMilli());
+        assertThat(response.route()).hasSize(3);
     }
 
     @Test
-    void getTripMapData_shouldDownsample_whenMoreThan2500Points_Phase2() {
+    void getTripMapData_shouldDownsample_whenMoreThan6000Points() {
         List<TrackPoint> hugePointList = new ArrayList<>();
         long baseTimeSeconds = 1680000000L;
 
-        for (int i = 0; i < 3000; i++) {
+        for (int i = 0; i < 7000; i++) {
             String timeStr = Instant.ofEpochSecond(baseTimeSeconds + (i * 20L)).toString();
             hugePointList.add(createPoint(52.2, 21.0, timeStr, 1, null));
         }
@@ -80,11 +73,11 @@ class TripMapServiceTest {
 
         MapDataResponse response = tripMapService.getTripMapData(100L, defaultTimezone);
 
-        assertThat(response.route().size()).isBetween(2450, 2550);
+        assertThat(response.route().size()).isBetween(5980, 6020);
     }
 
     @Test
-    void getTripMapData_shouldMapWeatherToDtoCorrectly_andDetermineDayPhase() {
+    void getTripMapData_shouldMapWeatherAndDayPhase_whenWeatherIsPresent() {
         Weather weather = new Weather();
         weather.setTemp(25.5);
         weather.setWindSpeed(12.0);
@@ -113,7 +106,7 @@ class TripMapServiceTest {
 
 
     @Test
-    void getTripMapData_shouldGenerateAstronomyMarkers() {
+    void getTripMapData_shouldGenerateAstronomyMarkers_whenPointsSpanMultiplePhases() {
 
         TrackPoint morning = createPoint(52.2, 21.0, "2023-05-10T02:00:00Z", 1, null);
         TrackPoint noon = createPoint(52.2, 21.0, "2023-05-10T12:00:00Z", 1, null);

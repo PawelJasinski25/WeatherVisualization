@@ -5,6 +5,8 @@ import jasinski.pawel.weather_visualization.dto.SpeedStats;
 import jasinski.pawel.weather_visualization.entity.TrackPoint;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,18 +41,9 @@ class SpeedAnalyzerTest {
         assertThat(stats.maxSpeed()).isEqualTo(36.00);
     }
 
-    @Test
-    void calculateSpeed_shouldPreferTrackPointSpeed_overRawSpeed() {
-        EnrichedSegment seg = createSegment(100.0, 10.0, 10.0, 15.5, true);
-
-        SpeedStats stats = SpeedAnalyzer.calculateSpeed(List.of(seg));
-
-        assertThat(stats.maxSpeed()).isEqualTo(15.5);
-    }
-
 
     @Test
-    void calculateSpeed_shouldIgnoreStationarySegments_inAverageSpeed_butKeepInTotalDistance() {
+    void calculateSpeed_shouldIgnoreStationarySegments_whenCalculatingAverageSpeed() {
         EnrichedSegment moving = createSegment(100.0, 10.0, 36.0, null, true);
         EnrichedSegment stopped = createSegment(10.0, 60.0, 0.6, null, false);
 
@@ -61,7 +54,7 @@ class SpeedAnalyzerTest {
     }
 
     @Test
-    void calculateSpeed_shouldSafelyIgnoreNullDistance_DataGapSegments() {
+    void calculateSpeed_shouldIgnoreNullDistance_whenDataGapOccurs() {
         EnrichedSegment moving = createSegment(100.0, 10.0, 36.0, null, true);
         EnrichedSegment gap = createSegment(null, 5000.0, null, null, false);
 
@@ -74,38 +67,42 @@ class SpeedAnalyzerTest {
 
 
     @Test
-    void calculateSpeed_shouldFilterSinglePointSpike() {
-        EnrichedSegment s1 = createSegment(10.0, 2.0, 20.0, null, true);
-        EnrichedSegment spike = createSegment(10.0, 2.0, 50.0, null, true);
-        EnrichedSegment s3 = createSegment(10.0, 2.0, 20.0, null, true);
+    void isAnomaly_shouldDetectSpike_whenAccelerationExceedsThreshold() {
+        List<Double> speeds = List.of(20.0, 50.0, 20.0);
+        List<Double> durations = List.of(1.0, 1.0, 1.0);
 
-        SpeedStats stats = SpeedAnalyzer.calculateSpeed(List.of(s1, spike, s3));
+        boolean isAnomaly = SpeedAnalyzer.isAnomaly(speeds, durations, 1);
 
-        assertThat(stats.maxSpeed()).isEqualTo(20.0);
+        assertThat(isAnomaly).isTrue();
     }
 
     @Test
-    void calculateSpeed_shouldAcceptValidSuddenAcceleration() {
-        EnrichedSegment s1 = createSegment(10.0, 2.0, 20.0, null, true);
-        EnrichedSegment s2 = createSegment(10.0, 2.0, 40.0, null, true);
-        EnrichedSegment s3 = createSegment(10.0, 2.0, 45.0, null, true);
-        EnrichedSegment s4 = createSegment(10.0, 2.0, 45.0, null, true);
+    void removeSpeedAnomalies_shouldReplaceSpeed_whenAnomalyIsDetected() {
+        TrackPoint p1 = createPointWithSpeed("2023-01-01T10:00:00Z", 20.0);
+        TrackPoint p2 = createPointWithSpeed("2023-01-01T10:00:05Z", 22.0);
+        TrackPoint p3 = createPointWithSpeed("2023-01-01T10:00:10Z", 120.0);
+        TrackPoint p4 = createPointWithSpeed("2023-01-01T10:00:15Z", 21.0);
 
-        SpeedStats stats = SpeedAnalyzer.calculateSpeed(List.of(s1, s2, s3, s4));
+        List<TrackPoint> cleaned = SpeedAnalyzer.removeSpeedAnomalies(List.of(p1, p2, p3, p4));
 
-        assertThat(stats.maxSpeed()).isEqualTo(45.0);
+        assertThat(cleaned.get(2).getSpeed()).isEqualTo(22.0);
+        assertThat(cleaned.get(3).getSpeed()).isEqualTo(21.0);
     }
 
+
     @Test
-    void calculateSpeed_shouldNotFilterSpike_whenExactlyOnThreshold() {
+    void isAnomaly_shouldReturnFalse_whenInsideToleranceWindow() {
+        List<Double> speeds = Arrays.asList(
+                5.0, 5.0, 5.0,
+                50.0, 52.0,
+                55.0,
+                51.0, 50.0
+        );
 
-        EnrichedSegment s1 = createSegment(10.0, 2.0, 20.0, null, true);
-        EnrichedSegment edgeCaseSpike = createSegment(10.0, 2.0, 32.0, null, true);
-        EnrichedSegment s3 = createSegment(10.0, 2.0, 20.0, null, true);
+        List<Double> durations = Arrays.asList(10.0, 10.0, 50.0, 10.0, 10.0, 10.0, 10.0, 10.0);
+        boolean isAnomaly = SpeedAnalyzer.isAnomaly(speeds, durations, 5);
 
-        SpeedStats stats = SpeedAnalyzer.calculateSpeed(List.of(s1, edgeCaseSpike, s3));
-
-        assertThat(stats.maxSpeed()).isEqualTo(32.0);
+        assertThat(isAnomaly).isFalse();
     }
 
     private EnrichedSegment createSegment(Double distance, double duration, Double rawSpeed, Double p2Speed, boolean isMoving) {
@@ -114,5 +111,14 @@ class SpeedAnalyzerTest {
         p2.setSpeed(p2Speed);
 
         return new EnrichedSegment(p1, p2, distance, duration, rawSpeed, isMoving);
+    }
+
+    private TrackPoint createPointWithSpeed(String time, double speed) {
+        TrackPoint pt = new TrackPoint();
+        pt.setTime(Instant.parse(time));
+        pt.setLatitude(52.0);
+        pt.setLongitude(21.0);
+        pt.setSpeed(speed);
+        return pt;
     }
 }
