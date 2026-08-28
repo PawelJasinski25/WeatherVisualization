@@ -80,7 +80,8 @@ public class TripService {
                 return new UploadTripResponseDto(existingTrip.get().getId(), true, existingTrip.get().getName());
             }
 
-            Trip savedTrip = tripPersistenceService.createAndSaveTripHeader(file.getOriginalFilename(), user, fileHash);
+            String cleanTripName = file.getOriginalFilename().replaceAll("(?i)\\.gpx$", "").trim();
+            Trip savedTrip = tripPersistenceService.createAndSaveTripHeader(cleanTripName, user, fileHash);
 
             List<TrackPoint> allTrackPoints = gpxParserService.extractTrackPoints(tempFile, savedTrip);
 
