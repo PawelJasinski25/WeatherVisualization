@@ -14,7 +14,7 @@ import "../styles/map-elements.css";
 
 const OSM_STYLE = {
     version: 8,
-    sources: { osm: { type: "raster", tiles: ["https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "&copy; OpenStreetMap" } },
+    sources: { osm: { type: "raster", tiles: ["https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>' } },
     layers: [{ id: "osm-tiles", type: "raster", source: "osm" }]
 };
 

@@ -68,31 +68,6 @@ const AnimationPanel = ({ selectedParams, setSelectedParams, isOpen, setIsOpen }
                     })}
                     </div>
                 </div>
-                <div className="panel-attribution">
-                    <details>
-                        <summary>Źródła ikon ▾</summary>
-                        <div className="attribution-content">
-                            <i>
-                                Ikony stworzone przez: <a href="https://www.flaticon.com/authors/freepik" target="_blank" rel="noreferrer">Freepik</a>,{' '}
-                                <a href="https://www.flaticon.com/authors/sonnycandra" target="_blank" rel="noreferrer">sonnycandra</a>,{' '}
-                                <a href="https://www.flaticon.com/authors/iconading" target="_blank" rel="noreferrer">iconading</a>,{' '}
-                                <a href="https://www.flaticon.com/authors/bqlqn" target="_blank" rel="noreferrer">bqlqn</a>,{' '}
-                                <a href="https://www.flaticon.com/authors/adriansyah" target="_blank" rel="noreferrer">adriansyah</a>,{' '}
-                                <a href="https://www.flaticon.com/authors/lutfix" target="_blank" rel="noreferrer">lutfix</a>,{' '}
-                                <a href="https://www.flaticon.com/authors/ayub-irawan" target="_blank" rel="noreferrer">Ayub Irawan</a>,{' '}
-                                <a href="https://www.flaticon.com/authors/rsetiawan" target="_blank" rel="noreferrer">rsetiawan</a>,{' '}
-                                <a href="https://www.flaticon.com/authors/whocon" target="_blank" rel="noreferrer">WhoCon</a>,{' '}
-                                <a href="https://www.flaticon.com/authors/lafs" target="_blank" rel="noreferrer">LAFS</a>,{' '}
-                                <a href="https://www.flaticon.com/authors/culmbio" target="_blank" rel="noreferrer">Culmbio</a>,{' '}
-                                <a href="https://www.flaticon.com/authors/pixel-perfect" target="_blank" rel="noreferrer">Pixel perfect</a>,{' '}
-                                <a href="https://www.flaticon.com/authors/sudowoodo" target="_blank" rel="noreferrer">Sudowoodo</a>,{' '}
-                                <a href="https://www.flaticon.com/authors/slidicon" target="_blank" rel="noreferrer">Slidicon</a> ,{' '}
-                                <a href="https://www.flaticon.com/authors/good-ware" target="_blank" rel="noreferrer">Good Ware</a>{' '}
-                                pobrane z <a href="https://www.flaticon.com" target="_blank" rel="noreferrer">Flaticon</a>.
-                            </i>
-                        </div>
-                    </details>
-                </div>
             </div>
         </div>
     );

@@ -99,34 +99,6 @@
     font-weight: 600;
 }
 
-
-.panel-attribution {
-    margin-top: auto;
-    padding-top: 1rem;
-    padding-bottom: 0.5rem;
-    border-top: 1px solid #f1f5f9;
-    font-size: 0.7rem;
-    color: #94a3b8;
-    text-align: center;
-}
-
-.panel-attribution summary::-webkit-details-marker {
-    display: none;
-}
-
-.panel-attribution summary {
-    list-style: none;
-    cursor: pointer;
-    font-weight: 500;
-    outline: none;
-    user-select: none;
-    transition: color 0.2s;
-}
-
-.panel-attribution summary:hover {
-    color: #3b82f6;
-}
-
 .attribution-content {
     margin-top: 0.75rem;
     line-height: 1.6;
