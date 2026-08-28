@@ -11,6 +11,7 @@ import jasinski.pawel.weather_visualization.repository.UserRepository;
 import jasinski.pawel.weather_visualization.repository.WeatherRepository;
 import jasinski.pawel.weather_visualization.utils.GeoUtils;
 
+import jasinski.pawel.weather_visualization.utils.SpeedAnalyzer;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -376,7 +377,8 @@ public class TripService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Brak uprawnień");
         }
 
-        List<TrackPoint> points = trackPointRepository.findByTripIdOrderByTimeAsc(tripId);
+        List<TrackPoint> rawPoints = trackPointRepository.findByTripIdOrderByTimeAsc(tripId);
+        List<TrackPoint> points = SpeedAnalyzer.removeSpeedAnomalies(rawPoints);
         String cleanTripName = trip.getName().replaceAll("(?i)\\.gpx$", "").trim();
 
         try {
@@ -386,6 +388,7 @@ public class TripService {
 
             writer.writeStartDocument("UTF-8", "1.0");
             writer.writeStartElement("gpx");
+            writer.writeDefaultNamespace("http://www.topografix.com/GPX/1/1");
             writer.writeAttribute("version", "1.1");
             writer.writeAttribute("creator", "WeatherVisualizationApp");
 
@@ -417,8 +420,13 @@ public class TripService {
                 }
 
                 if (pt.getSpeed() != null) {
+                    writer.writeStartElement("extensions");
                     writer.writeStartElement("speed");
-                    writer.writeCharacters(String.valueOf(pt.getSpeed()));
+
+                    double speedMs = pt.getSpeed() / 3.6;
+                    writer.writeCharacters(String.format(Locale.US, "%.3f", speedMs));
+
+                    writer.writeEndElement();
                     writer.writeEndElement();
                 }
 
