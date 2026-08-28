@@ -84,6 +84,11 @@ public class TripService {
 
             List<TrackPoint> allTrackPoints = gpxParserService.extractTrackPoints(tempFile, savedTrip);
 
+            if (allTrackPoints.isEmpty()) {
+                tripRepository.delete(savedTrip);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Plik nie zawiera elementów niezbędnych do działania aplikacji.");
+            }
+
             allTrackPoints.sort(Comparator.comparing(TrackPoint::getTime));
             if (!allTrackPoints.isEmpty()) {
                 savedTrip.setStartTime(allTrackPoints.get(0).getTime());
@@ -118,6 +123,8 @@ public class TripService {
 
             return new UploadTripResponseDto(savedTrip.getId(), false, savedTrip.getName());
 
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e){
             throw new IllegalArgumentException("Nie udało się przetworzyć pliku GPX. Upewnij się, że format jest poprawny.", e);
         }

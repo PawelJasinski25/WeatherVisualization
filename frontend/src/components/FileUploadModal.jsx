@@ -60,7 +60,11 @@ const FileUploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
             }
         } catch (error) {
             console.error("Błąd:", error);
-            setStatus({ type: "error", message: "Nie udało się wgrać pliku." });
+            const errorMessage = error.response?.data?.message
+                || error.response?.data
+                || "Nie udało się wgrać pliku.";
+
+            setStatus({ type: "error", message: errorMessage });
             setIsUploading(false);
         }
     };
