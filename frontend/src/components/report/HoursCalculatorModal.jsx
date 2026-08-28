@@ -41,6 +41,22 @@ const HoursCalculatorModal = ({ isOpen, onClose, initialLogs, onSave, cruiseDate
         return (endMins - startMins) / 60;
     };
 
+    const calculateExactSeconds = (startStr, endStr) => {
+        if (!startStr || !endStr) return 0;
+        if (startStr === '00:00' && endStr === '00:00') return 24 * 3600;
+
+        const [h1, m1] = startStr.split(':').map(Number);
+        const [h2, m2] = endStr.split(':').map(Number);
+
+        let startSecs = h1 * 3600 + m1 * 60;
+        let endSecs = h2 * 3600 + m2 * 60;
+
+        if (endStr === '00:00') endSecs = 24 * 3600;
+        if (endSecs < startSecs) return 0;
+
+        return endSecs - startSecs;
+    };
+
 
     const sortAndFormatLogs = (logsArray) => {
         const sorted = [...logsArray].sort((a, b) => {
@@ -237,16 +253,21 @@ const HoursCalculatorModal = ({ isOpen, onClose, initialLogs, onSave, cruiseDate
 
     const handleSave = () => {
         let sumTotal = 0, sumSails = 0, sumEngine = 0, sumTidal = 0, sumStopped = 0, sumGap = 0;
+        let secTotal = 0, secStopped = 0, secGap = 0;
 
         logs.forEach(l => {
             const t = parseFloat(String(l.total).replace(',', '.')) || 0;
+            const exactSec = calculateExactSeconds(l.startTime, l.endTime);
 
             if (l.type === 'POSTÓJ') {
                 sumStopped += t;
+                secStopped += exactSec;
             } else if (l.type === 'BRAK DANYCH') {
                 sumGap += t;
+                secGap += exactSec;
             } else {
                 sumTotal += t;
+                secTotal += exactSec;
                 sumSails += parseFloat(String(l.sails).replace(',', '.')) || 0;
                 sumEngine += parseFloat(String(l.engine).replace(',', '.')) || 0;
                 sumTidal += parseFloat(String(l.tidal).replace(',', '.')) || 0;
@@ -260,6 +281,14 @@ const HoursCalculatorModal = ({ isOpen, onClose, initialLogs, onSave, cruiseDate
             tidal: sumTidal > 0 ? sumTidal.toFixed(1).replace('.', ',') : '',
             stopped: sumStopped > 0 ? sumStopped.toFixed(1).replace('.', ',') : '',
             gap: sumGap > 0 ? sumGap.toFixed(1).replace('.', ',') : '',
+            exactSeconds: {
+                total: secTotal,
+                stopped: secStopped,
+                gap: secGap,
+                sails: sumSails * 3600,
+                engine: sumEngine * 3600,
+                tidal: sumTidal * 3600
+            },
             dailyLogs: logs
         });
         onClose();

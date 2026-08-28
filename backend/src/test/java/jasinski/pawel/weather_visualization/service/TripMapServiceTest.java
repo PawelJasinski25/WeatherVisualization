@@ -119,7 +119,7 @@ class TripMapServiceTest {
         List<AstronomyMarkerDto> markers = response.astronomyMarkers();
 
         assertThat(markers).extracting(AstronomyMarkerDto::type)
-                .contains("WSCHÓD", "ZACHÓD", "KULMINACJA SŁOŃCA");
+                .contains("WSCHÓD SŁOŃCA", "ZACHÓD SŁOŃCA", "KULMINACJA SŁOŃCA");
     }
 
     private TrackPoint createPoint(double lat, double lon, String timeStr, int segmentId, Weather weather) {

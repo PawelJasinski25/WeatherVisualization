@@ -99,19 +99,6 @@ def generate_report_pdf(report_data: dict) -> bytes:
     print("\n--- ROZPOCZĘCIE GENEROWANIA RAPORTU ---")
     start_total = time.time()
 
-    hours_form = report_data.get('hours', {})
-    mov_stats = report_data.get('overallMovement')
-    if mov_stats:
-        try:
-            if hours_form.get('total'):
-                mov_stats['movingSeconds'] = int(float(str(hours_form['total']).replace(',', '.')) * 3600)
-            if hours_form.get('stopped'):
-                mov_stats['stoppedSeconds'] = int(float(str(hours_form['stopped']).replace(',', '.')) * 3600)
-            if hours_form.get('gap'):
-                mov_stats['gapSeconds'] = int(float(str(hours_form['gap']).replace(',', '.')) * 3600)
-        except ValueError:
-            pass
-
     prefs = report_data.get('preferences', {})
     tz_str = prefs.get('timezone', 'UTC')
     env.filters['format_time'] = lambda val: format_time(val, tz_str)

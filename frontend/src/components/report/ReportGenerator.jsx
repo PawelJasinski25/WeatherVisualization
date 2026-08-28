@@ -35,7 +35,10 @@ const ReportGenerator = ({ tripId }) => {
             visitedPorts: '',
             tidalPortsCount: '', daysCount: '', dailySummaries: []
         },
-        hours: { total: '', sails: '', engine: '', tidal: '', stopped: '' },
+        hours: {
+            total: '', sails: '', engine: '', tidal: '', stopped: '', gap: '',
+            exactSeconds: { total: 0, sails: 0, engine: 0, tidal: 0, stopped: 0, gap: 0 }
+        },
         distance: { nauticalMiles: '' },
         crew: Array(16).fill({ name: '', patent: '', function: '' }),
 
@@ -177,7 +180,13 @@ const ReportGenerator = ({ tripId }) => {
                             ...prev.hours,
                             total: prev.hours.total || movingHours,
                             stopped: prev.hours.stopped || stoppedHours,
-                            gap: prev.hours.gap || gapHours
+                            gap: prev.hours.gap || gapHours,
+                            exactSeconds: isNewFetch ? {
+                                total: reportData?.overallMovement?.movingSeconds || 0,
+                                stopped: reportData?.overallMovement?.stoppedSeconds || 0,
+                                gap: reportData?.overallMovement?.gapSeconds || 0,
+                                sails: 0, engine: 0, tidal: 0
+                            } : prev.hours.exactSeconds
                         },
                     }));
                 }
@@ -199,9 +208,14 @@ const ReportGenerator = ({ tripId }) => {
     const handleNestedChange = (section, field, value) => {
         let processedValue = value;
 
-        const numericFields = ['total', 'sails', 'engine', 'tidal', 'nauticalMiles', 'length'];
+        const numericFields = ['total', 'sails', 'engine', 'tidal', 'stopped', 'nauticalMiles', 'length'];
         if (numericFields.includes(field) && typeof value === 'string') {
-            processedValue = processedValue.replace(/\./g, ',');
+            processedValue = value.replace(/\./g, ',').replace(/[^\d,]/g, '');
+
+            const parts = processedValue.split(',');
+            if (parts.length > 2) {
+                processedValue = parts[0] + ',' + parts.slice(1).join('');
+            }
         }
 
         setFormData(prev => ({ ...prev, [section]: { ...prev[section], [field]: processedValue } }));
@@ -362,13 +376,32 @@ const ReportGenerator = ({ tripId }) => {
             if (includeCruiseCard) modulesToExport.unshift('cruiseCard');
             if (includeOpinion) modulesToExport.unshift('opinion');
 
+            const resolveSeconds = (stringValue, exactSeconds) => {
+                if (!stringValue) return 0;
+                const floatValue = parseFloat(String(stringValue).replace(',', '.'));
+                if (isNaN(floatValue)) return 0;
+
+                const roundedExact = Math.round((exactSeconds / 3600) * 10) / 10;
+                if (Math.abs(roundedExact - floatValue) < 0.01) {
+                    return Math.round(exactSeconds);
+                }
+                return Math.round(floatValue * 3600);
+            };
+
+            const finalReportData = {
+                ...formData,
+                overallMovement: {
+                    movingSeconds: resolveSeconds(formData.hours.total, formData.hours.exactSeconds?.total),
+                    stoppedSeconds: resolveSeconds(formData.hours.stopped, formData.hours.exactSeconds?.stopped),
+                    gapSeconds: resolveSeconds(formData.hours.gap, formData.hours.exactSeconds?.gap),
+                },
+                preferences: units,
+                modules: modulesToExport
+            };
+
             const response = await api.post(`/trips/${tripId}/download-pdf`, {
                 modules: modulesToExport,
-                reportData: {
-                    ...formData,
-                    preferences: units,
-                    modules: modulesToExport
-                }
+                reportData: finalReportData
             }, {
                 responseType: 'blob',
                 params: { t: new Date().getTime() }
@@ -456,7 +489,6 @@ const ReportGenerator = ({ tripId }) => {
                 </div>
             </div>
 
-            {/* SIDEBAR */}
             <div className="report-sidebar">
                 <div className="report-sidebar-content">
                     <h3 className="panel-title" style={{ fontSize: '1.25rem' }}>Generowanie raportu</h3>

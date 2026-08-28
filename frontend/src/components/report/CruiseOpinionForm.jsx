@@ -62,6 +62,7 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
         handleNestedChange('hours', 'tidal', calculatedData.tidal);
         handleNestedChange('hours', 'stopped', calculatedData.stopped);
         handleNestedChange('hours', 'gap', calculatedData.gap);
+        handleNestedChange('hours', 'exactSeconds', calculatedData.exactSeconds);
         handleNestedChange('hours', 'dailyLogs', calculatedData.dailyLogs);
     };
 
