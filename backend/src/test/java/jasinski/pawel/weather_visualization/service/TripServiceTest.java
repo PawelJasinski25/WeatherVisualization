@@ -111,6 +111,7 @@ class TripServiceTest {
     @Test
     void processGpxFile_shouldCreateNewTrip_whenTripIsNew() throws Exception {
         MultipartFile mockFile = mock(MultipartFile.class);
+        when(mockFile.getOriginalFilename()).thenReturn("Nowa trasa GPX.gpx");
         when(mockFile.getInputStream()).thenReturn(new ByteArrayInputStream("data".getBytes()));
         when(userRepository.findByEmail("email@example.com")).thenReturn(Optional.of(owner));
         when(tripRepository.findByFileHashAndUser_Email(anyString(), anyString())).thenReturn(Optional.empty());
@@ -118,6 +119,9 @@ class TripServiceTest {
         Trip newTrip = new Trip();
         newTrip.setId(200L);
         newTrip.setName("Nowa trasa GPX");
+
+        TrackPoint trackPoint = new TrackPoint();
+        trackPoint.setTime(Instant.now());
 
         when(tripPersistenceService.createAndSaveTripHeader(any(), any(), any())).thenReturn(newTrip);
         when(gpxParserService.extractTrackPoints(any(Path.class), eq(newTrip)))
