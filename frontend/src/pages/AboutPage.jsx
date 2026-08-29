@@ -154,6 +154,16 @@ const AboutPage = () => {
                                             </i>
                                         </span>
                                     </li>
+                                    <li>
+                                        <span>
+                                            <strong>
+                                                <a href="https://lucide.dev/" target="_blank" rel="noopener noreferrer" className="about-link">
+                                                    Lucide (ISC / MIT License)
+                                                </a>
+                                            </strong>
+                                            <br /> Ikony wykorzystywane w pozostałych częściach interfejsu.
+                                        </span>
+                                    </li>
                                 </ul>
                             </div>
                         </section>
