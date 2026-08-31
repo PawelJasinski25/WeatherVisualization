@@ -176,7 +176,7 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips, getLo
         <div className="modal-overlay">
             <div className="modal-content modal-merge-width">
                 <div className="modal-header">
-                    <h3>Przytnij lub połącz trasy GPX</h3>
+                    <h3>Przytnij lub połącz trasy</h3>
                     <button type="button" onClick={onClose} className="modal-close-btn">&times;</button>
                 </div>
 
@@ -220,7 +220,7 @@ const TripMergeModal = ({ isOpen, onClose, onMergeSuccess, availableTrips, getLo
                         </div>
 
                         <div className="form-group">
-                            <label className="form-label">Wybierz pliki do połączenia i dostosuj ich zakresy czasowe:</label>
+                            <label className="form-label">Wybierz trasy do połączenia i dostosuj ich zakresy czasowe:</label>
                             <div className="merge-trips-list">
                                 {filteredAndSortedTrips.length === 0 ? (
                                     <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b', fontSize: '0.9rem' }}>
