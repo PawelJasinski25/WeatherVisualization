@@ -170,6 +170,7 @@ const ReportPreview = ({ formData, handleFieldChange, handleNestedChange, format
                                 <tr>
                                     <th>W RUCHU</th>
                                     <th>POSTOJE</th>
+                                    <th>BRAK DANYCH</th>
                                     <th>ŁĄCZNIE</th>
                                 </tr>
                                 </thead>
@@ -177,6 +178,7 @@ const ReportPreview = ({ formData, handleFieldChange, handleNestedChange, format
                                 <tr>
                                     <td><b>108:49:00</b></td>
                                     <td><b>150:12:15</b></td>
+                                    <td><b>00:00:00</b></td>
                                     <td><b>259:01:15</b></td>
                                 </tr>
                                 </tbody>
