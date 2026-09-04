@@ -159,6 +159,19 @@
     gap: 10px;
 }
 
+@media (max-width: 1300px) {
+    .astro-point-events-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .astro-point-item:last-child {
+        grid-column: auto;
+        justify-self: auto;
+    }
+}
+
 .astro-point-item {
     display: flex;
     align-items: center;
