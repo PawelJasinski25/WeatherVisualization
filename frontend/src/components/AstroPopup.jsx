@@ -17,6 +17,7 @@ const AstroPopup = ({ marker, onClose }) => {
             offset={[marker.offsetX, -10]}
             onClose={onClose}
             closeOnClick={false}
+            closeButton={false}
             maxWidth="220px"
             className="custom-astro-popup"
         >
