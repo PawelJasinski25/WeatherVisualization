@@ -405,7 +405,7 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
             {/* UWAGI KAPITANA */}
             <table className="form-table">
                 <thead>
-                <tr><th style={{ textAlign: 'left', paddingLeft: '8px' }}>UWAGI KAPITANA</th></tr>
+                <tr><th style={{ textAlign: 'center' }}>UWAGI KAPITANA</th></tr>
                 </thead>
                 <tbody>
                 <tr>
