@@ -127,10 +127,6 @@ const ReportGenerator = ({ tripId }) => {
 
                         const portsSet = new Set();
 
-                        if (reportData.startPort) {
-                            portsSet.add(reportData.startPort);
-                        }
-
                         if (reportData.dailySummaries) {
                             reportData.dailySummaries.forEach(day => {
                                 if (day.timelineEvents) {
@@ -143,10 +139,13 @@ const ReportGenerator = ({ tripId }) => {
                             });
                         }
 
-                        if (reportData.endPort) {
-                            portsSet.add(reportData.endPort);
+                        if (reportData.startPort) {
+                            portsSet.delete(reportData.startPort);
                         }
-
+                        if (reportData.endPort) {
+                            portsSet.delete(reportData.endPort);
+                        }
+                        
                         visitedPorts = Array.from(portsSet).join(', ');
                     }
 
