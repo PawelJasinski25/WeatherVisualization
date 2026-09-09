@@ -131,7 +131,7 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                 </thead>
                 <tbody>
                 <tr>
-                    <td colSpan="2" className="w-50">
+                    <td colSpan="2" className="w-40">
                         <span className="label">Imię i nazwisko:</span>
                         <input
                             className="interactive-input"
@@ -139,7 +139,7 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                             onChange={(e) => handleOpinionChange('participantName', e.target.value)}
                         />
                     </td>
-                    <td colSpan="2" className="w-50">
+                    <td colSpan="2" className="w-60">
                         <span className="label">stop. żegl. /mot. i nr pat.:</span>
                         <input
                             className="interactive-input"
@@ -157,7 +157,7 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                             onChange={(e) => handleOpinionChange('participantPhone', e.target.value)}
                         />
                     </td>
-                    <td className="w-25">
+                    <td className="w-33">
                         <span className="label">adres e-mail:</span>
                         <input
                             className="interactive-input"
@@ -165,7 +165,7 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                             onChange={(e) => handleOpinionChange('participantEmail', e.target.value)}
                         />
                     </td>
-                    <td className="w-25">
+                    <td className="w-21">
                         <span className="label">funkcja na jachcie:</span>
                         <input
                             className="interactive-input"
@@ -440,7 +440,7 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                     </td>
                 </tr>
                 <tr>
-                    <td className="w-18" style={{ verticalAlign: 'top' }}>
+                    <td className="w-15" style={{ verticalAlign: 'top' }}>
                         <span className="label">tel.:</span>
                         <input className="interactive-input" value={formData.captain.phone} onChange={(e) => handleNestedChange('captain', 'phone', e.target.value)} />
                     </td>
