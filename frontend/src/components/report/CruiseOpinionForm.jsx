@@ -113,7 +113,12 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                     value={opinion.title !== undefined ? opinion.title : "OPINIA Z REJSU"}
                     onChange={(e) => handleOpinionChange('title', e.target.value)}
                 />
-                <div className="summary-dates-container" style={{ justifyContent: 'center' }}>
+                <div className="summary-dates-container" style={{ justifyContent: 'center', alignItems: 'center' }}>
+                    {formData.tripName && (
+                        <span style={{marginRight: '6px' }}>
+                            {formData.tripName},
+                        </span>
+                    )}
                     <input
                         type="date"
                         className="interactive-input date-input inline-input"
@@ -124,7 +129,7 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                         }}
                         onClick={(e) => e.target.showPicker && e.target.showPicker()}
                     />
-                    <span className="date-separator">-</span>
+                    <span>-</span>
                     <input
                         type="date"
                         className="interactive-input date-input inline-input"

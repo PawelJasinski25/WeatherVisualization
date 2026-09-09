@@ -238,7 +238,8 @@
 <div class="form-title">
     {{ op.title if op.title else 'OPINIA Z REJSU' }}
     <br>
-    <span style="font-size: 13px; font-weight: normal; margin-top: 4px; display: inline-block;">
+    <span style="font-size: 13px; font-weight: normal; margin-top: 4px; display: inline-block; text-transform: none;">
+            {{ data.tripName + ', ' if data.tripName else '' }}
             {{ op.cruise.startDate if op.cruise else '01.08.2025' }}
             -
             {{ op.cruise.endDate if op.cruise else '16.09.2025' }}
@@ -456,7 +457,7 @@
 <table class="form-table">
     <tr><th style="text-align: center;">UWAGI KAPITANA</th></tr>
     <tr>
-        <td style="min-height: 40px; padding: 4px 8px; white-space: pre-wrap; font-weight: bold;">{{ op.remarks }}</td>
+        <td style="min-height: 50px; padding: 4px 8px; white-space: pre-wrap; font-weight: bold;">{{ op.remarks }}</td>
     </tr>
 </table>
 
