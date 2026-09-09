@@ -433,7 +433,7 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                                 spellCheck="false"
                                 value={opinion.remarks || ''}
                                 onChange={(e) => handleOpinionChange('remarks', e.target.value)}
-                                style={{ minHeight: '40px' }}
+                                style={{ minHeight: '60px' }}
                             />
                     </td>
                 </tr>
