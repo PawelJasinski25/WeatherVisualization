@@ -55,15 +55,31 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
         }
     }, [opinion.locationDate]);
 
+    const handleLocalNestedChange = (section, field, value) => {
+        let processedValue = value;
+        const numericFields = ['total', 'sails', 'engine', 'tidal', 'stopped', 'nauticalMiles'];
+        if (numericFields.includes(field) && typeof value === 'string') {
+            processedValue = value.replace(/\./g, ',').replace(/[^\d,]/g, '');
+            const parts = processedValue.split(',');
+            if (parts.length > 2) {
+                processedValue = parts[0] + ',' + parts.slice(1).join('');
+            }
+        }
+        handleOpinionChange(section, { ...opinion[section], [field]: processedValue });
+    };
+
     const handleSaveCalculatedHours = (calculatedData) => {
-        handleNestedChange('hours', 'total', calculatedData.total);
-        handleNestedChange('hours', 'sails', calculatedData.sails);
-        handleNestedChange('hours', 'engine', calculatedData.engine);
-        handleNestedChange('hours', 'tidal', calculatedData.tidal);
-        handleNestedChange('hours', 'stopped', calculatedData.stopped);
-        handleNestedChange('hours', 'gap', calculatedData.gap);
-        handleNestedChange('hours', 'exactSeconds', calculatedData.exactSeconds);
-        handleNestedChange('hours', 'dailyLogs', calculatedData.dailyLogs);
+        handleOpinionChange('hours', {
+            ...opinion.hours,
+            total: calculatedData.total,
+            sails: calculatedData.sails,
+            engine: calculatedData.engine,
+            tidal: calculatedData.tidal,
+            stopped: calculatedData.stopped,
+            gap: calculatedData.gap,
+            exactSeconds: calculatedData.exactSeconds,
+            dailyLogs: calculatedData.dailyLogs
+        });
     };
 
 
@@ -77,10 +93,10 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
             <HoursCalculatorModal
                 isOpen={isCalcOpen}
                 onClose={() => setIsCalcOpen(false)}
-                initialLogs={formData.hours.dailyLogs || []}
+                initialLogs={opinion?.hours?.dailyLogs || []}
                 onSave={handleSaveCalculatedHours}
-                cruiseDates={{ start: formData.cruise.embarkDate, end: formData.cruise.disembarkDate }}
-                dailySummaries={formData.cruise.dailySummaries}
+                cruiseDates={{ start: opinion?.cruise?.embarkDate, end: opinion?.cruise?.disembarkDate }}
+                dailySummaries={opinion?.cruise?.dailySummaries}
             />
 
             <div className="report-header mb-10" style={{ position: 'relative' }}>
@@ -101,11 +117,10 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                     <input
                         type="date"
                         className="interactive-input date-input inline-input"
-                        value={formatDateForPicker(formData.cruise.startDate)}
+                        value={formatDateForPicker(opinion.cruise.startDate)}
                         onChange={(e) => {
                             const val = formatDateFromPicker(e.target.value);
-                            handleNestedChange('cruise', 'startDate', val);
-                            handleNestedChange('cruise', 'embarkDate', val);
+                            handleOpinionChange('cruise', { ...opinion.cruise, startDate: val, embarkDate: val });
                         }}
                         onClick={(e) => e.target.showPicker && e.target.showPicker()}
                     />
@@ -113,11 +128,10 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                     <input
                         type="date"
                         className="interactive-input date-input inline-input"
-                        value={formatDateForPicker(formData.cruise.endDate)}
+                        value={formatDateForPicker(opinion.cruise.endDate)}
                         onChange={(e) => {
                             const val = formatDateFromPicker(e.target.value);
-                            handleNestedChange('cruise', 'endDate', val);
-                            handleNestedChange('cruise', 'disembarkDate', val);
+                            handleOpinionChange('cruise', { ...opinion.cruise, endDate: val, disembarkDate: val });
                         }}
                         onClick={(e) => e.target.showPicker && e.target.showPicker()}
                     />
@@ -219,55 +233,53 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                 <tr>
                     <td colSpan="4">
                         <span className="label">Wpisu dokonano na podstawie dziennika jachtowego, nr pływania:</span>
-                        <input className="interactive-input" value={formData.cruise.logbookNumber} onChange={(e) => handleNestedChange('cruise', 'logbookNumber', e.target.value)} />
+                        <input className="interactive-input" value={opinion.cruise.logbookNumber} onChange={(e) => handleLocalNestedChange('cruise', 'logbookNumber', e.target.value)} />
                     </td>
                 </tr>
                 <tr>
                     <td className="w-35">
                         <span className="label">Port zaokrętowania:</span>
-                        <input className="interactive-input" value={formData.cruise.embarkPort} onChange={(e) => handleNestedChange('cruise', 'embarkPort', e.target.value)} />
+                        <input className="interactive-input" value={opinion.cruise.embarkPort} onChange={(e) => handleLocalNestedChange('cruise', 'embarkPort', e.target.value)} />
                     </td>
                     <td className="w-25">
                         <span className="label">Data:</span>
                         <input
                             type="date"
                             className="interactive-input date-input"
-                            value={formatDateForPicker(formData.cruise.embarkDate)}
+                            value={formatDateForPicker(opinion.cruise.embarkDate)}
                             onChange={(e) => {
                                 const val = formatDateFromPicker(e.target.value);
-                                handleNestedChange('cruise', 'embarkDate', val);
-                                handleNestedChange('cruise', 'startDate', val);
+                                handleOpinionChange('cruise', { ...opinion.cruise, embarkDate: val, startDate: val });
                             }}
                             onClick={(e) => e.target.showPicker && e.target.showPicker()}
                         />
                     </td>
                     <td className="w-40" colSpan="2">
                         <span className="label">Pływowy:</span>
-                        <input className="interactive-input" value={formData.cruise.embarkTidal} onChange={(e) => handleNestedChange('cruise', 'embarkTidal', e.target.value)} />
+                        <input className="interactive-input" value={opinion.cruise.embarkTidal} onChange={(e) => handleLocalNestedChange('cruise', 'embarkTidal', e.target.value)} />
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <span className="label">Port wyokrętowania:</span>
-                        <input className="interactive-input" value={formData.cruise.disembarkPort} onChange={(e) => handleNestedChange('cruise', 'disembarkPort', e.target.value)} />
+                        <input className="interactive-input" value={opinion.cruise.disembarkPort} onChange={(e) => handleLocalNestedChange('cruise', 'disembarkPort', e.target.value)} />
                     </td>
                     <td>
                         <span className="label">Data:</span>
                         <input
                             type="date"
                             className="interactive-input date-input"
-                            value={formatDateForPicker(formData.cruise.disembarkDate)}
+                            value={formatDateForPicker(opinion.cruise.disembarkDate)}
                             onChange={(e) => {
                                 const val = formatDateFromPicker(e.target.value);
-                                handleNestedChange('cruise', 'disembarkDate', val);
-                                handleNestedChange('cruise', 'endDate', val);
+                                handleOpinionChange('cruise', { ...opinion.cruise, disembarkDate: val, endDate: val });
                             }}
                             onClick={(e) => e.target.showPicker && e.target.showPicker()}
                         />
                     </td>
                     <td colSpan="2">
                         <span className="label">Pływowy:</span>
-                        <input className="interactive-input" value={formData.cruise.disembarkTidal} onChange={(e) => handleNestedChange('cruise', 'disembarkTidal', e.target.value)} />
+                        <input className="interactive-input" value={opinion.cruise.disembarkTidal} onChange={(e) => handleLocalNestedChange('cruise', 'disembarkTidal', e.target.value)} />
                     </td>
                 </tr>
                 <tr>
@@ -277,19 +289,19 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                             ref={portsRef}
                             className="interactive-textarea"
                             spellCheck="false"
-                            value={formData.cruise.visitedPorts}
-                            onChange={(e) => handleNestedChange('cruise', 'visitedPorts', e.target.value)}
+                            value={opinion.cruise.visitedPorts}
+                            onChange={(e) => handleLocalNestedChange('cruise', 'visitedPorts', e.target.value)}
                         />
                     </td>
                 </tr>
                 <tr>
                     <td colSpan="2">
                         <span className="label">W tym liczba portów pływowych:</span>
-                        <input className="interactive-input" value={formData.cruise.tidalPortsCount} onChange={(e) => handleNestedChange('cruise', 'tidalPortsCount', e.target.value)} />
+                        <input className="interactive-input" value={opinion.cruise.tidalPortsCount} onChange={(e) => handleLocalNestedChange('cruise', 'tidalPortsCount', e.target.value)} />
                     </td>
                     <td colSpan="2">
                         <span className="label">Liczba dni rejsu:</span>
-                        <input className="interactive-input" value={formData.cruise.daysCount} onChange={(e) => handleNestedChange('cruise', 'daysCount', e.target.value)} />
+                        <input className="interactive-input" value={opinion.cruise.daysCount} onChange={(e) => handleLocalNestedChange('cruise', 'daysCount', e.target.value)} />
                     </td>
                 </tr>
                 </tbody>
@@ -313,27 +325,27 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                 <tr>
                     <td className="w-15">
                         <span className="label">razem (żagle+silnik)</span>
-                        <input className="interactive-input center-input" value={formData.hours.total} onChange={(e) => handleNestedChange('hours', 'total', e.target.value)} />
+                        <input className="interactive-input center-input" value={opinion.hours.total} onChange={(e) => handleLocalNestedChange('hours', 'total', e.target.value)} />
                     </td>
                     <td className="w-15">
                         <span className="label">pod żaglami</span>
-                        <input className="interactive-input center-input" value={formData.hours.sails} onChange={(e) => handleNestedChange('hours', 'sails', e.target.value)} />
+                        <input className="interactive-input center-input" value={opinion.hours.sails} onChange={(e) => handleLocalNestedChange('hours', 'sails', e.target.value)} />
                     </td>
                     <td className="w-15">
                         <span className="label">na silniku</span>
-                        <input className="interactive-input center-input" value={formData.hours.engine} onChange={(e) => handleNestedChange('hours', 'engine', e.target.value)} />
+                        <input className="interactive-input center-input" value={opinion.hours.engine} onChange={(e) => handleLocalNestedChange('hours', 'engine', e.target.value)} />
                     </td>
                     <td className="w-15">
                         <span className="label">wody pływowe</span>
-                        <input className="interactive-input center-input" value={formData.hours.tidal} onChange={(e) => handleNestedChange('hours', 'tidal', e.target.value)} />
+                        <input className="interactive-input center-input" value={opinion.hours.tidal} onChange={(e) => handleLocalNestedChange('hours', 'tidal', e.target.value)} />
                     </td>
                     <td>
                         <span className="label">w portach / kotwica</span>
-                        <input className="interactive-input center-input" value={formData.hours.stopped} onChange={(e) => handleNestedChange('hours', 'stopped', e.target.value)} />
+                        <input className="interactive-input center-input" value={opinion.hours.stopped} onChange={(e) => handleLocalNestedChange('hours', 'stopped', e.target.value)} />
                     </td>
                     <td>
                         <span className="label">łącznie</span>
-                        <input className="interactive-input center-input" value={formData.distance.nauticalMiles} onChange={(e) => handleNestedChange('distance', 'nauticalMiles', e.target.value)} />
+                        <input className="interactive-input center-input" value={opinion.distance.nauticalMiles} onChange={(e) => handleLocalNestedChange('distance', 'nauticalMiles', e.target.value)} />
                     </td>
                 </tr>
                 </tbody>

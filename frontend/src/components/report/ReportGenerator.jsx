@@ -145,7 +145,7 @@ const ReportGenerator = ({ tripId }) => {
                         if (reportData.endPort) {
                             portsSet.delete(reportData.endPort);
                         }
-                        
+
                         visitedPorts = Array.from(portsSet).join(', ');
                     }
 
@@ -257,7 +257,10 @@ const ReportGenerator = ({ tripId }) => {
                     participantPhone: '', participantEmail: '',
                     general: '', duties: '', seasickness: '', endurance: '', remarks: '',
                     title: 'OPINIA Z REJSU',
-                    locationDate: locDate
+                    locationDate: locDate,
+                    cruise: JSON.parse(JSON.stringify(prev.cruise)),
+                    hours: JSON.parse(JSON.stringify(prev.hours)),
+                    distance: JSON.parse(JSON.stringify(prev.distance)),
                 });
             }
 
@@ -267,7 +270,10 @@ const ReportGenerator = ({ tripId }) => {
                     participantName: '', participantPatent: '', participantFunction: '',
                     participantPhone: '', participantEmail: '',
                     general: '', duties: '', seasickness: '', endurance: '', remarks: '',
-                    title: 'OPINIA Z REJSU', locationDate: locDate
+                    title: 'OPINIA Z REJSU', locationDate: locDate,
+                    cruise: JSON.parse(JSON.stringify(prev.cruise)),
+                    hours: JSON.parse(JSON.stringify(prev.hours)),
+                    distance: JSON.parse(JSON.stringify(prev.distance)),
                 });
             }
 
@@ -302,7 +308,10 @@ const ReportGenerator = ({ tripId }) => {
                                 participantEmail: '',
                                 general: '', duties: '', seasickness: '', endurance: '', remarks: '',
                                 title: 'OPINIA Z REJSU',
-                                locationDate: combinedLocationDate
+                                locationDate: combinedLocationDate,
+                                cruise: JSON.parse(JSON.stringify(prev.cruise)),
+                                hours: JSON.parse(JSON.stringify(prev.hours)),
+                                distance: JSON.parse(JSON.stringify(prev.distance)),
                             });
                         }
                     });
@@ -314,7 +323,10 @@ const ReportGenerator = ({ tripId }) => {
                         participantPhone: '', participantEmail: '',
                         general: '', duties: '', seasickness: '', endurance: '', remarks: '',
                         title: 'OPINIA Z REJSU',
-                        locationDate: combinedLocationDate
+                        locationDate: combinedLocationDate,
+                        cruise: JSON.parse(JSON.stringify(prev.cruise)),
+                        hours: JSON.parse(JSON.stringify(prev.hours)),
+                        distance: JSON.parse(JSON.stringify(prev.distance)),
                     });
                 }
                 return { ...prev, opinions: newOpinions };

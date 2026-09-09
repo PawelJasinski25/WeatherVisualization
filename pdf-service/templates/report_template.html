@@ -239,9 +239,9 @@
     {{ op.title if op.title else 'OPINIA Z REJSU' }}
     <br>
     <span style="font-size: 13px; font-weight: normal; margin-top: 4px; display: inline-block;">
-            {{ data.cruise.startDate if data.cruise else '01.08.2025' }}
+            {{ op.cruise.startDate if op.cruise else '01.08.2025' }}
             -
-            {{ data.cruise.endDate if data.cruise else '16.09.2025' }}
+            {{ op.cruise.endDate if op.cruise else '16.09.2025' }}
         </span>
 </div>
 
@@ -315,53 +315,53 @@
     <tr>
         <td colspan="4">
             <span class="label">Wpisu dokonano na podstawie dziennika jachtowego, nr pływania:</span>
-            <div class="val">{{ data.cruise.logbookNumber if data.cruise else '' }}</div>
+            <div class="val">{{ op.cruise.logbookNumber if op.cruise else '' }}</div>
         </td>
     </tr>
     <tr>
         <td style="width: 35%;">
             <span class="label">Port zaokrętowania:</span>
-            <div class="val">{{ data.cruise.embarkPort if data.cruise else '' }}</div>
+            <div class="val">{{ op.cruise.embarkPort if op.cruise else '' }}</div>
         </td>
         <td style="width: 25%;">
             <span class="label">Data:</span>
-            <div class="val">{{ data.cruise.embarkDate if data.cruise else '' }}</div>
+            <div class="val">{{ op.cruise.embarkDate if op.cruise else '' }}</div>
         </td>
         <td style="width: 40%;" colspan="2">
             <span class="label">Pływowy:</span>
-            <div class="val" style="text-decoration: underline;">{{ data.cruise.embarkTidal if data.cruise else '' }}</div>
+            <div class="val" style="text-decoration: underline;">{{ op.cruise.embarkTidal if op.cruise else '' }}</div>
         </td>
     </tr>
     <tr>
         <td>
             <span class="label">Port wyokrętowania:</span>
-            <div class="val">{{ data.cruise.disembarkPort if data.cruise else '' }}</div>
+            <div class="val">{{ op.cruise.disembarkPort if op.cruise else '' }}</div>
         </td>
         <td>
             <span class="label">Data:</span>
-            <div class="val">{{ data.cruise.disembarkDate if data.cruise else '' }}</div>
+            <div class="val">{{ op.cruise.disembarkDate if op.cruise else '' }}</div>
         </td>
         <td colspan="2">
             <span class="label">Pływowy:</span>
-            <div class="val" style="text-decoration: underline;">{{ data.cruise.disembarkTidal if data.cruise else '' }}</div>
+            <div class="val" style="text-decoration: underline;">{{ op.cruise.disembarkTidal if op.cruise else '' }}</div>
         </td>
     </tr>
     <tr>
         <td colspan="4">
             <span class="label">Odwiedzone porty:</span>
             <div class="val" style="min-height: 24px;">
-                {{ data.cruise.visitedPorts if data.cruise else '' }}
+                {{ op.cruise.visitedPorts if op.cruise else '' }}
             </div>
         </td>
     </tr>
     <tr>
         <td colspan="2">
             <span class="label">W tym liczba portów pływowych:</span>
-            <div class="val">{{ data.cruise.tidalPortsCount if data.cruise else '' }}</div>
+            <div class="val">{{ op.cruise.tidalPortsCount if op.cruise else '' }}</div>
         </td>
         <td colspan="2">
             <span class="label">Liczba dni rejsu:</span>
-            <div class="val">{{ data.cruise.daysCount if data.cruise else '' }}</div>
+            <div class="val">{{ op.cruise.daysCount if op.cruise else '' }}</div>
         </td>
     </tr>
 </table>
@@ -376,27 +376,27 @@
     <tr>
         <td style="width: 15%;">
             <span class="label">razem (żagle+silnik)</span>
-            <div class="val">{{ data.hours.total if data.hours else '' }}</div>
+            <div class="val">{{ op.hours.total if op.hours else '' }}</div>
         </td>
         <td style="width: 15%;">
             <span class="label">pod żaglami</span>
-            <div class="val">{{ data.hours.sails if data.hours else '' }}</div>
+            <div class="val">{{ op.hours.sails if op.hours else '' }}</div>
         </td>
         <td style="width: 15%;">
             <span class="label">na silniku</span>
-            <div class="val">{{ data.hours.engine if data.hours else '' }}</div>
+            <div class="val">{{ op.hours.engine if op.hours else '' }}</div>
         </td>
         <td style="width: 15%;">
             <span class="label">wody pływowe</span>
-            <div class="val">{{ data.hours.tidal if data.hours else '' }}</div>
+            <div class="val">{{ op.hours.tidal if op.hours else '' }}</div>
         </td>
         <td>
             <span class="label">w portach / kotwica</span>
-            <div class="val">{{ data.hours.stopped if data.hours else '' }}</div>
+            <div class="val">{{ op.hours.stopped if op.hours else '' }}</div>
         </td>
         <td>
             <span class="label">łącznie</span>
-            <div class="val">{{ data.distance.nauticalMiles if data.distance else '' }}</div>
+            <div class="val">{{ op.distance.nauticalMiles if op.distance else '' }}</div>
         </td>
     </tr>
 </table>
