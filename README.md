@@ -1,4 +1,7 @@
-## Uruchomienie lokalne aplikacji
+# Pogoda na trasie
+Aplikacja webowa zrealizowana w ramach pracy magisterskiej. Służy do wizualizacji i analizy warunków pogodowych na historycznych trasach zarejestrowanych w plikach GPX. Jej główne funkcje obejmują prezentację warunków meteorologicznych na mapie oraz przy użyciu animacji, a także generowanie raportów analitycznych zawierających podsumowanie wyprawy w formacie PDF.
+
+## Uruchomienie aplikacji
 ### Wymagania wstępne
 Upewnij się, że masz zainstalowane:
 * [Docker Desktop](https://www.docker.com/products/docker-desktop/)
