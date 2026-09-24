@@ -103,7 +103,7 @@ public class SpeedAnalyzer {
         }
         double currentSpeed = currentSpeedOpt;
 
-        double timeWindowSec = 30.0;
+        double timeWindowSec = 60.0;
         double maxAccel = 15.0;
         double multiplier = 2.0;
         double minDiff = 8.0;

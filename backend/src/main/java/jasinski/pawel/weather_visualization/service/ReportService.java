@@ -283,7 +283,6 @@ public class ReportService {
         List<DailySummary> summaries = generateDailySummaries(context, zoneId);
 
         String mainCsvContent = generateSummaryCsv(context, summaries, prefs, zoneId);
-        String apiCsvContent = generateApiUsageCsv(context, prefs, zoneId);
         String detailedPointsCsvContent = generateDetailedPointsCsv(context, summaries, prefs, zoneId);
 
         TripReportDataDto data = buildReportDataDto(trip, context, summaries, zoneId);
@@ -318,14 +317,9 @@ public class ReportService {
             zipOutputStream.write(mainCsvContent.getBytes(StandardCharsets.UTF_8));
             zipOutputStream.closeEntry();
 
-            // Punkty z bazy i zapytania
-            zipOutputStream.putNextEntry(new ZipEntry(filePrefix + "punkty.csv"));
-            zipOutputStream.write(bom);
-            zipOutputStream.write(apiCsvContent.getBytes(StandardCharsets.UTF_8));
-            zipOutputStream.closeEntry();
 
-            // Szczegóły punktów (jeden punkt - jeden wiersz)
-            zipOutputStream.putNextEntry(new ZipEntry(filePrefix + "szczegolowe_punkty.csv"));
+            // Wszystkie punkty z bazy z pogodą
+            zipOutputStream.putNextEntry(new ZipEntry(filePrefix + "punkty.csv"));
             zipOutputStream.write(bom);
             zipOutputStream.write(detailedPointsCsvContent.getBytes(StandardCharsets.UTF_8));
             zipOutputStream.closeEntry();
@@ -490,135 +484,6 @@ public class ReportService {
                 } else {
                     csv.append("--;--;--;--;--;");
                 }
-            }
-            csv.append("\n");
-        }
-        return csv.toString();
-    }
-
-    public String generateApiUsageCsv(TripAnalysisContext context, Map<String, String> prefs, ZoneId zoneId) {
-        StringBuilder csv = new StringBuilder();
-        DateTimeFormatter fullTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(zoneId);
-
-        class ApiUsageStats {
-            Instant firstPointTime;
-            Instant lastPointTime;
-            double gridLat;
-            double gridLon;
-            double origLat;
-            double origLon;
-            boolean isWater;
-            Weather weather;
-            int pointCount = 0;
-            boolean isActualHttpApiCall;
-        }
-
-        Map<String, ApiUsageStats> usageMap = new LinkedHashMap<>();
-        Set<String> executedHttpCalls = new HashSet<>();
-
-        // Odtwarzanie zapytań
-        for (TrackPoint pt : context.points()) {
-            String dateStr = pt.getTime().toString().substring(0, 10);
-            String targetHourStr = pt.getTime().toString().substring(0, 13) + ":00";
-            double gridLat = Math.round(pt.getLatitude() * 10.0) / 10.0;
-            double gridLon = Math.round(pt.getLongitude() * 10.0) / 10.0;
-
-            String hourlyKey = targetHourStr + "_" + gridLat + "_" + gridLon;
-            String dailyGridKey = dateStr + "_" + gridLat + "_" + gridLon;
-
-            ApiUsageStats stats = usageMap.get(hourlyKey);
-            if (stats == null) {
-                stats = new ApiUsageStats();
-                stats.firstPointTime = pt.getTime();
-                stats.gridLat = gridLat;
-                stats.gridLon = gridLon;
-                stats.origLat = pt.getLatitude();
-                stats.origLon = pt.getLongitude();
-                stats.isWater = waterDetectionService.isWater(pt.getLatitude(), pt.getLongitude());
-                stats.weather = pt.getWeather();
-
-                if (!executedHttpCalls.contains(dailyGridKey)) {
-                    stats.isActualHttpApiCall = true;
-                    executedHttpCalls.add(dailyGridKey);
-                } else {
-                    stats.isActualHttpApiCall = false;
-                }
-
-                usageMap.put(hourlyKey, stats);
-            }
-
-            stats.lastPointTime = pt.getTime();
-            stats.pointCount++;
-        }
-
-        String tempUnit = prefs.getOrDefault("temp", "°C");
-        String windUnit = prefs.getOrDefault("wind", "km/h");
-        String pressureUnit = prefs.getOrDefault("pressure", "hPa");
-        String rainUnit = prefs.getOrDefault("rain", "mm");
-        String snowUnit = prefs.getOrDefault("snow", "cm");
-        String waveUnit = prefs.getOrDefault("wave", "m");
-        String currentsUnit = prefs.getOrDefault("currents", "km/h");
-
-        csv.append("Data punktu z bazy;Szerokość;Długość;Szerokość zaokrąglona;Długość zaokrąglona;Źródło danych;Open-Meteo Historical API (0/1);Open-Meteo Marine API (0/1);Dopasowane punkty;Dopasowane punkty od;Dopasowane punkty do;");
-        csv.append("Temperatura (").append(tempUnit).append(");Prędkość wiatru (").append(windUnit).append(");Kierunek wiatru (°);Punkt rosy (").append(tempUnit).append(");Porywy wiatru (").append(windUnit).append(");Opady deszczu (").append(rainUnit).append(");Opady śniegu (").append(snowUnit).append(");Wilgotność (%);Ciśnienie (").append(pressureUnit).append(");Zachmurzenie ogólne (%);Chmury niskie (%);Chmury średnie (%);Chmury wysokie (%);Wysokość fali (").append(waveUnit).append(");Okres fali (s);Kierunek fali (°);Wysokość fal wiatrowych (").append(waveUnit).append(");Okres fal wiatrowych (s);Wysokość martwej fali (").append(waveUnit).append(");Okres martwej fali (s);Prędkość prądów (").append(currentsUnit).append(");Kierunek prądów (°);Temperatura morza (").append(tempUnit).append(");Kod pogody\n");
-
-        for (ApiUsageStats stats : usageMap.values()) {
-            String origLatStr = String.format(Locale.US, "%.5f", stats.origLat);
-            String origLonStr = String.format(Locale.US, "%.5f", stats.origLon);
-            String gridLatStr = String.format(Locale.US, "%.1f", stats.gridLat);
-            String gridLonStr = String.format(Locale.US, "%.1f", stats.gridLon);
-
-            String dateFullStr = fullTimeFormatter.format(stats.firstPointTime);
-            String startTimeStr = fullTimeFormatter.format(stats.firstPointTime);
-            String endTimeStr = fullTimeFormatter.format(stats.lastPointTime);
-
-            String dataSource = stats.isActualHttpApiCall ?
-                    "Zapytanie HTTP (paczka 24h)" :
-                    "Cache (paczka 24h)";
-
-            int historicalFlag = stats.isActualHttpApiCall ? 1 : 0;
-            int marineFlag = (stats.isActualHttpApiCall && stats.isWater) ? 1 : 0;
-
-            csv.append(dateFullStr).append(";")
-                    .append(origLatStr).append(";")
-                    .append(origLonStr).append(";")
-                    .append(gridLatStr).append(";")
-                    .append(gridLonStr).append(";")
-                    .append(dataSource).append(";")
-                    .append(historicalFlag).append(";")
-                    .append(marineFlag).append(";")
-                    .append(stats.pointCount).append(";")
-                    .append(startTimeStr).append(";")
-                    .append(endTimeStr).append(";");
-
-            Weather w = stats.weather;
-            if (w != null) {
-                appendCsv(csv, formatUnit(w.getTemp(), tempUnit, "temp"));
-                appendCsv(csv, formatUnit(w.getWindSpeed(), windUnit, "wind"));
-                appendCsv(csv, w.getWindDir());
-                appendCsv(csv, formatUnit(w.getDewPoint(), tempUnit, "temp"));
-                appendCsv(csv, formatUnit(w.getWindGusts(), windUnit, "wind"));
-                appendCsv(csv, formatUnit(w.getRain(), rainUnit, "rain"));
-                appendCsv(csv, formatUnit(w.getSnowfall(), snowUnit, "snow"));
-                appendCsv(csv, w.getHumidity());
-                appendCsv(csv, formatUnit(w.getPressure(), pressureUnit, "pressure"));
-                appendCsv(csv, w.getCloudCover());
-                appendCsv(csv, w.getCloudCoverLow());
-                appendCsv(csv, w.getCloudCoverMid());
-                appendCsv(csv, w.getCloudCoverHigh());
-                appendCsv(csv, formatUnit(w.getWaveHeight(), waveUnit, "wave"));
-                appendCsv(csv, w.getWavePeriod());
-                appendCsv(csv, w.getWaveDirection());
-                appendCsv(csv, formatUnit(w.getWindWaveHeight(), waveUnit, "wave"));
-                appendCsv(csv, w.getWindWavePeriod());
-                appendCsv(csv, formatUnit(w.getSwellWaveHeight(), waveUnit, "wave"));
-                appendCsv(csv, w.getSwellWavePeriod());
-                appendCsv(csv, formatUnit(w.getOceanCurrentVelocity(), currentsUnit, "currents"));
-                appendCsv(csv, w.getOceanCurrentDirection());
-                appendCsv(csv, formatUnit(w.getSeaTemperature(), tempUnit, "temp"));
-                appendCsv(csv, w.getWeatherCode());
-            } else {
-                for (int i = 0; i < 24; i++) csv.append("--;");
             }
             csv.append("\n");
         }
