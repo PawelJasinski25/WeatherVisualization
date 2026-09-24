@@ -7,9 +7,8 @@ import '../../styles/panel.css';
 import '../../styles/report-elements.css';
 import '../../styles/report-generator.css';
 import {useUnits} from "../../contexts/UnitContext.jsx";
-import { FileSignature, ClipboardList } from 'lucide-react';
 import ErrorModal from "../ErrorModal.jsx";
-import { Loader2} from 'lucide-react';
+import { FileSignature, ClipboardList, Download, FolderOpen, Loader2 } from 'lucide-react';
 
 const ReportGenerator = ({ tripId }) => {
     const [includeCruiseCard, setIncludeCruiseCard] = useState(true);
@@ -58,6 +57,91 @@ const ReportGenerator = ({ tripId }) => {
         const parts = dateStr.split('-');
         if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
         return dateStr;
+    };
+
+    const handleExportJSON = () => {
+
+        const dataToExport = JSON.parse(JSON.stringify(formData));
+
+        if (dataToExport.cruise && dataToExport.cruise.dailySummaries) {
+            delete dataToExport.cruise.dailySummaries;
+        }
+
+        if (dataToExport.opinions && Array.isArray(dataToExport.opinions)) {
+            dataToExport.opinions.forEach(op => {
+                if (op.cruise && op.cruise.dailySummaries) {
+                    delete op.cruise.dailySummaries;
+                }
+            });
+        }
+
+        const dataStr = JSON.stringify(dataToExport, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = window.URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        const cleanTripName = formData.tripName?.trim();
+        link.download = cleanTripName
+            ? `${cleanTripName}_dane_formularz.json`
+            : "dane_formularz.json";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+    };
+
+    const handleImportJSON = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (
+                    !importedData.captain || !importedData.yacht || !importedData.cruise || !importedData.hours || !importedData.distance ||
+                    !Array.isArray(importedData.crew) ||
+                    !Array.isArray(importedData.opinions)
+                ) {
+                    throw new Error("Niezgodny format pliku JSON");
+                }
+
+                setFormData(prev => {
+                    const newCruise = {
+                        ...prev.cruise,
+                        ...(importedData.cruise || {}),
+                        dailySummaries: prev.cruise.dailySummaries
+                    };
+
+                    const newOpinions = (importedData.opinions || []).map(op => ({
+                        ...op,
+                        cruise: {
+                            ...(op.cruise || {}),
+                            dailySummaries: prev.cruise.dailySummaries
+                        }
+                    }));
+
+                    return {
+                        ...prev,
+                        ...importedData,
+                        cruise: newCruise,
+                        opinions: newOpinions
+                    };
+                });
+
+                if (importedData.opinions && importedData.opinions.length > 0) {
+                    setIncludeOpinion(true);
+                }
+
+            } catch (error) {
+                console.error("Błąd podczas odczytu pliku JSON:", error);
+                setError("Nie udało się odczytać pliku.");
+            }
+        };
+        reader.readAsText(file);
+
+        event.target.value = null;
     };
 
     useEffect(() => {
@@ -502,10 +586,45 @@ const ReportGenerator = ({ tripId }) => {
 
             <div className="report-sidebar">
                 <div className="report-sidebar-content">
-                    <h3 className="panel-title" style={{ fontSize: '1.25rem' }}>Generowanie raportu</h3>
-                    <p className="panel-subtitle">
-                        <b>Opcjonalnie dodaj kartę i opinię z rejsu.</b>
-                    </p>
+                    <div style={{ marginBottom: '1.25rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                            <h3 className="panel-title" style={{ fontSize: '1.25rem', margin: 0 }}>
+                                Generowanie raportu
+                            </h3>
+
+                            <div className="template-icon-actions">
+                                <button
+                                    onClick={handleExportJSON}
+                                    disabled={isFetchingData}
+                                    className="template-icon-btn"
+                                    title="Zapisz dane z formularzy"
+                                >
+                                    <Download size={16} />
+                                </button>
+
+                                <button
+                                    onClick={() => document.getElementById('import-json-input').click()}
+                                    disabled={isFetchingData}
+                                    className="template-icon-btn"
+                                    title="Wczytaj dane do formularzy"
+                                >
+                                    <FolderOpen size={16} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <p className="panel-subtitle" style={{ margin: 0 }}>
+                            <b>Opcjonalnie dodaj kartę i opinię z rejsu.</b>
+                        </p>
+                    </div>
+
+                    <input
+                        type="file"
+                        accept=".json"
+                        id="import-json-input"
+                        style={{ display: 'none' }}
+                        onChange={handleImportJSON}
+                    />
 
                     <div className="sidebar-actions-group">
                         <button
