@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import HoursCalculatorModal from "./HoursCalculatorModal.jsx";
-import { Calculator, X } from 'lucide-react';
+import { Calculator, X, ImagePlus } from 'lucide-react';
 
 const CheckboxOption = ({ label, checked, onClick }) => {
     const lineStyle = {
@@ -28,7 +28,7 @@ const CheckboxOption = ({ label, checked, onClick }) => {
     );
 };
 
-const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemove, handleNestedChange, formatDateForPicker, formatDateFromPicker }) => {
+const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemove, handleNestedChange, formatDateForPicker, formatDateFromPicker, handleLogoUpload,handleLogoRemove }) => {
     const portsRef = useRef(null);
     const remarksRef = useRef(null);
     const locationDateRef = useRef(null);
@@ -89,7 +89,7 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
 
 
     return (
-        <div className="a4-paper mb-20">
+        <div className="a4-paper mb-20" style={{ position: 'relative' }}>
             <HoursCalculatorModal
                 isOpen={isCalcOpen}
                 onClose={() => setIsCalcOpen(false)}
@@ -99,15 +99,31 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                 dailySummaries={opinion?.cruise?.dailySummaries}
             />
 
+            <button
+                onClick={handleRemove}
+                className="remove-opinion-btn"
+                title="Usuń opinię dla tej osoby"
+            >
+                <X size={26} />
+            </button>
+
             <div className="report-header mb-10" style={{ position: 'relative' }}>
-                <button
-                    onClick={handleRemove}
-                    className="no-print"
-                    style={{ position: 'absolute', top: 0, right: 0, background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}
-                    title="Usuń opinię dla tej osoby"
-                >
-                    <X size={24} />
-                </button>
+                <div className="logo-upload-box" style={{ right: 0, top: '-5px' }} title="Wgraj logo">
+                    {formData.logoBase64 ? (
+                        <>
+                            <img src={formData.logoBase64} alt="Logo" />
+                            <button type="button" className="remove-logo-btn no-print" onClick={handleLogoRemove} title="Usuń logo">
+                                <X size={14} />
+                            </button>
+                        </>
+                    ) : (
+                        <label className="logo-upload-label">
+                            <input type="file" accept="image/png, image/jpeg" style={{ display: 'none' }} onChange={handleLogoUpload} />
+                            <ImagePlus size={40} strokeWidth={1.5} className="no-print" />
+                        </label>
+                    )}
+                </div>
+
                 <input
                     className="interactive-input title-input"
                     value={opinion.title !== undefined ? opinion.title : "OPINIA Z REJSU"}
@@ -115,7 +131,7 @@ const CruiseOpinionForm = ({ formData, opinion, handleOpinionChange, handleRemov
                 />
                 <div className="summary-dates-container" style={{ justifyContent: 'center', alignItems: 'center' }}>
                     {formData.tripName && (
-                        <span style={{marginRight: '6px' }}>
+                        <span style={{ marginRight: '6px' }}>
                             {formData.tripName},
                         </span>
                     )}

@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import HoursCalculatorModal from "./HoursCalculatorModal.jsx";
-import { Calculator } from 'lucide-react';
+import { Calculator, X, ImagePlus } from 'lucide-react';
 
-const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handleCrewChange, formatDateForPicker, formatDateFromPicker }) => {
+const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handleCrewChange, formatDateForPicker, formatDateFromPicker, handleLogoUpload, handleLogoRemove }) => {
     const textareaRef = useRef(null);
     const [isCalcOpen, setIsCalcOpen] = useState(false);
 
@@ -38,7 +38,23 @@ const CruiseCardForm = ({ formData, handleFieldChange, handleNestedChange, handl
             />
 
             {/* NAGŁÓWEK */}
-            <div className="report-header mb-10">
+            <div className="report-header mb-10" style={{ position: 'relative' }}>
+                <div className="logo-upload-box" title="Wgraj logo">
+                    {formData.logoBase64 ? (
+                        <>
+                            <img src={formData.logoBase64} alt="Logo" />
+                            <button type="button" className="remove-logo-btn no-print" onClick={handleLogoRemove} title="Usuń logo">
+                                <X size={14} />
+                            </button>
+                        </>
+                    ) : (
+                        <label className="logo-upload-label">
+                            <input type="file" accept="image/png, image/jpeg" style={{ display: 'none' }} onChange={handleLogoUpload} />
+                            <ImagePlus size={40} strokeWidth={1.5} className="no-print" />
+                        </label>
+                    )}
+                </div>
+
                 <input
                     className="interactive-input title-input"
                     value={formData.tripName}

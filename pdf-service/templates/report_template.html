@@ -6,14 +6,20 @@
 <!-- STRONA 1: KARTA REJSU-->
 
 {% if 'cruiseCard' in modules %}
-<div class="form-title">
-    {{ data.tripName if data.tripName else 'Rejs po Zatoce Botnickiej' }}
-    <br>
-    <span style="font-size: 13px; font-weight: normal; margin-top: 4px; display: inline-block;">
-        {{ data.cruise.startDate if data.cruise else '01.08.2025' }} 
-        -
-        {{ data.cruise.endDate if data.cruise else '16.09.2025' }}
-    </span>
+<div style="position: relative; min-height: 60px;">
+    <div class="form-title">
+        {{ data.tripName if data.tripName else 'Karta rejsu' }}
+        <br>
+        <span style="font-size: 13px; font-weight: normal; margin-top: 4px; display: inline-block;">
+            {{ data.cruise.startDate if data.cruise else '01.08.2025' }}
+            -
+            {{ data.cruise.endDate if data.cruise else '16.09.2025' }}
+        </span>
+    </div>
+
+    {% if data.logoBase64 %}
+    <img src="{{ data.logoBase64 }}" style="position: absolute; top: -5px; right: 0; width: 60px; height: 60px; object-fit: contain;">
+    {% endif %}
 </div>
 
 <!-- INFORMACJE O KAPITANIE -->
@@ -235,15 +241,21 @@
 <!-- STRONA 2: OPINIA Z REJSU-->
 {% if 'opinion' in modules %}
 {% for op in data.opinions %}
-<div class="form-title">
-    {{ op.title if op.title else 'OPINIA Z REJSU' }}
-    <br>
-    <span style="font-size: 13px; font-weight: normal; margin-top: 4px; display: inline-block; text-transform: none;">
-            {{ data.tripName + ', ' if data.tripName else '' }}
-            {{ op.cruise.startDate if op.cruise else '01.08.2025' }}
-            -
-            {{ op.cruise.endDate if op.cruise else '16.09.2025' }}
-        </span>
+<div style="position: relative; min-height: 60px;">
+    <div class="form-title">
+        {{ op.title if op.title else 'OPINIA Z REJSU' }}
+        <br>
+        <span style="font-size: 13px; font-weight: normal; margin-top: 4px; display: inline-block; text-transform: none;">
+                {{ data.tripName + ', ' if data.tripName else '' }}
+                {{ op.cruise.startDate if op.cruise else '01.08.2025' }}
+                -
+                {{ op.cruise.endDate if op.cruise else '16.09.2025' }}
+            </span>
+    </div>
+
+    {% if data.logoBase64 %}
+    <img src="{{ data.logoBase64 }}" style="position: absolute; top: -5px; right: 0; width: 60px; height: 60px; object-fit: contain;">
+    {% endif %}
 </div>
 
 <!-- INFORMACJE O UCZESTNIKU -->

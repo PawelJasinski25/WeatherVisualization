@@ -22,6 +22,7 @@ const ReportGenerator = ({ tripId }) => {
     const lastFetchRef = useRef({ tripId: null, tz: null });
 
     const [formData, setFormData] = useState({
+        logoBase64: null,
         summaryTitle: 'PODSUMOWANIE TRASY',
         tripName: '',
         captain: { name: '', patent: '', phone: '', email: '' },
@@ -57,6 +58,22 @@ const ReportGenerator = ({ tripId }) => {
         const parts = dateStr.split('-');
         if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
         return dateStr;
+    };
+
+    const handleLogoUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFormData(prev => ({ ...prev, logoBase64: reader.result }));
+            };
+            reader.readAsDataURL(file);
+        }
+        e.target.value = null;
+    };
+
+    const handleLogoRemove = () => {
+        setFormData(prev => ({ ...prev, logoBase64: null }));
     };
 
     const handleExportJSON = () => {
@@ -556,6 +573,8 @@ const ReportGenerator = ({ tripId }) => {
                                     handleCrewChange={handleCrewChange}
                                     formatDateForPicker={formatDateForPicker}
                                     formatDateFromPicker={formatDateFromPicker}
+                                    handleLogoUpload={handleLogoUpload}
+                                    handleLogoRemove={handleLogoRemove}
                                 />
                             )}
 
@@ -569,6 +588,8 @@ const ReportGenerator = ({ tripId }) => {
                                     handleNestedChange={handleNestedChange}
                                     formatDateForPicker={formatDateForPicker}
                                     formatDateFromPicker={formatDateFromPicker}
+                                    handleLogoUpload={handleLogoUpload}
+                                    handleLogoRemove={handleLogoRemove}
                                 />
                             ))}
 
