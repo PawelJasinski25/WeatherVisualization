@@ -99,12 +99,14 @@ public class MovementAnalyzer {
                     double distFromStop = calculateDistance(lastStopPoint.getLatitude(), lastStopPoint.getLongitude(), p2.getLatitude(), p2.getLongitude());
 
                     if (distFromStop >= MIN_MOVE_DISTANCE_METERS) {
-                        events.add(new TimelineEvent("POSTÓJ", phaseStart, p1.getTime(), phaseLat, phaseLon, null));
+                        TrackPoint transitionPoint = (timeGap >= MIN_GAP_DURATION_SECONDS) ? p2 : p1;
+
+                        events.add(new TimelineEvent("POSTÓJ", phaseStart, transitionPoint.getTime(), phaseLat, phaseLon, null));
 
                         currentState = "RUCH";
-                        phaseStart = p1.getTime();
-                        phaseLat = p1.getLatitude();
-                        phaseLon = p1.getLongitude();
+                        phaseStart = transitionPoint.getTime();
+                        phaseLat = transitionPoint.getLatitude();
+                        phaseLon = transitionPoint.getLongitude();
                         lastStopPoint = null;
                         potentialStopStartPoint = null;
                     }
