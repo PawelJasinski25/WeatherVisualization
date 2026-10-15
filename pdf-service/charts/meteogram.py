@@ -9,6 +9,25 @@ from matplotlib.ticker import FuncFormatter
 
 from utils import parse_dt, convert_raw
 
+def get_short_tz(tz_str):
+    if str(tz_str).upper() == "UTC":
+        return "UTC"
+    try:
+        import datetime
+        try:
+            from zoneinfo import ZoneInfo
+            tz = ZoneInfo(tz_str)
+        except ImportError:
+            import pytz
+            tz = pytz.timezone(tz_str)
+
+        offset = datetime.datetime.now(tz).utcoffset().total_seconds() / 3600
+        if offset == 0:
+            return "UTC"
+        return f"UTC+{int(offset)}" if offset > 0 else f"UTC{int(offset)}"
+    except Exception:
+        return str(tz_str)
+
 
 def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=None, figsize=(11, 7.4)):
     if not points: return None
@@ -406,6 +425,12 @@ def create_meteogram_chart(points, prefs, min_sec=None, max_sec=None, events=Non
         pass
 
     fig.subplots_adjust(left=0.06, right=0.94, top=0.92, bottom=0.08)
+
+    tz_label = get_short_tz(tz_str)
+    y_pos = 0.043 if is_daily_sync else 0.015
+    txt = fig.text(0.96, y_pos, tz_label, ha='right', va='bottom', fontsize=8, color='#64748b', fontweight='bold')
+    if is_daily_sync:
+        txt.set_in_layout(False)
 
     buf = io.BytesIO()
     fig.savefig(buf, format='png', bbox_inches='tight', dpi=96, transparent=False)
