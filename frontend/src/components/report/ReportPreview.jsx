@@ -125,13 +125,17 @@ const ReportPreview = ({ formData, handleFieldChange, handleNestedChange, format
             {/* STRONA 2: PODSUMOWANIE TRASY */}
             <div className="a4-paper">
                 <div className="report-header summary-header-wrapper">
+                    
                     <input
                         className="interactive-input summary-title-input"
-                        value={formData?.summaryTitle || ''}
-                        onChange={(e) => handleFieldChange('summaryTitle', e.target.value)}
-                        placeholder="Podsumowanie trasy"
+                        value={formData?.tripName || ''}
+                        onChange={(e) => handleFieldChange('tripName', e.target.value)}
+                        placeholder="Nazwa rejsu..."
                     />
+
                     <div className="summary-dates-container">
+                        <span style={{ marginRight: '6px' }}>Podsumowanie trasy,</span>
+
                         <input
                             type="date"
                             className="interactive-input date-input inline-input"

@@ -517,8 +517,9 @@
 <div>
     <div>
         <div class="report-header">
-            <h1>{{ data.summaryTitle if data.summaryTitle else 'PODSUMOWANIE TRASY' }}</h1>
+            <h1>{{ data.tripName if data.tripName else 'RAPORT Z REJSU' }}</h1>
             <p>
+                Podsumowanie trasy,
                 {{ data.cruise.startDate if data.cruise.startDate else '' }}
                 {% if data.cruise.startDate and data.cruise.endDate %} - {% endif %}
                 {{ data.cruise.endDate if data.cruise.endDate else '' }}
