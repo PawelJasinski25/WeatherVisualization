@@ -1,7 +1,7 @@
 import {
     tempColors, humidityColors, dewColors, pressureColors, rainColors, snowColors,
     cloudsColors, cloudsLowColors, cloudsMidColors, cloudsHighColors,
-    windColors, gustsColors, waveColors, wavePeriodColors, seaTempColors, oceanCurrentColors
+    windColors, gustsColors, waveColors, wavePeriodColors, seaTempColors, oceanCurrentColors, speedColors
 } from "./mapColors";
 
 import { useUnits } from '../contexts/UnitContext';
@@ -29,6 +29,8 @@ export const metricConfig = {
     clouds_mid: { label: "Chmury średnie", palette: cloudsMidColors, getValue: pt => pt.cloudMid, labelCount: 5 },
     clouds_high: { label: "Chmury wysokie", palette: cloudsHighColors, getValue: pt => pt.cloudHigh, labelCount: 5 },
     pressure: { label: "Ciśnienie", palette: pressureColors, getValue: pt => pt.pressure !== null ? pt.pressure * 100 : null, labelCount: 5 },
+    speed: { label: "Prędkość jednostki", palette: speedColors, getValue: pt => pt.speed !== null ? pt.speed / 3.6 : null, labelCount: 6 ,
+    },
 };
 
 export const useMetricConfig = () => {
@@ -69,6 +71,7 @@ export const useMetricConfig = () => {
         clouds: { ...metricConfig.clouds, unit: "%", formatValue: val => Number(val).toFixed(1) },
         clouds_low: { ...metricConfig.clouds_low, unit: "%", formatValue: val => Number(val).toFixed(1) },
         clouds_mid: { ...metricConfig.clouds_mid, unit: "%", formatValue: val => Number(val).toFixed(1) },
-        clouds_high: { ...metricConfig.clouds_high, unit: "%", formatValue: val => Number(val).toFixed(1) }
+        clouds_high: { ...metricConfig.clouds_high, unit: "%", formatValue: val => Number(val).toFixed(1) },
+        speed: { ...metricConfig.speed, unit: formatCurrents(0, units.speed || 'kt').unit, formatValue: val => formatCurrents(val, units.speed || 'kt').val},
     };
 };

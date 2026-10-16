@@ -35,10 +35,11 @@ public record TrackPointDto(
         Double speed,
         Integer weatherCode
 ){
-    public TrackPointDto(double latitude, double longitude, double segmentId, double timeMs, Integer dayPhase) {
+    public TrackPointDto(double latitude, double longitude, double segmentId, double timeMs, Integer dayPhase, Double speed) {
         this(latitude, longitude, segmentId, timeMs, dayPhase,
                 null, null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null, null,
+                speed, null);
     }
 
     public static TrackPointDto fromEntity(TrackPoint p) {

@@ -125,7 +125,7 @@ const ReportPreview = ({ formData, handleFieldChange, handleNestedChange, format
             {/* STRONA 2: PODSUMOWANIE TRASY */}
             <div className="a4-paper">
                 <div className="report-header summary-header-wrapper">
-                    
+
                     <input
                         className="interactive-input summary-title-input"
                         value={formData?.tripName || ''}

@@ -180,6 +180,7 @@ public class AstronomyAnalyzer {
             exactPoint.setTime(exactEventTime);
             exactPoint.setSegmentId(before.getSegmentId());
             exactPoint.setWeather(before.getWeather());
+            exactPoint.setSpeed(before.getSpeed());
 
             return new EventPoint(exactEventTime, exactPoint);
         }

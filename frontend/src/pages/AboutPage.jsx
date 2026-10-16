@@ -151,6 +151,7 @@ const AboutPage = () => {
                                                 <a href="https://www.flaticon.com/authors/sudowoodo" target="_blank" rel="noreferrer" className="about-link">Sudowoodo</a>,{' '}
                                                 <a href="https://www.flaticon.com/authors/slidicon" target="_blank" rel="noreferrer" className="about-link">Slidicon</a>,{' '}
                                                 <a href="https://www.flaticon.com/authors/good-ware" target="_blank" rel="noreferrer" className="about-link">Good Ware</a>{' '}
+                                                <a href="https://www.flaticon.com/authors/meaicon" target="_blank" rel="noreferrer" className="about-link">meaicon</a>{' '}
                                             </i>
                                         </span>
                                     </li>

@@ -29,6 +29,7 @@ const primaryParams = [
     { id: 'ocean_current_velocity', label: 'Prędkość prądów', icon: '/icons/ocean_current.png' },
     { id: 'sea_temperature', label: 'Temperatura morza', icon: '/icons/sea.png', scale:1.8 },
     { id: 'astronomy', label: 'Pory dnia', icon: '/icons/time.png', scale: 1.0 },
+    { id: 'speed', label: 'Prędkość jednostki', icon: '/icons/speed.png', scale: 1.2 },
 
 ];
 
@@ -57,6 +58,7 @@ const secondaryParams = [
     { id: 'ocean_current_direction', label: 'Kierunek prądów', icon: '/icons/direction.png' },
     { id: 'wave_dir', label: 'Kierunek fal', icon: '/icons/direction.png' },
     { id: 'weather_pictograms', label: 'Stan pogody', icon: '/icons/partly-cloudy.png', scale:1.4 },
+    { id: 'speed', label: 'Prędkość jednostki', icon: '/icons/speed.png', scale: 1.2 },
 ];
 
 const SidePanel = ({ selectedPrimary, setSelectedPrimary, selectedSecondary, setSelectedSecondary, isOpen, setIsOpen }) => {

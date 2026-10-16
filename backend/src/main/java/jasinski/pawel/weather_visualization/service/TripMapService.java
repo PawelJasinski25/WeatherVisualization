@@ -8,6 +8,7 @@ import jasinski.pawel.weather_visualization.entity.TrackPoint;
 import jasinski.pawel.weather_visualization.entity.Weather;
 import jasinski.pawel.weather_visualization.repository.TrackPointRepository;
 import jasinski.pawel.weather_visualization.utils.AstronomyAnalyzer;
+import jasinski.pawel.weather_visualization.utils.SpeedAnalyzer;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -33,13 +34,14 @@ public class TripMapService {
         List<TrackPoint> rawPoints = trackPointRepository.findByTripIdOrderByTimeAsc(tripId);
         if (rawPoints.isEmpty()) return new MapDataResponse(List.of(), List.of(), Map.of());
 
-        List<TrackPoint> points = filterPointsForMap(rawPoints);
+        List<TrackPoint> cleanedPoints = SpeedAnalyzer.removeSpeedAnomalies(rawPoints);
+        List<TrackPoint> points = filterPointsForMap(cleanedPoints);
         System.out.println("Optymalizacja mapy: Zredukowano z " + rawPoints.size() + " do " + points.size() + " punktów.");
 
 
 
         Map<LocalDate, List<TrackPoint>> pointsByDay = groupPointsByDay(points,zoneId);
-        Map<LocalDate, List<TrackPoint>> rawPointsByDay = groupPointsByDay(rawPoints,zoneId);
+        Map<LocalDate, List<TrackPoint>> rawPointsByDay = groupPointsByDay(cleanedPoints, zoneId);
         List<TrackPointDto> route = new ArrayList<>();
         List<AstronomyMarkerDto> markers = new ArrayList<>();
 
@@ -54,7 +56,7 @@ public class TripMapService {
             List<TrackPoint> dayPoints = entry.getValue();
 
             List<TrackPoint> rawDayPoints = rawPointsByDay.get(currentDate);
-            AstronomyStats astro = AstronomyAnalyzer.calculateAstronomy(rawDayPoints, rawPoints, null, zoneId);
+            AstronomyStats astro = AstronomyAnalyzer.calculateAstronomy(rawDayPoints, cleanedPoints, null, zoneId);
 
             if (firstDayAstro == null) {
                 firstDayAstro = astro;
@@ -103,6 +105,7 @@ public class TripMapService {
             int phase = calculatePhaseFromTimeline(point, timeline, firstDayAstro, firstDate);
             route.add(mapToDto(point, phase));
 
+            updateRanges(ranges, "speed", point.getSpeed() != null ? point.getSpeed() / 3.6 : null);
             Weather w = point.getWeather();
             if (w != null) {
                 updateRanges(ranges, "temp", w.getTemp() != null ? w.getTemp() + 273.15 : null);
@@ -202,9 +205,10 @@ public class TripMapService {
         double lon = point.getLongitude();
         double segmentId = point.getSegmentId() != null ? point.getSegmentId() : 0.0;
         double timeMs = point.getTime() != null ? (double) point.getTime().toEpochMilli() : 0.0;
+        Double speed = point.getSpeed();
 
         if (w == null) {
-            return new TrackPointDto(lat, lon, segmentId, timeMs, dayPhase);
+            return new TrackPointDto(lat, lon, segmentId, timeMs, dayPhase, speed);
         }
 
         return new TrackPointDto(
@@ -214,7 +218,7 @@ public class TripMapService {
                 w.getCloudCoverMid(), w.getCloudCoverHigh(), w.getWindDir(), w.getSnowfall(),
                 w.getWaveHeight(), w.getWavePeriod(), w.getWaveDirection(), w.getWindWaveHeight(),
                 w.getWindWavePeriod(), w.getSwellWaveHeight(), w.getSwellWavePeriod(),
-                w.getOceanCurrentVelocity(), w.getSeaTemperature(), w.getOceanCurrentDirection(), null, w.getWeatherCode()
+                w.getOceanCurrentVelocity(), w.getSeaTemperature(), w.getOceanCurrentDirection(), speed, w.getWeatherCode()
         );
     }
 
